@@ -1,0 +1,849 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\Siswa;
+use App\Models\Kelas;
+use App\Models\OrangTuaWali;
+use App\Models\AbsensiSiswa;
+use App\Models\User;
+use App\Models\LogAktivitas;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Inertia\Inertia;
+use Illuminate\Support\Facades\Log;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Http;
+use Maatwebsite\Excel\Facades\Excel;
+
+class SiswaController extends Controller
+{
+    /**
+     * Menampilkan halaman daftar siswa dengan filter dan paginasi dinamis.
+     */
+    public function index(Request $request)
+    {
+        $kelasOptions = Kelas::orderBy('tingkat')->get();
+        
+        // Logika Rows Per Page
+        $perPageRequest = $request->input('per_page', 10);
+        
+        // Jika 'all', kita ambil jumlah total data, atau angka sangat besar
+        if ($perPageRequest === 'all') {
+            $perPage = Siswa::count();
+            if ($perPage == 0) $perPage = 10; // Hindari division by zero atau error pagination jika kosong
+        } else {
+            $perPage = (int) $perPageRequest;
+            // Validasi agar tidak error jika user input aneh-aneh di URL
+            if ($perPage < 1) $perPage = 10;
+        }
+
+        $siswas = Siswa::with('kelas')
+            ->when($request->input('search'), function ($query, $search) {
+                $query->where('nama_lengkap', 'like', "%{$search}%")
+                    ->orWhere('nis', 'like', "%{$search}%");
+            })
+            ->when($request->input('kelas'), function ($query, $kelasId) {
+                if ($kelasId === 'null') {
+                    $query->whereNull('id_kelas');
+                } else {
+                    $query->where('id_kelas', $kelasId);
+                }
+            })
+            ->latest()
+            ->paginate($perPage) // Gunakan variabel dinamis
+            ->withQueryString();
+
+        // ✅ Tambahkan foto_url untuk setiap siswa
+        $siswas->through(function ($s) {
+            $s->foto_url = null;
+            if ($s->foto_profil && Storage::disk('public')->exists($s->foto_profil)) {
+                $s->foto_url = url('/storage-public/' . ltrim($s->foto_profil, '/'));
+            }
+            return $s;
+        });
+
+        return Inertia::render('admin/Siswa/Index', [
+            'siswas' => $siswas,
+            'kelasOptions' => $kelasOptions,
+            'filters' => array_merge($request->only(['search', 'kelas']), ['per_page' => $perPageRequest]),
+        ]);
+    }
+
+    /**
+     * Menampilkan form untuk membuat data siswa baru.
+     */
+    public function create()
+    {
+        return Inertia::render('admin/Siswa/Create', [
+            'kelasOptions' => Kelas::orderBy('tingkat')->get(),
+        ]);
+    }
+
+    /**
+     * Menyimpan data siswa baru beserta akun pengguna yang terhubung secara otomatis.
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'id_siswa' => 'required|string|max:20|unique:tbl_siswa',
+            'nis' => 'required|string|max:30|unique:tbl_siswa|unique:tbl_pengguna,username',
+            'nisn' => 'required|string|max:20|unique:tbl_siswa',
+            'id_kelas' => 'nullable|exists:tbl_kelas,id_kelas',
+            'nama_lengkap' => 'required|string|max:100',
+            'nama_panggilan' => 'nullable|string|max:30',
+            'foto_profil' => 'nullable|image|max:2048',
+            'nik' => 'required|string|max:16|unique:tbl_siswa',
+            'nomor_kk' => 'required|string|max:16',
+            'tempat_lahir' => 'required|string|max:50',
+            'tanggal_lahir' => 'required|date',
+            'jenis_kelamin' => 'required|in:Laki-laki,Perempuan',
+            'agama' => 'required|string',
+            'alamat_lengkap' => 'required|string',
+            'anak_ke' => 'nullable|integer|min:1',
+            'jumlah_saudara' => 'nullable|integer|min:0',
+            'sekolah_asal' => 'nullable|string|max:100',
+            'tahun_lulus' => 'nullable|string|max:4',
+            'nama_ayah' => 'nullable|string|max:100',
+            'nik_ayah' => 'nullable|string|max:16',
+            'pendidikan_ayah' => 'nullable|string|max:50',
+            'pekerjaan_ayah' => 'nullable|string|max:50',
+            'penghasilan_ayah' => 'nullable|string|max:50',
+            'nama_ibu' => 'nullable|string|max:100',
+            'nik_ibu' => 'nullable|string|max:16',
+            'pendidikan_ibu' => 'nullable|string|max:50',
+            'pekerjaan_ibu' => 'nullable|string|max:50',
+            'penghasilan_ibu' => 'nullable|string|max:50',
+            'nama_wali' => 'nullable|string|max:100',
+            'no_hp_wali' => 'nullable|string|max:20',
+            'alamat_wali' => 'nullable|string',
+            'status' => 'required|in:Aktif,Lulus,Pindah,Drop Out',
+            'sidik_jari_template' => 'nullable|string',
+            'barcode_id' => 'nullable|string|max:100|unique:tbl_siswa,barcode_id',
+        ]);
+
+        try {
+            DB::transaction(function () use ($request, $validated) {
+                $user = User::create([
+                    'nama_lengkap' => $validated['nama_lengkap'],
+                    'username' => $validated['nis'],
+                    'password' => Hash::make($validated['nis']),
+                    'level' => 'Siswa',
+                ]);
+
+                $validated['id_pengguna'] = $user->id_pengguna;
+
+                if ($request->hasFile('foto_profil')) {
+                    $path = $request->file('foto_profil')->store('foto_profil_siswa', 'public');
+                    $validated['foto_profil'] = $path;
+                }
+
+                Siswa::create($validated);
+            });
+
+            return to_route('admin.siswa.index')
+                ->with('success', 'Data Siswa berhasil ditambahkan beserta akun loginnya.');
+        } catch (\Throwable $e) {
+            Log::error('STORE SISWA ERROR', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return back()
+                ->with('error', 'Gagal menambahkan siswa. Coba lagi.')
+                ->withInput();
+        }
+    }
+
+    /**
+     * Menampilkan halaman detail untuk seorang siswa.
+     */
+    public function show(Siswa $siswa)
+    {
+        $siswa->load('kelas.waliKelas');
+
+        $orangTuaWali = OrangTuaWali::where('id_siswa', $siswa->id_siswa)->get();
+
+        $riwayatAbsensi = AbsensiSiswa::where('id_siswa', $siswa->id_siswa)
+            ->latest('tanggal')
+            ->take(30)
+            ->get();
+
+        $fotoUrl = null;
+        if ($siswa->foto_profil && Storage::disk('public')->exists($siswa->foto_profil)) {
+            $fotoUrl = url('/storage-public/' . ltrim($siswa->foto_profil, '/'));
+        }
+
+        return Inertia::render('admin/Siswa/Show', [
+            'siswa' => array_merge($siswa->toArray(), [
+                'foto_url' => $fotoUrl,
+            ]),
+            'orangTuaWali' => $orangTuaWali,
+            'riwayatAbsensi' => $riwayatAbsensi,
+        ]);
+    }
+
+    /**
+     * Menampilkan form untuk mengedit data siswa.
+     */
+    public function edit(Siswa $siswa)
+    {
+        return Inertia::render('admin/Siswa/Edit', [
+            'siswa' => $siswa,
+            'kelasOptions' => Kelas::orderBy('tingkat')->get(),
+        ]);
+    }
+
+    /**
+     * Memperbarui data siswa di database.
+     */
+    public function update(Request $request, Siswa $siswa)
+    {
+        $validated = $request->validate([
+            'nis' => ['required', 'string', 'max:30', Rule::unique('tbl_siswa')->ignore($siswa->id_siswa, 'id_siswa')],
+            'nisn' => ['required', 'string', 'max:20', Rule::unique('tbl_siswa')->ignore($siswa->id_siswa, 'id_siswa')],
+            'id_kelas' => 'nullable|exists:tbl_kelas,id_kelas',
+            'nama_lengkap' => 'required|string|max:100',
+            'nama_panggilan' => 'nullable|string|max:30',
+            'foto_profil' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'nik' => ['required', 'string', 'max:16', Rule::unique('tbl_siswa')->ignore($siswa->id_siswa, 'id_siswa')],
+            'nomor_kk' => 'required|string|max:16',
+            'tempat_lahir' => 'required|string|max:50',
+            'tanggal_lahir' => 'required|date',
+            'jenis_kelamin' => 'required|in:Laki-laki,Perempuan',
+            'agama' => 'required|string',
+            'alamat_lengkap' => 'required|string',
+            'anak_ke' => 'nullable|integer|min:1',
+            'jumlah_saudara' => 'nullable|integer|min:0',
+            'sekolah_asal' => 'nullable|string|max:100',
+            'tahun_lulus' => 'nullable|string|max:4',
+            'nama_ayah' => 'nullable|string|max:100',
+            'nik_ayah' => 'nullable|string|max:16',
+            'pendidikan_ayah' => 'nullable|string|max:50',
+            'pekerjaan_ayah' => 'nullable|string|max:50',
+            'penghasilan_ayah' => 'nullable|string|max:50',
+            'nama_ibu' => 'nullable|string|max:100',
+            'nik_ibu' => 'nullable|string|max:16',
+            'pendidikan_ibu' => 'nullable|string|max:50',
+            'pekerjaan_ibu' => 'nullable|string|max:50',
+            'penghasilan_ibu' => 'nullable|string|max:50',
+            'nama_wali' => 'nullable|string|max:100',
+            'no_hp_wali' => 'nullable|string|max:20',
+            'alamat_wali' => 'nullable|string',
+            'status' => 'required|in:Aktif,Lulus,Pindah,Drop Out',
+            'sidik_jari_template' => 'nullable|string',
+            'barcode_id' => ['nullable', 'string', 'max:100', Rule::unique('tbl_siswa')->ignore($siswa->id_siswa, 'id_siswa')],
+        ]);
+
+        try {
+            DB::transaction(function () use ($request, $siswa, $validated) {
+                if ($request->hasFile('foto_profil')) {
+                    $file = $request->file('foto_profil');
+
+                    if ($siswa->foto_profil && Storage::disk('public')->exists($siswa->foto_profil)) {
+                        Storage::disk('public')->delete($siswa->foto_profil);
+                    }
+
+                    $timestamp = now()->timestamp;
+                    $filename = "siswa_{$siswa->id_siswa}_{$timestamp}." . $file->getClientOriginalExtension();
+                    $path = $file->storeAs('foto_profil_siswa', $filename, 'public');
+
+                    $validated['foto_profil'] = $path;
+                }
+
+                $siswa->update($validated);
+
+                if ($siswa->pengguna) {
+                    $siswa->pengguna->update([
+                        'nama_lengkap' => $validated['nama_lengkap'],
+                        'username' => $validated['nis'],
+                    ]);
+                }
+            });
+
+            return to_route('admin.siswa.index')
+                ->with('success', 'Data Siswa berhasil diperbarui.');
+        } catch (\Throwable $e) {
+            Log::error('UPDATE SISWA ERROR', [
+                'siswa_id' => $siswa->id_siswa,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return back()
+                ->with('error', 'Gagal memperbarui data siswa. Periksa input & coba lagi.')
+                ->withInput();
+        }
+    }
+
+    /**
+     * Memperbarui data keamanan (barcode & sidik jari) untuk siswa.
+     */
+    public function updateKeamanan(Request $request, Siswa $siswa)
+    {
+        $validated = $request->validate([
+            'sidik_jari_template' => 'nullable|string',
+            'barcode_id' => ['nullable', 'string', 'max:100', Rule::unique('tbl_siswa', 'barcode_id')->ignore($siswa->id_siswa, 'id_siswa')],
+        ]);
+
+        try {
+            if ($request->input('generate_barcode') && empty($validated['barcode_id'])) {
+                $validated['barcode_id'] = 'SISWA-' . Str::upper(Str::random(10));
+            }
+
+            $siswa->update($validated);
+
+            return redirect()->route('admin.siswa.show', $siswa->id_siswa)
+                ->with('success', 'Data keamanan berhasil diperbarui.');
+        } catch (\Throwable $e) {
+            Log::error('UPDATE KEAMANAN SISWA ERROR', [
+                'siswa_id' => $siswa->id_siswa,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Gagal memperbarui data keamanan. Coba lagi.');
+        }
+    }
+
+    /**
+     * Membuat akun pengguna secara massal untuk siswa yang belum memilikinya.
+     */
+    public function generateMissingAccounts()
+    {
+        try {
+            $studentsToProcess = Siswa::where('status', 'Aktif')
+                ->whereNull('id_pengguna')
+                ->get();
+
+            $createdCount = 0;
+            $failedCount = 0;
+
+            foreach ($studentsToProcess as $siswa) {
+                DB::transaction(function () use ($siswa, &$createdCount, &$failedCount) {
+                    $userExists = User::where('username', $siswa->nis)->exists();
+
+                    if ($userExists) {
+                        $failedCount++;
+                        return;
+                    }
+
+                    $user = User::create([
+                        'nama_lengkap' => $siswa->nama_lengkap,
+                        'username' => $siswa->nis,
+                        'password' => Hash::make($siswa->nis),
+                        'level' => 'Siswa',
+                    ]);
+
+                    $siswa->id_pengguna = $user->id_pengguna;
+                    $siswa->save();
+
+                    $createdCount++;
+                });
+            }
+
+            if ($createdCount === 0 && $failedCount === 0) {
+                return back()->with('success', 'Semua siswa aktif sudah memiliki akun.');
+            }
+
+            $message = "Proses selesai. Berhasil membuat {$createdCount} akun baru.";
+            if ($failedCount > 0) {
+                $message .= " Gagal membuat {$failedCount} akun karena NIS sudah terdaftar sebagai username.";
+            }
+
+            return back()->with('success', $message);
+        } catch (\Throwable $e) {
+            Log::error('GENERATE ACCOUNT ERROR', ['error' => $e->getMessage()]);
+            return back()->with('error', 'Gagal membuat akun massal. Coba lagi.');
+        }
+    }
+
+    /**
+     * Menghapus data siswa dan akun pengguna yang terhubung.
+     */
+    public function destroy(Siswa $siswa)
+    {
+        try {
+            DB::transaction(function () use ($siswa) {
+                if ($siswa->foto_profil) {
+                    Storage::disk('public')->delete($siswa->foto_profil);
+                }
+
+                if ($siswa->pengguna) {
+                    $siswa->pengguna->delete();
+                }
+
+                $siswa->delete();
+            });
+
+            return redirect()->back(303)
+                ->with('success', 'Data Siswa berhasil dihapus beserta akun loginnya.');
+        } catch (\Throwable $e) {
+            Log::error('DELETE SISWA ERROR', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Gagal menghapus siswa. Coba lagi.')
+                ->withInput();
+        }
+    }
+
+    /**
+     * Menampilkan halaman khusus Reset Password.
+     */
+    public function resetPasswordIndex(Request $request)
+    {
+        $siswas = Siswa::with('kelas', 'pengguna')
+            ->when($request->input('search'), function ($query, $search) {
+                $query->where('nama_lengkap', 'like', "%{$search}%")
+                    ->orWhere('nis', 'like', "%{$search}%");
+            })
+            ->whereNotNull('id_pengguna')
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
+        $siswas->through(function ($s) {
+            $s->foto_url = null;
+            if ($s->foto_profil && Storage::disk('public')->exists($s->foto_profil)) {
+                $s->foto_url = url('/storage-public/' . ltrim($s->foto_profil, '/'));
+            }
+            return $s;
+        });
+
+        return Inertia::render('admin/Siswa/ResetPassword', [
+            'siswas' => $siswas,
+            'filters' => $request->only(['search']),
+        ]);
+    }
+
+    /**
+     * Memproses reset password ke default (NIS).
+     */
+    public function resetPasswordStore(Siswa $siswa)
+    {
+        try {
+            if (!$siswa->pengguna) {
+                return back()->with('error', 'Siswa ini belum memiliki akun pengguna.');
+            }
+
+            $siswa->pengguna->update([
+                'password' => Hash::make($siswa->nis),
+                'username' => $siswa->nis,
+            ]);
+
+            return back()->with('success', "Akun siswa {$siswa->nama_lengkap} berhasil direset. Login menggunakan NIS.");
+        } catch (\Throwable $e) {
+            Log::error('RESET PASSWORD ERROR', ['error' => $e->getMessage()]);
+            return back()->with('error', 'Terjadi kesalahan saat mereset password.');
+        }
+    }
+
+    /**
+     * Export Data Siswa ke PDF
+     */
+    public function exportPdf(Request $request)
+    {
+        $search = $request->query('search');
+        $id_kelas = $request->query('kelas');
+        
+        $query = Siswa::with('kelas')->where('status', 'Aktif');
+
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('nama_lengkap', 'like', "%{$search}%")
+                  ->orWhere('nis', 'like', "%{$search}%")
+                  ->orWhere('nisn', 'like', "%{$search}%");
+            });
+        }
+
+        if ($id_kelas) {
+            $query->where('id_kelas', $id_kelas);
+        }
+
+        // Chunking untuk menghemat memori jika data besar (lebih dari 1000 baris)
+        // Kita menggunakan chunk map untuk menghasilkan array semua data tanpa load semua sekaligus.
+        $siswas = collect();
+        $query->orderBy('nis')->chunk(500, function ($chunk) use ($siswas) {
+            foreach ($chunk as $siswa) {
+                $siswas->push($siswa);
+            }
+        });
+
+        $pdf = Pdf::loadView('exports.siswa_pdf', ['siswas' => $siswas])
+                  ->setPaper('a4', 'landscape');
+
+        return $pdf->download('Data_Siswa.pdf');
+    }
+
+    /**
+     * Menghapus banyak siswa sekaligus (Bulk Delete).
+     */
+    public function bulkDelete(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:tbl_siswa,id_siswa',
+        ]);
+
+        $ids = $request->ids;
+        $count = 0;
+
+        try {
+            DB::transaction(function () use ($ids, &$count) {
+                $students = Siswa::whereIn('id_siswa', $ids)->get();
+
+                foreach ($students as $siswa) {
+                    if ($siswa->foto_profil && Storage::disk('public')->exists($siswa->foto_profil)) {
+                        Storage::disk('public')->delete($siswa->foto_profil);
+                    }
+                    if ($siswa->pengguna) {
+                        $siswa->pengguna->delete();
+                    }
+                    $siswa->delete();
+                    $count++;
+                }
+                
+                LogAktivitas::create([
+                    'id_pengguna' => Auth::id() ?? 1,
+                    'waktu'       => now(),
+                    'aksi'        => 'Hapus Massal Siswa',
+                    'keterangan'  => "Menghapus (Soft Delete) {$count} data siswa beserta akunnya."
+                ]);
+            });
+
+            return back()->with('success', "Berhasil menghapus {$count} data siswa.");
+        } catch (\Throwable $e) {
+            Log::error('BULK DELETE ERROR', ['error' => $e->getMessage()]);
+            return back()->with('error', 'Gagal menghapus data massal.');
+        }
+    }
+
+    /**
+     * Update massal (Pindah Kelas atau Ganti Status).
+     */
+    public function bulkUpdate(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:tbl_siswa,id_siswa',
+            'type' => 'required|in:kelas,status',
+            'value' => 'required', 
+        ]);
+
+        $ids = $request->ids;
+        $type = $request->type;
+        $value = $request->value;
+        $updatedCount = 0;
+
+        try {
+            DB::transaction(function () use ($ids, $type, $value, &$updatedCount) {
+                $updateData = [];
+                
+                if ($type === 'kelas') {
+                    $updateData['id_kelas'] = $value;
+                } elseif ($type === 'status') {
+                    $updateData['status'] = $value;
+                    
+                    if ($value === 'Lulus') {
+                        // Soft delete linked users if status changes to Lulus
+                        $idPenggunas = Siswa::whereIn('id_siswa', $ids)->whereNotNull('id_pengguna')->pluck('id_pengguna');
+                        if ($idPenggunas->count() > 0) {
+                            User::whereIn('id_pengguna', $idPenggunas)->delete();
+                        }
+                    }
+                }
+
+                $updatedCount = Siswa::whereIn('id_siswa', $ids)->update($updateData);
+                
+                LogAktivitas::create([
+                    'id_pengguna' => Auth::id() ?? 1,
+                    'waktu'       => now(),
+                    'aksi'        => 'Ubah Massal Siswa',
+                    'keterangan'  => "Mengubah {$type} menjadi '{$value}' untuk {$updatedCount} siswa."
+                ]);
+            });
+
+            return back()->with('success', "Berhasil memperbarui {$updatedCount} data siswa.");
+        } catch (\Throwable $e) {
+            Log::error('BULK UPDATE ERROR', ['error' => $e->getMessage()]);
+            return back()->with('error', 'Gagal melakukan update massal.');
+        }
+    }
+
+    // --- IMPORT FITUR (NEW) ---
+
+    public function downloadTemplate()
+    {
+        $headers = [
+            'NIS', 'NISN', 'Nama Lengkap', 'Kelas (Contoh: X RPL 1)', 'Jenis Kelamin (L/P)', 
+            'Tempat Lahir', 'Tanggal Lahir (YYYY-MM-DD)', 'NIK', 'Nomor KK', 'Agama', 
+            'Alamat Lengkap', 'Anak Ke', 'Jumlah Saudara', 'Sekolah Asal', 'Tahun Lulus',
+            'Nama Ayah', 'NIK Ayah', 'Pendidikan Ayah', 'Pekerjaan Ayah', 'Penghasilan Ayah',
+            'Nama Ibu', 'NIK Ibu', 'Pendidikan Ibu', 'Pekerjaan Ibu', 'Penghasilan Ibu',
+            'Nama Wali', 'No. HP Wali', 'Alamat Wali'
+        ];
+        $callback = function() use ($headers) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $headers);
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, [
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=template_siswa.csv",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ]);
+    }
+
+    private function readFileData($filePath)
+    {
+        $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+        
+        if ($extension === 'csv' || $extension === 'txt') {
+            if (($handle = fopen($filePath, "r")) !== FALSE) {
+                $line = fgets($handle);
+                rewind($handle);
+                $delimiter = (strpos($line, ';') !== false) ? ';' : ',';
+
+                $headers = fgetcsv($handle, 1000, $delimiter);
+                $sampleRow = fgetcsv($handle, 1000, $delimiter);
+                fclose($handle);
+                
+                if (isset($headers[0])) {
+                    $headers[0] = preg_replace('/^\xEF\xBB\xBF/', '', $headers[0]);
+                }
+
+                return ['headers' => $headers, 'sample' => $sampleRow, 'all_rows' => null];
+            }
+        } 
+        else if (in_array($extension, ['xlsx', 'xls'])) {
+            try {
+                $data = Excel::toArray([], $filePath);
+                if (isset($data[0]) && count($data[0]) > 0) {
+                    $headers = $data[0][0]; 
+                    $sampleRow = isset($data[0][1]) ? $data[0][1] : [];
+                    return ['headers' => $headers, 'sample' => $sampleRow, 'all_rows' => $data[0]];
+                }
+            } catch (\Exception $e) {
+                Log::error("Gagal baca Excel: " . $e->getMessage());
+                return null;
+            }
+        }
+
+        return null;
+    }
+
+    public function previewImport(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt,xlsx,xls'
+        ], [
+            'file.mimes' => 'Format file harus CSV atau Excel (.xlsx, .xls).'
+        ]);
+
+        $file = $request->file('file');
+        $path = $file->store('temp_imports');
+        $fullPath = Storage::path($path);
+
+        $fileData = $this->readFileData($fullPath);
+
+        if (!$fileData || empty($fileData['headers'])) {
+            return response()->json(['message' => 'Gagal membaca header file. Pastikan format benar.'], 400);
+        }
+
+        $headers = $fileData['headers'];
+        $sampleRow = $fileData['sample'];
+
+        $guesses = [];
+        $apiKey = env('AIzaSyDGdi4tpkpm4i8TGcH9_y_Re80JTvEL3VQ');
+
+        if ($apiKey) {
+            try {
+                $targetFields = [
+                    'nis' => 'Nomor Induk Siswa / NIPD',
+                    'nisn' => 'Nomor Induk Siswa Nasional',
+                    'nama_lengkap' => 'Nama Peserta Didik / Nama Siswa',
+                    'kelas' => 'Kelas / Rombel / Jurusan',
+                    'jenis_kelamin' => 'Jenis Kelamin (L/P) / Gender',
+                    'tempat_lahir' => 'Tempat Lahir',
+                    'tanggal_lahir' => 'Tanggal Lahir',
+                    'nik' => 'NIK / Nomor KTP',
+                    'nomor_kk' => 'Nomor KK',
+                    'agama' => 'Agama',
+                    'alamat_lengkap' => 'Alamat / Jalan',
+                    'anak_ke' => 'Anak Ke',
+                    'jumlah_saudara' => 'Jumlah Saudara',
+                    'sekolah_asal' => 'Sekolah Asal / Asal Sekolah',
+                    'tahun_lulus' => 'Tahun Lulus',
+                    'nama_ayah' => 'Nama Ayah',
+                    'nik_ayah' => 'NIK Ayah',
+                    'pendidikan_ayah' => 'Pendidikan Ayah',
+                    'pekerjaan_ayah' => 'Pekerjaan Ayah',
+                    'penghasilan_ayah' => 'Penghasilan Ayah',
+                    'nama_ibu' => 'Nama Ibu',
+                    'nik_ibu' => 'NIK Ibu',
+                    'pendidikan_ibu' => 'Pendidikan Ibu',
+                    'pekerjaan_ibu' => 'Pekerjaan Ibu',
+                    'penghasilan_ibu' => 'Penghasilan Ibu',
+                    'nama_wali' => 'Nama Wali',
+                    'no_hp_wali' => 'No HP Wali',
+                    'alamat_wali' => 'Alamat Wali'
+                ];
+
+                $prompt = "I have a CSV/Excel file with the following headers (indexed 0-" . (count($headers)-1) . "): " . json_encode($headers) . ". \n";
+                $prompt .= "Please map these headers to the following database fields: " . json_encode($targetFields) . ". \n";
+                $prompt .= "Return ONLY a valid JSON object where the keys are the database fields (e.g., 'nis', 'nama_lengkap') and the values are the integer index of the matching header. If no match is found for a field, omit it from the JSON. Be smart about abbreviations (e.g. 'JK' = 'jenis_kelamin', 'NIPD' = 'nis'). Do not include markdown formatting.";
+
+                $response = Http::withHeaders([
+                    'Content-Type' => 'application/json'
+                ])->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={$apiKey}", [
+                    'contents' => [['parts' => [['text' => $prompt]]]]
+                ]);
+
+                if ($response->successful()) {
+                    $content = $response->json()['candidates'][0]['content']['parts'][0]['text'] ?? '{}';
+                    $content = str_replace(['```json', '```'], '', $content);
+                    $guesses = json_decode($content, true);
+                } else {
+                    $guesses = $this->getManualGuesses($headers);
+                }
+
+            } catch (\Exception $e) {
+                $guesses = $this->getManualGuesses($headers);
+            }
+        } else {
+            $guesses = $this->getManualGuesses($headers);
+        }
+
+        return response()->json([
+            'headers' => $headers,
+            'rows' => [$sampleRow],
+            'guesses' => $guesses,
+            'temp_path' => $path
+        ]);
+    }
+
+    private function getManualGuesses($headers) {
+        $guesses = [];
+        $dbFields = [
+            'nis' => ['nipd', 'nis', 'nomor induk', 'induk'],
+            'nisn' => ['nisn', 'nomor induk siswa nasional'],
+            'nama_lengkap' => ['nama', 'nama lengkap', 'peserta didik', 'nama siswa'],
+            'kelas' => ['rombel', 'kelas', 'jurusan'],
+            'jenis_kelamin' => ['jk', 'l/p', 'jenis kelamin', 'gender'],
+            'tempat_lahir' => ['tempat lahir', 'tmp lahir'],
+            'tanggal_lahir' => ['tanggal lahir', 'tgl lahir', 'dob'],
+            'nik' => ['nik', 'no ktp'],
+            'nomor_kk' => ['no kk', 'kartu keluarga'],
+            'agama' => ['agama'],
+            'alamat_lengkap' => ['alamat', 'jalan'],
+            'anak_ke' => ['anak ke'],
+            'jumlah_saudara' => ['jumlah saudara'],
+            'sekolah_asal' => ['sekolah asal', 'asal sekolah'],
+            'tahun_lulus' => ['tahun lulus', 'thn lulus'],
+            'nama_ayah' => ['nama ayah', 'ayah'],
+            'nik_ayah' => ['nik ayah'],
+            'pendidikan_ayah' => ['pendidikan ayah'],
+            'pekerjaan_ayah' => ['pekerjaan ayah'],
+            'penghasilan_ayah' => ['penghasilan ayah', 'gaji ayah'],
+            'nama_ibu' => ['nama ibu', 'ibu'],
+            'nik_ibu' => ['nik ibu'],
+            'pendidikan_ibu' => ['pendidikan ibu'],
+            'pekerjaan_ibu' => ['pekerjaan ibu'],
+            'penghasilan_ibu' => ['penghasilan ibu', 'gaji ibu'],
+            'nama_wali' => ['nama wali', 'wali'],
+            'no_hp_wali' => ['no hp wali', 'hp wali', 'telp wali'],
+            'alamat_wali' => ['alamat wali'],
+        ];
+
+        foreach ($dbFields as $fieldKey => $keywords) {
+            foreach ($keywords as $keyword) {
+                foreach ($headers as $index => $header) {
+                    $h = strtolower($header);
+                    if ($fieldKey == 'nama_lengkap' && (str_contains($h, 'ayah') || str_contains($h, 'ibu') || str_contains($h, 'wali'))) continue;
+                    if ($fieldKey == 'nik' && (str_contains($h, 'ayah') || str_contains($h, 'ibu') || str_contains($h, 'wali'))) continue;
+                    
+                    if ($h === $keyword || (strlen($keyword) > 2 && str_contains($h, $keyword))) {
+                        $guesses[$fieldKey] = $index;
+                        break 2;
+                    }
+                }
+            }
+        }
+        return $guesses;
+    }
+
+    public function importStore(Request $request)
+    {
+        $request->validate([
+            'file_path' => 'required|string',
+            'mappings' => 'required|array'
+        ]);
+
+        if (!Storage::exists($request->file_path)) {
+            return response()->json(['message' => 'File expired. Silakan upload ulang.'], 400);
+        }
+
+        $path = Storage::path($request->file_path);
+        $mappings = $request->mappings;
+
+        $success = 0;
+        $failed = 0;
+        $errors = [];
+        $rowNumber = 1; 
+
+        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $dataRows = [];
+
+        if ($extension === 'csv' || $extension === 'txt') {
+            if (($handle = fopen($path, "r")) !== FALSE) {
+                $line = fgets($handle);
+                rewind($handle);
+                $delimiter = (strpos($line, ';') !== false) ? ';' : ',';
+                fgetcsv($handle, 1000, $delimiter); 
+                while (($row = fgetcsv($handle, 1000, $delimiter)) !== FALSE) {
+                    $dataRows[] = $row;
+                }
+                fclose($handle);
+            }
+        } else {
+            try {
+                $sheets = Excel::toArray([], $path);
+                if (isset($sheets[0])) {
+                    $dataRows = array_slice($sheets[0], 1);
+                }
+            } catch (\Exception $e) {
+                return response()->json(['message' => 'Gagal memproses file Excel: ' . $e->getMessage()], 400);
+            }
+        }
+
+        // Dispatch background job
+        \App\Jobs\ImportSiswaJob::dispatch(
+            auth()->id(),
+            $dataRows,
+            $mappings,
+            config('app.timezone')
+        );
+
+        Storage::delete($request->file_path);
+
+        return response()->json([
+            'message' => 'File sedang diproses di background. Anda akan menerima notifikasi setelah selesai.',
+            // Respons dummy agar frontend yang lama tidak error (jika mengharapkan property ini)
+            'total' => count($dataRows),
+            'success' => 0,
+            'failed' => 0,
+            'errors' => []
+        ]);
+    }
+}

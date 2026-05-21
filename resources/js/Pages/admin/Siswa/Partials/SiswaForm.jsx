@@ -1,0 +1,522 @@
+import React, { useEffect, useMemo, useState } from "react";
+
+export default function SiswaForm({ data, setData, errors = {}, kelasOptions = [], siswa = null }) {
+  // Preview prioritas:
+  // 1) file baru yg dipilih
+  // 2) siswa.foto_url (kalau backend ngirim)
+  // 3) fallback /storage/<path> (kalau format lama)
+  // 4) ui-avatars
+  const initialPreview = useMemo(() => {
+    if (siswa?.foto_url) return siswa.foto_url;
+    if (siswa?.foto_profil) return `/storage/${siswa.foto_profil}`;
+    return null;
+  }, [siswa]);
+
+  const [preview, setPreview] = useState(initialPreview);
+  const [objectUrl, setObjectUrl] = useState(null);
+
+  useEffect(() => {
+    setPreview(initialPreview);
+  }, [initialPreview]);
+
+  // cleanup object URL biar gak bocor memory
+  useEffect(() => {
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [objectUrl]);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setData("foto_profil", file);
+
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+    const url = URL.createObjectURL(file);
+    setObjectUrl(url);
+    setPreview(url);
+  };
+
+  const agamaOptions = [
+    "Islam",
+    "Kristen Protestan",
+    "Katolik",
+    "Hindu",
+    "Buddha",
+    "Khonghucu",
+    "Lainnya",
+  ];
+
+  const pendidikanOptions = [
+    "Tidak Sekolah",
+    "SD/Sederajat",
+    "SMP/Sederajat",
+    "SMA/Sederajat",
+    "D1", "D2", "D3", "D4",
+    "S1",
+    "S2",
+    "S3",
+  ];
+
+  const penghasilanOptions = [
+    "Kurang dari Rp 1.000.000",
+    "Rp 1.000.000 - Rp 3.000.000",
+    "Rp 3.000.000 - Rp 5.000.000",
+    "Rp 5.000.000 - Rp 10.000.000",
+    "Lebih dari Rp 10.000.000",
+    "Tidak Berpenghasilan",
+  ];
+
+  const avatarFallback = useMemo(() => {
+    const name = encodeURIComponent(data.nama_lengkap || "S");
+    return `https://ui-avatars.com/api/?name=${name}&color=7F9CF5&background=EBF4FF&size=256`;
+  }, [data.nama_lengkap]);
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6">
+      {/* Kolom Kiri - Foto Profil */}
+      <div className="md:col-span-1">
+        <h3 className="text-lg font-medium text-gray-900">Foto Profil Siswa</h3>
+        <p className="mt-1 text-sm text-gray-600">Upload foto profil siswa (opsional).</p>
+
+        <div className="mt-4">
+          <div className="w-40 h-40 bg-gray-100 rounded-full mx-auto overflow-hidden ring-1 ring-gray-200">
+            <img
+              src={preview || avatarFallback}
+              alt="Preview"
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.src = avatarFallback;
+              }}
+            />
+          </div>
+
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            className="mt-4 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+          />
+          {errors.foto_profil && <p className="text-red-500 text-xs mt-1">{errors.foto_profil}</p>}
+        </div>
+      </div>
+
+      {/* Kolom Kanan - Detail Informasi */}
+      <div className="md:col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {/* Data Akademik */}
+          <div className="sm:col-span-2">
+            <h3 className="text-lg font-medium text-gray-900">Data Akademik</h3>
+          </div>
+
+          <div>
+            <label className="block font-medium text-sm text-gray-700">
+              ID Siswa <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={data.id_siswa}
+              onChange={(e) => setData("id_siswa", e.target.value)}
+              disabled={!!siswa}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm disabled:bg-gray-100"
+            />
+            {errors.id_siswa && <p className="text-red-500 text-xs mt-1">{errors.id_siswa}</p>}
+          </div>
+
+          <div>
+            <label className="block font-medium text-sm text-gray-700">
+              NIS <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={data.nis}
+              onChange={(e) => setData("nis", e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+            />
+            {errors.nis && <p className="text-red-500 text-xs mt-1">{errors.nis}</p>}
+          </div>
+
+          <div>
+            <label className="block font-medium text-sm text-gray-700">
+              NISN <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={data.nisn}
+              onChange={(e) => setData("nisn", e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+            />
+            {errors.nisn && <p className="text-red-500 text-xs mt-1">{errors.nisn}</p>}
+          </div>
+
+          <div>
+            <label className="block font-medium text-sm text-gray-700">
+              Kelas (Opsional)
+            </label>
+            <select
+              value={data.id_kelas || ""}
+              onChange={(e) => setData("id_kelas", e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+            >
+              <option value="">-- Belum Ada Kelas --</option>
+              {kelasOptions.map((kelas) => (
+                <option key={kelas.id_kelas} value={kelas.id_kelas}>
+                  {kelas.tingkat} {kelas.jurusan}
+                </option>
+              ))}
+            </select>
+            {errors.id_kelas && <p className="text-red-500 text-xs mt-1">{errors.id_kelas}</p>}
+          </div>
+
+          {/* Data Pribadi */}
+          <div className="sm:col-span-2 mt-4">
+            <h3 className="text-lg font-medium text-gray-900">Data Pribadi</h3>
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="block font-medium text-sm text-gray-700">
+              Nama Lengkap <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={data.nama_lengkap}
+              onChange={(e) => setData("nama_lengkap", e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+            />
+            {errors.nama_lengkap && <p className="text-red-500 text-xs mt-1">{errors.nama_lengkap}</p>}
+          </div>
+
+          <div>
+            <label className="block font-medium text-sm text-gray-700">
+              Tempat Lahir <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={data.tempat_lahir}
+              onChange={(e) => setData("tempat_lahir", e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+            />
+            {errors.tempat_lahir && <p className="text-red-500 text-xs mt-1">{errors.tempat_lahir}</p>}
+          </div>
+
+          <div>
+            <label className="block font-medium text-sm text-gray-700">
+              Tanggal Lahir <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              value={data.tanggal_lahir}
+              onChange={(e) => setData("tanggal_lahir", e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+            />
+            {errors.tanggal_lahir && <p className="text-red-500 text-xs mt-1">{errors.tanggal_lahir}</p>}
+          </div>
+
+          <div>
+            <label className="block font-medium text-sm text-gray-700">
+              Jenis Kelamin <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={data.jenis_kelamin}
+              onChange={(e) => setData("jenis_kelamin", e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+            >
+              <option value="Laki-laki">Laki-laki</option>
+              <option value="Perempuan">Perempuan</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block font-medium text-sm text-gray-700">
+              Agama <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={data.agama}
+              onChange={(e) => setData("agama", e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+            >
+              {agamaOptions.map((agama) => (
+                <option key={agama} value={agama}>
+                  {agama}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block font-medium text-sm text-gray-700">
+              NIK <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={data.nik}
+              onChange={(e) => setData("nik", e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+            />
+            {errors.nik && <p className="text-red-500 text-xs mt-1">{errors.nik}</p>}
+          </div>
+
+          <div>
+            <label className="block font-medium text-sm text-gray-700">
+              Nomor KK <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={data.nomor_kk}
+              onChange={(e) => setData("nomor_kk", e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+            />
+            {errors.nomor_kk && <p className="text-red-500 text-xs mt-1">{errors.nomor_kk}</p>}
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="block font-medium text-sm text-gray-700">
+              Alamat Lengkap <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={data.alamat_lengkap}
+              onChange={(e) => setData("alamat_lengkap", e.target.value)}
+              rows="3"
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+            />
+            {errors.alamat_lengkap && <p className="text-red-500 text-xs mt-1">{errors.alamat_lengkap}</p>}
+          </div>
+
+          <div>
+            <label className="block font-medium text-sm text-gray-700">Anak Ke</label>
+            <input
+              type="number"
+              min="1"
+              value={data.anak_ke || ""}
+              onChange={(e) => setData("anak_ke", e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+              placeholder="Contoh: 2"
+            />
+            {errors.anak_ke && <p className="text-red-500 text-xs mt-1">{errors.anak_ke}</p>}
+          </div>
+
+          <div>
+            <label className="block font-medium text-sm text-gray-700">Jumlah Saudara</label>
+            <input
+              type="number"
+              min="0"
+              value={data.jumlah_saudara || ""}
+              onChange={(e) => setData("jumlah_saudara", e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+              placeholder="Contoh: 3"
+            />
+            {errors.jumlah_saudara && <p className="text-red-500 text-xs mt-1">{errors.jumlah_saudara}</p>}
+          </div>
+
+          {/* Asal Sekolah */}
+          <div className="sm:col-span-2 mt-4">
+            <h3 className="text-lg font-medium text-gray-900">Asal Sekolah</h3>
+          </div>
+
+          <div>
+            <label className="block font-medium text-sm text-gray-700">Sekolah Asal</label>
+            <input
+              type="text"
+              value={data.sekolah_asal || ""}
+              onChange={(e) => setData("sekolah_asal", e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+              placeholder="Contoh: SMP Negeri 1"
+            />
+            {errors.sekolah_asal && <p className="text-red-500 text-xs mt-1">{errors.sekolah_asal}</p>}
+          </div>
+
+          <div>
+            <label className="block font-medium text-sm text-gray-700">Tahun Lulus</label>
+            <input
+              type="text"
+              maxLength={4}
+              value={data.tahun_lulus || ""}
+              onChange={(e) => setData("tahun_lulus", e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+              placeholder="Contoh: 2024"
+            />
+            {errors.tahun_lulus && <p className="text-red-500 text-xs mt-1">{errors.tahun_lulus}</p>}
+          </div>
+
+          {/* Data Keluarga - Ayah */}
+          <div className="sm:col-span-2 mt-4">
+            <h3 className="text-lg font-medium text-gray-900">Informasi Ayah</h3>
+          </div>
+
+          <div>
+            <label className="block font-medium text-sm text-gray-700">Nama Ayah</label>
+            <input
+              type="text"
+              value={data.nama_ayah || ""}
+              onChange={(e) => setData("nama_ayah", e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+            />
+            {errors.nama_ayah && <p className="text-red-500 text-xs mt-1">{errors.nama_ayah}</p>}
+          </div>
+
+          <div>
+            <label className="block font-medium text-sm text-gray-700">NIK Ayah</label>
+            <input
+              type="text"
+              maxLength={16}
+              value={data.nik_ayah || ""}
+              onChange={(e) => setData("nik_ayah", e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+            />
+            {errors.nik_ayah && <p className="text-red-500 text-xs mt-1">{errors.nik_ayah}</p>}
+          </div>
+
+          <div>
+            <label className="block font-medium text-sm text-gray-700">Pendidikan Ayah</label>
+            <select
+              value={data.pendidikan_ayah || ""}
+              onChange={(e) => setData("pendidikan_ayah", e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+            >
+              <option value="">-- Pilih --</option>
+              {pendidikanOptions.map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+            {errors.pendidikan_ayah && <p className="text-red-500 text-xs mt-1">{errors.pendidikan_ayah}</p>}
+          </div>
+
+          <div>
+            <label className="block font-medium text-sm text-gray-700">Pekerjaan Ayah</label>
+            <input
+              type="text"
+              value={data.pekerjaan_ayah || ""}
+              onChange={(e) => setData("pekerjaan_ayah", e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+            />
+            {errors.pekerjaan_ayah && <p className="text-red-500 text-xs mt-1">{errors.pekerjaan_ayah}</p>}
+          </div>
+
+          <div>
+            <label className="block font-medium text-sm text-gray-700">Penghasilan Ayah</label>
+            <select
+              value={data.penghasilan_ayah || ""}
+              onChange={(e) => setData("penghasilan_ayah", e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+            >
+              <option value="">-- Pilih --</option>
+              {penghasilanOptions.map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+            {errors.penghasilan_ayah && <p className="text-red-500 text-xs mt-1">{errors.penghasilan_ayah}</p>}
+          </div>
+
+          {/* Data Keluarga - Ibu */}
+          <div className="sm:col-span-2 mt-4">
+            <h3 className="text-lg font-medium text-gray-900">Informasi Ibu</h3>
+          </div>
+
+          <div>
+            <label className="block font-medium text-sm text-gray-700">Nama Ibu</label>
+            <input
+              type="text"
+              value={data.nama_ibu || ""}
+              onChange={(e) => setData("nama_ibu", e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+            />
+            {errors.nama_ibu && <p className="text-red-500 text-xs mt-1">{errors.nama_ibu}</p>}
+          </div>
+
+          <div>
+            <label className="block font-medium text-sm text-gray-700">NIK Ibu</label>
+            <input
+              type="text"
+              maxLength={16}
+              value={data.nik_ibu || ""}
+              onChange={(e) => setData("nik_ibu", e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+            />
+            {errors.nik_ibu && <p className="text-red-500 text-xs mt-1">{errors.nik_ibu}</p>}
+          </div>
+
+          <div>
+            <label className="block font-medium text-sm text-gray-700">Pendidikan Ibu</label>
+            <select
+              value={data.pendidikan_ibu || ""}
+              onChange={(e) => setData("pendidikan_ibu", e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+            >
+              <option value="">-- Pilih --</option>
+              {pendidikanOptions.map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+            {errors.pendidikan_ibu && <p className="text-red-500 text-xs mt-1">{errors.pendidikan_ibu}</p>}
+          </div>
+
+          <div>
+            <label className="block font-medium text-sm text-gray-700">Pekerjaan Ibu</label>
+            <input
+              type="text"
+              value={data.pekerjaan_ibu || ""}
+              onChange={(e) => setData("pekerjaan_ibu", e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+            />
+            {errors.pekerjaan_ibu && <p className="text-red-500 text-xs mt-1">{errors.pekerjaan_ibu}</p>}
+          </div>
+
+          <div>
+            <label className="block font-medium text-sm text-gray-700">Penghasilan Ibu</label>
+            <select
+              value={data.penghasilan_ibu || ""}
+              onChange={(e) => setData("penghasilan_ibu", e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+            >
+              <option value="">-- Pilih --</option>
+              {penghasilanOptions.map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+            {errors.penghasilan_ibu && <p className="text-red-500 text-xs mt-1">{errors.penghasilan_ibu}</p>}
+          </div>
+
+          {/* Kontak Orang Tua / Wali */}
+          <div className="sm:col-span-2 mt-4">
+            <h3 className="text-lg font-medium text-gray-900">Kontak Orang Tua / Wali</h3>
+          </div>
+
+          <div>
+            <label className="block font-medium text-sm text-gray-700">Nama Wali</label>
+            <input
+              type="text"
+              value={data.nama_wali || ""}
+              onChange={(e) => setData("nama_wali", e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+            />
+            {errors.nama_wali && <p className="text-red-500 text-xs mt-1">{errors.nama_wali}</p>}
+          </div>
+
+          <div>
+            <label className="block font-medium text-sm text-gray-700">No. HP Wali</label>
+            <input
+              type="text"
+              value={data.no_hp_wali || ""}
+              onChange={(e) => setData("no_hp_wali", e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+              placeholder="Contoh: 081234567890"
+            />
+            {errors.no_hp_wali && <p className="text-red-500 text-xs mt-1">{errors.no_hp_wali}</p>}
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="block font-medium text-sm text-gray-700">Alamat Wali</label>
+            <textarea
+              value={data.alamat_wali || ""}
+              onChange={(e) => setData("alamat_wali", e.target.value)}
+              rows="2"
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+            />
+            {errors.alamat_wali && <p className="text-red-500 text-xs mt-1">{errors.alamat_wali}</p>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

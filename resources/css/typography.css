@@ -1,0 +1,62 @@
+/* resources/css/typography.css */
+
+/*
+  SISAB Typography System
+  Defines base text sizing, weights, and leading for consistent UI.
+*/
+
+@layer base {
+  html {
+    /* Base configuration to smooth fonts */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply font-sans text-slate-800 bg-slate-50;
+  }
+
+  h1, h2, h3, h4, h5, h6, .font-heading {
+    @apply font-display tracking-tight text-slate-900;
+  }
+}
+
+@layer utilities {
+  /* Scale Utilities for easy migration */
+  .text-display {
+    @apply font-display text-3xl md:text-4xl font-extrabold tracking-tight leading-tight;
+  }
+
+  .text-h1 {
+    @apply font-display text-2xl md:text-3xl font-bold tracking-tight leading-snug;
+  }
+
+  .text-h2 {
+    @apply font-display text-xl md:text-2xl font-semibold tracking-tight leading-snug;
+  }
+
+  .text-h3 {
+    @apply font-display text-lg font-semibold tracking-tight leading-snug;
+  }
+
+  .text-body {
+    @apply font-sans text-sm md:text-base font-normal leading-relaxed text-slate-600;
+  }
+
+  .text-body-sm {
+    @apply font-sans text-sm font-normal leading-normal text-slate-600;
+  }
+
+  .text-caption {
+    @apply font-sans text-xs font-medium leading-none text-slate-500;
+  }
+
+  .text-overline {
+    @apply font-sans text-[11px] font-bold uppercase tracking-wider text-slate-500;
+  }
+
+  .text-mono-data {
+    @apply font-mono text-sm font-semibold tracking-tight;
+  }
+}

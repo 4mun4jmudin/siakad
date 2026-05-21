@@ -1,0 +1,493 @@
+import React, { useState, Fragment, useEffect, useMemo } from 'react';
+import { Link, Head, usePage, router } from '@inertiajs/react';
+import { Toaster, toast } from 'react-hot-toast';
+import { Dialog, Transition, Menu } from '@headlessui/react';
+import FlashNotice from "@/Components/FlashNotice";
+import {
+  Home,
+  BookOpen,
+  CalendarDays,
+  Users,
+  FileText,
+  Bell,
+  Menu as MenuIcon,
+  X,
+  ChevronDown,
+  Settings,
+  ChevronLeft,
+  ChevronRight,
+  Image as ImageIcon,
+} from 'lucide-react';
+
+/* ======================
+   Helpers: safe route check
+   ====================== */
+function routeExists(name) {
+  try {
+    window.route(name);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+function safeRoute(name, params = {}, fallback = '#') {
+  return routeExists(name) ? window.route(name, params) : fallback;
+}
+function classNames(...classes) {
+  return classes.filter(Boolean).join(' ');
+}
+
+/* ======================
+   Navigation items
+   ====================== */
+const navigationItems = [
+  { name: 'Dashboard', href: 'orangtua.dashboard', icon: Home },
+  { name: 'Absensi Ananda', href: 'orangtua.absensi.index', icon: CalendarDays },
+  { name: 'Jadwal Pelajaran', href: 'orangtua.jadwal.index', icon: BookOpen },
+  { name: 'Pengumuman', href: 'orangtua.pengumuman.index', icon: Users },
+  { name: 'Pengajuan Izin', href: 'orangtua.surat-izin.index', icon: FileText },
+];
+
+/* ======================
+   NavItem
+   ====================== */
+function NavItem({ item, collapsed }) {
+  const targetHref = safeRoute(item.href);
+  const isActive = targetHref !== '#' && window.route().current(item.href);
+  const Icon = item.icon;
+
+  return (
+    <Link
+      href={targetHref}
+      className={classNames(
+        'group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-1',
+        isActive
+          ? 'bg-sky-700 text-white focus:ring-sky-400'
+          : 'text-slate-100 hover:bg-slate-700 hover:text-white focus:ring-slate-500/30'
+      )}
+      aria-current={isActive ? 'page' : undefined}
+      title={collapsed ? item.name : undefined}
+    >
+      <span className={classNames(collapsed ? 'mx-auto' : 'flex-none')}>
+        <Icon
+          className={classNames('h-5 w-5', isActive ? 'text-white' : 'text-slate-200')}
+          aria-hidden
+        />
+      </span>
+
+      {!collapsed && <span className="truncate">{item.name}</span>}
+
+      {collapsed && (
+        <span className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-3 hidden whitespace-nowrap rounded-md bg-slate-900/95 px-3 py-1 text-xs font-semibold text-white group-hover:block z-10">
+          {item.name}
+        </span>
+      )}
+    </Link>
+  );
+}
+
+/* ======================
+   Brand block (logo + nama sekolah)
+   ====================== */
+function Brand({ collapsed, app }) {
+  const namaSekolah = app?.nama_sekolah || 'Sekolah';
+  const logoUrl = app?.logo_url || null;
+
+  const [logoOk, setLogoOk] = useState(true);
+
+  useEffect(() => {
+    setLogoOk(true);
+  }, [logoUrl]);
+
+  return (
+    <div className="flex items-center gap-3 min-w-0">
+      <div
+        className={classNames(
+          'flex h-10 w-10 items-center justify-center rounded-md overflow-hidden ring-1 ring-white/15',
+          collapsed ? 'bg-sky-800' : 'bg-white/10'
+        )}
+        title={namaSekolah}
+      >
+        {logoUrl && logoOk ? (
+          <img
+            src={logoUrl}
+            alt={namaSekolah}
+            className="h-full w-full object-cover"
+            onError={() => setLogoOk(false)}
+          />
+        ) : (
+          <ImageIcon className="h-5 w-5 text-white" />
+        )}
+      </div>
+
+      {!collapsed && (
+        <div className="min-w-0">
+          <div className="text-sm font-semibold leading-tight text-white truncate">
+            {namaSekolah}
+          </div>
+          <div className="text-xs text-sky-200/80 truncate">
+            Panel Orang Tua / Wali
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ======================
+   Layout
+   ====================== */
+export default function OrangTuaLayout({ children, header = 'Panel Orang Tua/Wali' }) {
+  const { props } = usePage();
+  const { auth, flash } = props;
+
+  const user = auth?.user ?? { nama_lengkap: 'Pengguna' };
+
+  // ✅ shared props dari middleware
+  const app = useMemo(() => props?.app || {}, [props]);
+
+  const orangTuaContext = useMemo(() => props?.orangTuaContext || null, [props]);
+  const activeSiswa = orangTuaContext?.activeSiswa;
+  const allSiswas = orangTuaContext?.allSiswas || [];
+
+  const handleSwitchSiswa = (id_siswa) => {
+    if (activeSiswa?.id_siswa === id_siswa) return;
+    router.post(safeRoute('orangtua.switch-siswa'), { id_siswa }, {
+        preserveScroll: true,
+        onSuccess: () => {
+             // Toast akan dihandle oleh flash message global jika dikirim dari server
+        }
+    });
+  };
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (flash?.success) toast.success(flash.success);
+    if (flash?.error) toast.error(flash.error);
+  }, [flash]);
+
+  const notifications = useMemo(
+    () => [
+      { id: 1, title: 'Pengumuman: Rapat GTK', time: '2 jam lalu' },
+      { id: 2, title: 'Jurnal perlu konfirmasi', time: '1 hari lalu' },
+    ],
+    []
+  );
+
+  const SidebarContent = ({ isMobile = false }) => (
+    <>
+      <div className={classNames('flex h-16 items-center', isMobile ? 'px-4' : 'px-4')}>
+        <Link href={safeRoute('orangtua.dashboard')} className="flex items-center gap-3 min-w-0">
+          <Brand collapsed={!isMobile && collapsed} app={app} />
+        </Link>
+      </div>
+
+      <nav className="flex-1 overflow-y-auto px-2 py-4 space-y-1" aria-label="Sidebar">
+        {navigationItems.map((item) => (
+          <NavItem key={item.name} item={item} collapsed={!isMobile && collapsed} />
+        ))}
+      </nav>
+
+      <div className="p-3 border-t border-sky-800">
+        {!collapsed || isMobile ? (
+          <div className="flex items-center gap-3">
+            <img
+              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                user.nama_lengkap
+              )}&background=0ea5e9&color=fff`}
+              alt={user.nama_lengkap}
+              className="h-10 w-10 rounded-full object-cover ring-1 ring-white/20"
+            />
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-semibold truncate text-white">{user.nama_lengkap}</div>
+              <div className="text-xs text-sky-200/80">Orang Tua / Wali</div>
+            </div>
+            <Link href={safeRoute('profile.edit')} className="text-sky-200 hover:text-white" title="Profil">
+              <Settings className="h-5 w-5" />
+            </Link>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center">
+            <Link href={safeRoute('profile.edit')} className="text-sky-200 hover:text-white" title="Profil">
+              <Settings className="h-5 w-5" />
+            </Link>
+          </div>
+        )}
+      </div>
+    </>
+  );
+
+  // ✅ tombol toggle sidebar DI LUAR layout sidebar (floating di tepi sidebar)
+  const SIDEBAR_EXPANDED = 256; // lg:w-64
+  const SIDEBAR_COLLAPSED = 80; // lg:w-20
+
+  const DesktopSidebarToggle = () => (
+    <button
+      type="button"
+      onClick={() => setCollapsed((v) => !v)}
+      className={classNames(
+        'hidden lg:flex',
+        'fixed z-[60]',
+        'top-1/2 -translate-y-1/2 -translate-x-1/2',
+        'h-10 w-10 items-center justify-center rounded-full',
+        'bg-sky-950 text-white shadow-lg ring-1 ring-white/15',
+        'hover:bg-sky-900 focus:outline-none focus:ring-2 focus:ring-sky-400'
+      )}
+      style={{ left: collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED }}
+      aria-label={collapsed ? 'Perlebar sidebar' : 'Ciutkan sidebar'}
+      title={collapsed ? 'Perlebar sidebar' : 'Ciutkan sidebar'}
+    >
+      {collapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
+    </button>
+  );
+
+  return (
+    <>
+      <Head title={header} />
+      <Toaster position="top-right" />
+
+      <div className="min-h-screen bg-slate-50 text-slate-800">
+        {/* Desktop sidebar */}
+        <aside
+          className={classNames(
+            'hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:flex-col bg-sky-900 text-white transition-all duration-300',
+            collapsed ? 'lg:w-20' : 'lg:w-64'
+          )}
+        >
+          <SidebarContent />
+        </aside>
+
+        {/* ✅ Toggle button floating (outside sidebar) */}
+        <DesktopSidebarToggle />
+
+        {/* Mobile sidebar */}
+        <Transition.Root show={sidebarOpen} as={Fragment}>
+          <Dialog as="div" className="relative z-50 lg:hidden" onClose={setSidebarOpen}>
+            <Transition.Child
+              as={Fragment}
+              enter="transition-opacity ease-linear duration-300"
+              enterFrom="opacity-0"
+              enterTo="opacity-100"
+              leave="transition-opacity ease-linear duration-300"
+              leaveFrom="opacity-100"
+              leaveTo="opacity-0"
+            >
+              <div className="fixed inset-0 bg-black/60" />
+            </Transition.Child>
+
+            <div className="fixed inset-0 flex">
+              <Transition.Child
+                as={Fragment}
+                enter="transition ease-in-out duration-300 transform"
+                enterFrom="-translate-x-full"
+                enterTo="translate-x-0"
+                leave="transition ease-in-out duration-300 transform"
+                leaveFrom="translate-x-0"
+                leaveTo="-translate-x-full"
+              >
+                <Dialog.Panel className="relative flex w-full max-w-xs flex-1 flex-col bg-sky-900 text-white">
+                  <button
+                    className="absolute top-4 right-4 p-1 text-white"
+                    onClick={() => setSidebarOpen(false)}
+                    aria-label="Tutup sidebar"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+
+                  <SidebarContent isMobile />
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </Dialog>
+        </Transition.Root>
+
+        {/* Main content */}
+        <div
+          className={classNames(
+            'flex min-w-0 flex-1 flex-col transition-all duration-300',
+            collapsed ? 'lg:pl-20' : 'lg:pl-64'
+          )}
+        >
+          {/* Topbar */}
+          <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white/90 backdrop-blur-sm px-4 sm:px-6 lg:px-8">
+            {/* Mobile menu */}
+            <button
+              type="button"
+              className="-m-2.5 p-2.5 text-gray-700 lg:hidden rounded-md hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Buka menu"
+            >
+              <MenuIcon className="h-6 w-6" />
+            </button>
+
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <h1 className="text-sm font-semibold text-slate-900 truncate">{header}</h1>
+                  <span className="hidden sm:inline text-xs text-slate-500 truncate">
+                    — {app?.nama_sekolah || 'Sekolah'}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {/* Switch Siswa Dropdown */}
+                  {allSiswas.length > 0 && (
+                    <Menu as="div" className="relative hidden sm:block">
+                      <Menu.Button className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-full text-sm font-medium text-slate-700 transition">
+                        <Users className="h-4 w-4 text-sky-600" />
+                        <span className="truncate max-w-[120px]">{activeSiswa?.nama_lengkap}</span>
+                        {allSiswas.length > 1 && <ChevronDown className="h-4 w-4 text-slate-400" />}
+                      </Menu.Button>
+                      
+                      {allSiswas.length > 1 && (
+                        <Transition
+                          as={Fragment}
+                          enter="transition ease-out duration-100"
+                          enterFrom="transform opacity-0 scale-95"
+                          enterTo="transform opacity-100 scale-100"
+                          leave="transition ease-in duration-75"
+                          leaveFrom="transform opacity-100 scale-100"
+                          leaveTo="transform opacity-0 scale-95"
+                        >
+                          <Menu.Items className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-xl bg-white py-2 shadow-lg ring-1 ring-black/5 focus:outline-none">
+                            <div className="px-3 py-2 border-b border-slate-100 mb-2">
+                                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pilih Anak</p>
+                            </div>
+                            {allSiswas.map((siswa) => (
+                              <Menu.Item key={siswa.id_siswa}>
+                                {({ active }) => (
+                                  <button
+                                    onClick={() => handleSwitchSiswa(siswa.id_siswa)}
+                                    className={classNames(
+                                      active ? 'bg-sky-50 text-sky-700' : 'text-slate-700',
+                                      siswa.id_siswa === activeSiswa?.id_siswa ? 'bg-sky-50 font-semibold text-sky-700' : '',
+                                      'flex w-full items-center px-4 py-2 text-sm transition-colors'
+                                    )}
+                                  >
+                                    <div className="flex flex-col items-start truncate">
+                                        <span>{siswa.nama_lengkap}</span>
+                                        <span className="text-xs text-slate-500 font-normal">{siswa.kelas?.tingkat} {siswa.kelas?.jurusan} • {siswa.nis}</span>
+                                    </div>
+                                  </button>
+                                )}
+                              </Menu.Item>
+                            ))}
+                          </Menu.Items>
+                        </Transition>
+                      )}
+                    </Menu>
+                  )}
+
+                  {/* Notifications */}
+                  <Menu as="div" className="relative">
+                    <Menu.Button
+                      className="relative inline-flex items-center p-2 rounded-md text-gray-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500"
+                      aria-label="Notifikasi"
+                    >
+                      <Bell className="h-6 w-6" />
+                    </Menu.Button>
+
+                    <Transition
+                      as={Fragment}
+                      enter="transition ease-out duration-100"
+                      enterFrom="transform opacity-0 scale-95"
+                      enterTo="transform opacity-100 scale-100"
+                      leave="transition ease-in duration-75"
+                      leaveFrom="transform opacity-100 scale-100"
+                      leaveTo="transform opacity-0 scale-95"
+                    >
+                      <Menu.Items className="absolute right-0 z-10 mt-2 w-72 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 focus:outline-none">
+                        <div className="px-2">
+                          <div className="py-2 text-xs font-semibold text-slate-600 px-2">
+                            Notifikasi
+                          </div>
+                          {notifications.map((n) => (
+                            <Menu.Item key={n.id}>
+                              {() => (
+                                <div className="block rounded-md px-3 py-2 text-sm text-slate-800 hover:bg-slate-50">
+                                  <div className="font-medium">{n.title}</div>
+                                  <div className="text-xs text-slate-500">{n.time}</div>
+                                </div>
+                              )}
+                            </Menu.Item>
+                          ))}
+                        </div>
+                      </Menu.Items>
+                    </Transition>
+                  </Menu>
+
+                  {/* Profile dropdown */}
+                  <Menu as="div" className="relative">
+                    <Menu.Button className="-m-1.5 flex items-center p-1.5 rounded-md">
+                      <img
+                        className="h-8 w-8 rounded-full bg-gray-50"
+                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                          user.nama_lengkap
+                        )}&background=0ea5e9&color=fff`}
+                        alt={user.nama_lengkap}
+                      />
+                      <span className="hidden lg:flex lg:items-center">
+                        <span className="ml-3 text-sm font-semibold leading-6 text-gray-900">
+                          {user.nama_lengkap}
+                        </span>
+                        <ChevronDown className="ml-2 h-5 w-5 text-gray-400" />
+                      </span>
+                    </Menu.Button>
+
+                    <Transition
+                      as={Fragment}
+                      enter="transition ease-out duration-100"
+                      enterFrom="transform opacity-0 scale-95"
+                      enterTo="transform opacity-100 scale-100"
+                      leave="transition ease-in duration-75"
+                      leaveFrom="transform opacity-100 scale-100"
+                      leaveTo="transform opacity-0 scale-95"
+                    >
+                      <Menu.Items className="absolute right-0 z-10 mt-2.5 w-48 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 focus:outline-none">
+                        <Menu.Item>
+                          {({ active }) => (
+                            <Link
+                              href={safeRoute('profile.edit')}
+                              className={classNames(
+                                active ? 'bg-gray-50' : '',
+                                'block px-3 py-1 text-sm leading-6 text-gray-900'
+                              )}
+                            >
+                              Profil Saya
+                            </Link>
+                          )}
+                        </Menu.Item>
+                        <Menu.Item>
+                          {({ active }) => (
+                            <Link
+                              href={safeRoute('logout')}
+                              method="post"
+                              as="button"
+                              className={classNames(
+                                active ? 'bg-gray-50' : '',
+                                'block w-full text-left px-3 py-1 text-sm leading-6 text-gray-900'
+                              )}
+                            >
+                              Keluar
+                            </Link>
+                          )}
+                        </Menu.Item>
+                      </Menu.Items>
+                    </Transition>
+                  </Menu>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          {/* Content */}
+          <main className="flex-1 p-4 sm:p-6 lg:p-8">
+            <div className="mx-auto max-w-screen-2xl">{children}</div>
+          </main>
+        </div>
+      </div>
+    </>
+  );
+}
