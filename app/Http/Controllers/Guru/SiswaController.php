@@ -83,7 +83,7 @@ class SiswaController extends Controller
         $siswa->load('kelas');
 
         // Ambil data orang tua/wali
-        $orangTuaWali = OrangTuaWali::where('id_siswa', $siswa->id_siswa)->get();
+        $orangTuaWali = $siswa->orangTuaWalis;
 
         // Ambil ringkasan absensi (contoh: untuk 30 hari terakhir)
         $absensiSummary = DB::table('tbl_absensi_siswa')

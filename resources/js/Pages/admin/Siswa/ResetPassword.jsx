@@ -52,14 +52,12 @@ export default function ResetPassword({ auth, siswas, filters }) {
     // Handle Flash Message dari Controller
     useEffect(() => {
         if (flash?.message || flash?.success || flash?.error) {
-            setToast({ 
-                show: true, 
-                message: flash.message || flash.success || flash.error,
-                type: flash.error ? 'error' : 'success'
-            });
-            
-            // Auto hide toast
-            
+            const message = flash.message || flash.success || flash.error;
+            if (flash.error) {
+                toast.error(message);
+            } else {
+                toast.success(message);
+            }
         }
     }, [flash]);
 

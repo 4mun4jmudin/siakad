@@ -94,7 +94,7 @@ class PengaturanController extends Controller
                 $path = $request->file('logo')->store('logos', 'public'); // logos/xxx.png
 
                 // ✅ pakai route custom kamu
-                $dataToUpdate['logo_url'] = route('storage.public', ['path' => $path]);
+                $dataToUpdate['logo_url'] = route('storage.public', ['path' => $path], false);
             }
 
             $pengaturan->update($dataToUpdate);

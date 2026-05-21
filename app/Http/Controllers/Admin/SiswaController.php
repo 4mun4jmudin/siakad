@@ -168,7 +168,7 @@ class SiswaController extends Controller
     {
         $siswa->load('kelas.waliKelas');
 
-        $orangTuaWali = OrangTuaWali::where('id_siswa', $siswa->id_siswa)->get();
+        $orangTuaWali = $siswa->orangTuaWalis;
 
         $riwayatAbsensi = AbsensiSiswa::where('id_siswa', $siswa->id_siswa)
             ->latest('tanggal')

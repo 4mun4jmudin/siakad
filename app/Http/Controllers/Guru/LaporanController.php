@@ -28,8 +28,8 @@ class LaporanController extends Controller
             ->get();
 
         $filterOptions = [
-            'kelas' => $jadwals->map(fn($j) => $j->kelas)->unique('id_kelas')->sortBy('tingkat')->values(),
-            'mapel' => $jadwals->map(fn($j) => $j->mapel)->unique('id_mapel')->sortBy('nama_mapel')->values(),
+            'kelas' => $jadwals->map(fn($j) => $j->kelas)->filter()->unique('id_kelas')->sortBy('tingkat')->values(),
+            'mapel' => $jadwals->map(fn($j) => $j->mapel)->filter()->unique('id_mapel')->sortBy('nama_mapel')->values(),
         ];
 
         $request->validate([

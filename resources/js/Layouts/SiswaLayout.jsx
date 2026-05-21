@@ -10,13 +10,24 @@ import {
   ChevronDownIcon,
   UserCircleIcon,
   ArrowLeftOnRectangleIcon,
+  BookOpenIcon,
+  AcademicCapIcon,
+  CalendarDaysIcon,
+  ClockIcon,
 } from "@heroicons/react/24/outline";
 
 // ✅ Navigasi Sidebar
 const navigation = [
   { name: "Dashboard Absensi", routeName: "siswa.dashboard", icon: HomeIcon },
-  { name: "Profil Saya", routeName: "siswa.akun.edit", icon: ClipboardDocumentListIcon },
-  // Tombol logout kita pisahkan visualnya agar UX lebih jelas
+  { name: "Materi Belajar", routeName: "siswa.materi.index", icon: BookOpenIcon },
+  { name: "Tugas Saya", routeName: "siswa.tugas.index", icon: ClipboardDocumentListIcon },
+  { name: "Profil Saya", routeName: "siswa.akun.edit", icon: UserCircleIcon },
+];
+
+const academicNavigation = [
+  { name: "Lihat Nilai", routeName: "siswa.nilai.index", icon: AcademicCapIcon },
+  { name: "Lihat Absensi", routeName: "siswa.absensi.index", icon: CalendarDaysIcon },
+  { name: "Jadwal Pelajaran", routeName: "siswa.jadwal.index", icon: ClockIcon },
 ];
 
 // Komponen Link Navigasi Custom
@@ -95,6 +106,31 @@ export default function SiswaLayout({ children, header }) {
             </div>
             <ul role="list" className="-mx-2 space-y-2">
               {navigation.map((item) => {
+                let href = "#";
+                try { href = route(item.routeName); } catch (e) {}
+                const isActive = route().current(item.routeName);
+
+                return (
+                  <li key={item.name}>
+                    <NavLink
+                      href={href}
+                      active={isActive}
+                      label={item.name}
+                    >
+                      <item.icon className="h-6 w-6" aria-hidden="true" />
+                    </NavLink>
+                  </li>
+                );
+              })}
+            </ul>
+          </li>
+
+          <li>
+            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4 px-2">
+              Akademik
+            </div>
+            <ul role="list" className="-mx-2 space-y-2">
+              {academicNavigation.map((item) => {
                 let href = "#";
                 try { href = route(item.routeName); } catch (e) {}
                 const isActive = route().current(item.routeName);

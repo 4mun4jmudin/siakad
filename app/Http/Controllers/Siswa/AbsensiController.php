@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Siswa;
 
 use App\Http\Controllers\Controller;
 use App\Models\AbsensiSiswa;
+use App\Models\AbsensiSiswaMapel;
 use App\Models\Pengaturan;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -222,5 +223,77 @@ class AbsensiController extends Controller
              sin($dLon / 2) * sin($dLon / 2);
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
         return round($earthRadius * $c);
+    }
+
+    /**
+     * Menampilkan riwayat absensi harian dan mapel siswa.
+     */
+    public function riwayat(Request $request): Response|RedirectResponse
+    {
+        $user  = Auth::user();
+        $siswa = $user->siswa;
+
+        if (!$siswa) {
+            Auth::logout();
+            $request->session()->invalidate();
+            return redirect('/login/siswa')->with('error', 'Akun tidak terhubung dengan data siswa.');
+        }
+
+        // --- Filter untuk Kalender ---
+        $year = $request->input('tahun', Carbon::now()->year);
+        $month = $request->input('bulan', Carbon::now()->month);
+        $date = Carbon::createFromDate($year, $month, 1);
+        $startDate = $date->copy()->startOfMonth();
+        $endDate = $date->copy()->endOfMonth();
+
+        // 1. Data absensi harian untuk kalender
+        $absensiHarianCalendar = AbsensiSiswa::where('id_siswa', $siswa->id_siswa)
+            ->whereBetween('tanggal', [$startDate, $endDate])
+            ->get()
+            ->keyBy(function ($item) {
+                return Carbon::parse($item->tanggal)->format('Y-m-d');
+            });
+
+        // 2. Data absensi mapel untuk detail kalender
+        $absensiMapelCalendar = AbsensiSiswaMapel::where('id_siswa', $siswa->id_siswa)
+            ->whereBetween('tanggal', [$startDate, $endDate])
+            ->with(['jadwal.mapel', 'jadwal.guru'])
+            ->orderBy('jam_mulai', 'asc')
+            ->get()
+            ->groupBy(function ($item) {
+                return Carbon::parse($item->tanggal)->format('Y-m-d');
+            });
+
+        // --- Query baru untuk tab "Riwayat Kehadiran" ---
+        $riwayatQuery = AbsensiSiswa::query()
+            ->where('id_siswa', $siswa->id_siswa)
+            ->orderBy('tanggal', 'desc');
+
+        // Terapkan filter tanggal jika ada
+        if ($request->filled('tanggal_mulai') && $request->filled('tanggal_selesai')) {
+            $riwayatQuery->whereBetween('tanggal', [$request->tanggal_mulai, $request->tanggal_selesai]);
+        }
+        
+        // Terapkan filter status jika ada
+        if ($request->filled('status') && $request->status !== 'Semua') {
+            if ($request->status === 'Terlambat') {
+                $riwayatQuery->where('menit_keterlambatan', '>', 0);
+            } else {
+                $riwayatQuery->where('status_kehadiran', $request->status);
+            }
+        }
+
+        $riwayatKehadiran = $riwayatQuery->paginate(15)->withQueryString();
+
+        return Inertia::render('Siswa/Absensi/Index', [
+            'siswa' => $siswa->load('kelas'),
+            'absensiHarian' => $absensiHarianCalendar,
+            'absensiMapel' => $absensiMapelCalendar,
+            'riwayatKehadiran' => $riwayatKehadiran,
+            'filters' => $request->only(['bulan', 'tahun', 'status', 'tanggal_mulai', 'tanggal_selesai']) + [
+                'bulan' => (int)$month,
+                'tahun' => (int)$year,
+            ]
+        ]);
     }
 }

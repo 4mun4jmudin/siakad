@@ -433,6 +433,32 @@ export default function AdminLayout({ user, header, children }) {
                             </li>
                         )}
 
+                        {!isAbsensiMode && (
+                            <li>
+                                <NavLink
+                                    href={route("admin.monitoring.materi")}
+                                    active={route().current("admin.monitoring.materi*")}
+                                    isCollapsed={!isSidebarOpen && !isMobile}
+                                    label="Monitoring Materi"
+                                >
+                                    <ChartPieIcon className="w-6 h-6" />
+                                </NavLink>
+                            </li>
+                        )}
+
+                        {!isAbsensiMode && (
+                            <li>
+                                <NavLink
+                                    href={route("admin.monitoring.tugas")}
+                                    active={route().current("admin.monitoring.tugas*")}
+                                    isCollapsed={!isSidebarOpen && !isMobile}
+                                    label="Monitoring Tugas"
+                                >
+                                    <ClipboardDocumentListIcon className="w-6 h-6" />
+                                </NavLink>
+                            </li>
+                        )}
+
                         {/* Laporan (Tampil di kedua mode) */}
                         <MenuSectionLabel isCollapsed={!isSidebarOpen && !isMobile}>Sistem & Laporan</MenuSectionLabel>
                         <li>
@@ -469,6 +495,19 @@ export default function AdminLayout({ user, header, children }) {
                                     label="Kalender Akademik"
                                 >
                                     <CalendarDaysIcon className="w-6 h-6" />
+                                </NavLink>
+                            </li>
+                        )}
+
+                        {!isAbsensiMode && (
+                            <li>
+                                <NavLink
+                                    href={route("admin.users.index")}
+                                    active={route().current("admin.users.*")}
+                                    isCollapsed={!isSidebarOpen && !isMobile}
+                                    label="Manajemen User"
+                                >
+                                    <UsersIcon className="w-6 h-6" />
                                 </NavLink>
                             </li>
                         )}

@@ -151,7 +151,7 @@ class Siswa extends Model
                 // cache busting: ganti query string ketika updated_at berubah
                 $v = $attributes['updated_at'] ?? time();
 
-                return route('storage.public', ['path' => urlencode($foto)]) . '?v=' . urlencode($v);
+                return route('storage.public', ['path' => $foto], false) . '?v=' . urlencode($v);
             }
         );
     }

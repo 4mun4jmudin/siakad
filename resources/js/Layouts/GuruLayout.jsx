@@ -17,6 +17,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
+  FolderOpen,
+  ClipboardList,
 } from 'lucide-react';
 import NotificationDropdown from '@/Components/NotificationDropdown';
 
@@ -46,7 +48,9 @@ function normalizeLogoUrl(url) {
 
 const navigationItems = [
   { name: 'Dashboard', href: 'guru.dashboard', icon: Home },
+  { name: 'Rencana Materi', href: 'guru.rencana-materi.index', icon: FolderOpen },
   { name: 'Jurnal & Absensi', href: 'guru.jurnal.index', icon: BookOpen },
+  { name: 'Manajemen Tugas', href: 'guru.tugas.index', icon: ClipboardList },
   { name: 'Absensi Siswa', href: 'guru.absensi-mapel.index', icon: Users },
   { name: 'Absensi Harian', href: 'guru.absensi-harian.index', icon: ClipboardCheck },
   { name: 'Jadwal Saya', href: 'guru.jadwal.index', icon: CalendarDays },

@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\JurnalMengajar;
 use App\Models\JadwalMengajar;
 use App\Models\AbsensiGuru;
+use App\Models\RencanaMateri;
+use App\Models\MataPelajaran;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -60,9 +62,15 @@ class JurnalMengajarController extends Controller
             ->whereDate('tanggal', today())
             ->first();
 
+        $rencanaMateriOptions = RencanaMateri::whereIn('id_mapel', $jadwalOptions->pluck('id_mapel')->unique())
+            ->orderBy('id_mapel')
+            ->orderBy('pertemuan_ke')
+            ->get();
+
         return Inertia::render('Guru/Jurnal/Create', [
             'jadwalOptions' => $jadwalOptions,
             'absensiHariIni' => $absensiHariIni,
+            'rencanaMateriOptions' => $rencanaMateriOptions,
         ]);
     }
 
@@ -133,6 +141,7 @@ class JurnalMengajarController extends Controller
             ],
             'materi_pembahasan' => 'required|string|min:10',
             'alasan_tidak_mengajar' => 'nullable|string|max:255',
+            'id_rencana_materi' => 'nullable|integer|exists:tbl_rencana_materi,id_rencana',
         ], [
             'id_jadwal.unique' => 'Jurnal untuk jadwal dan tanggal ini sudah pernah diisi sebelumnya.',
             'tanggal.before_or_equal' => 'Tanggal tidak boleh lebih dari hari ini.',
@@ -224,11 +233,17 @@ class JurnalMengajarController extends Controller
             ->with(['kelas', 'mataPelajaran'])
             ->get();
 
+        $rencanaMateriOptions = RencanaMateri::whereIn('id_mapel', $jadwalOptions->pluck('id_mapel')->unique())
+            ->orderBy('id_mapel')
+            ->orderBy('pertemuan_ke')
+            ->get();
+
         $jurnal->load(['jadwalMengajar.kelas', 'jadwalMengajar.mataPelajaran', 'guruPengganti']);
 
         return Inertia::render('Guru/Jurnal/Edit', [
             'jurnal' => $jurnal,
             'jadwalOptions' => $jadwalOptions,
+            'rencanaMateriOptions' => $rencanaMateriOptions,
         ]);
     }
 
@@ -290,6 +305,7 @@ class JurnalMengajarController extends Controller
             ],
             'materi_pembahasan' => 'required|string|min:10',
             'alasan_tidak_mengajar' => 'nullable|string|max:255',
+            'id_rencana_materi' => 'nullable|integer|exists:tbl_rencana_materi,id_rencana',
         ], [
             'id_jadwal.unique' => 'Jurnal untuk jadwal dan tanggal ini sudah pernah diisi sebelumnya.',
             'tanggal.before_or_equal' => 'Tanggal tidak boleh lebih dari hari ini.',

@@ -11,7 +11,7 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import { AlertTriangle, Info } from 'lucide-react';
 
 // Terima prop 'absensiHariIni' dari controller
-export default function Create({ auth, jadwalOptions, absensiHariIni }) {
+export default function Create({ auth, jadwalOptions, absensiHariIni, rencanaMateriOptions }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         id_jadwal: '',
         tanggal: new Date().toISOString().slice(0, 10),
@@ -19,6 +19,7 @@ export default function Create({ auth, jadwalOptions, absensiHariIni }) {
         jam_keluar_kelas: '',
         status_mengajar: 'Mengajar',
         materi_pembahasan: '',
+        id_rencana_materi: '',
     });
 
     const [isFormDisabled, setIsFormDisabled] = useState(false);
@@ -111,7 +112,7 @@ export default function Create({ auth, jadwalOptions, absensiHariIni }) {
                             <option value="">--- Pilih Jadwal ---</option>
                             {jadwalOptions.map(jadwal => (
                                 <option key={jadwal.id_jadwal} value={jadwal.id_jadwal}>
-                                    {jadwal.hari}, {jadwal.jam_mulai.substring(0,5)} - {jadwal.mata_pelajaran.nama_mapel} ({jadwal.kelas.tingkat} {jadwal.kelas.jurusan})
+                                    {jadwal.hari}, {jadwal.jam_mulai ? jadwal.jam_mulai.substring(0,5) : ''} - {jadwal.mata_pelajaran?.nama_mapel || ''} ({jadwal.kelas?.tingkat || ''} {jadwal.kelas?.jurusan || ''})
                                 </option>
                             ))}
                         </select>
@@ -142,6 +143,36 @@ export default function Create({ auth, jadwalOptions, absensiHariIni }) {
                             <TextInput id="jam_keluar_kelas" type="time" value={data.jam_keluar_kelas} onChange={e => setData('jam_keluar_kelas', e.target.value)} className="mt-1 block w-full disabled:bg-gray-100" disabled={isFormDisabled}/>
                             <InputError message={errors.jam_keluar_kelas} className="mt-2" />
                         </div>
+                    </div>
+
+                    <div>
+                        <InputLabel htmlFor="id_rencana_materi" value="Pilih Target Rencana Materi (Opsional)" />
+                        <select
+                            id="id_rencana_materi"
+                            value={data.id_rencana_materi}
+                            onChange={e => {
+                                setData('id_rencana_materi', e.target.value);
+                                const selected = rencanaMateriOptions.find(r => r.id_rencana == e.target.value);
+                                if (selected && !data.materi_pembahasan) {
+                                    setData('materi_pembahasan', selected.judul_materi + (selected.deskripsi ? ' - ' + selected.deskripsi : ''));
+                                }
+                            }}
+                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm disabled:bg-gray-100"
+                            disabled={isFormDisabled || !data.id_jadwal}
+                        >
+                            <option value="">--- Bukan Bagian dari Target Materi / Isi Manual ---</option>
+                            {rencanaMateriOptions
+                                .filter(r => {
+                                    const selectedJadwal = jadwalOptions.find(j => j.id_jadwal === data.id_jadwal);
+                                    return selectedJadwal && r.id_mapel === selectedJadwal.id_mapel;
+                                })
+                                .map(materi => (
+                                <option key={materi.id_rencana} value={materi.id_rencana}>
+                                    Pertemuan {materi.pertemuan_ke || '-'}: {materi.judul_materi}
+                                </option>
+                            ))}
+                        </select>
+                        <InputError message={errors.id_rencana_materi} className="mt-2" />
                     </div>
 
                     <div>

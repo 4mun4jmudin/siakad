@@ -29,6 +29,7 @@ class JurnalMengajar extends Model
         'id_penginput_manual',
         'id_editor',
         'terakhir_diedit_pada',
+        'id_rencana_materi',
     ];
 
     // perbaiki Call to undefined method App\Models\JurnalMengajar::jadwal()
@@ -49,9 +50,14 @@ class JurnalMengajar extends Model
         return $this->belongsTo(Guru::class, 'id_guru_pengganti', 'id_guru');
     }
 
-    // Relasi ke pengguna yang menginput manual
     public function penginputManual()
     {
         return $this->belongsTo(User::class, 'id_penginput_manual', 'id_pengguna');
+    }
+
+    // Relasi ke rencana materi
+    public function rencanaMateri()
+    {
+        return $this->belongsTo(RencanaMateri::class, 'id_rencana_materi', 'id_rencana');
     }
 }

@@ -60,7 +60,7 @@ class SuratIzinController extends Controller
             $item->lampiran_is_image = false;
 
             if ($path && Storage::disk('public')->exists($path)) {
-                $url = route('storage.public', ['path' => $path]);
+                $url = route('storage.public', ['path' => $path], false);
 
                 // ✅ agar UI kamu yang pakai item.file_lampiran tetap jalan
                 $item->file_lampiran = $url;

@@ -55,4 +55,14 @@ class JadwalMengajar extends Model
     {
         return Carbon::parse($this->jam_mulai)->format('H:i');
     }
+
+    public function jurnalMengajar()
+    {
+        return $this->hasMany(JurnalMengajar::class, 'id_jadwal');
+    }
+
+    public function tugas()
+    {
+        return $this->hasMany(Tugas::class, 'id_jadwal');
+    }
 }

@@ -65,7 +65,7 @@ export default function LaporanIndex({ auth, filterOptions, laporanData, filters
                             <label htmlFor="id_kelas" className="block text-sm font-medium text-gray-700">Kelas</label>
                             <select id="id_kelas" value={data.id_kelas} onChange={e => setData('id_kelas', e.target.value)} required className="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
                                 <option value="">Pilih Kelas</option>
-                                {filterOptions.kelas.map(k => (
+                                {filterOptions.kelas && filterOptions.kelas.filter(Boolean).map(k => (
                                     <option key={k.id_kelas} value={k.id_kelas}>{k.tingkat} {k.jurusan}</option>
                                 ))}
                             </select>
@@ -74,7 +74,7 @@ export default function LaporanIndex({ auth, filterOptions, laporanData, filters
                             <label htmlFor="id_mapel" className="block text-sm font-medium text-gray-700">Mata Pelajaran</label>
                             <select id="id_mapel" value={data.id_mapel} onChange={e => setData('id_mapel', e.target.value)} required className="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
                                 <option value="">Pilih Mata Pelajaran</option>
-                                {filterOptions.mapel.map(m => (
+                                {filterOptions.mapel && filterOptions.mapel.filter(Boolean).map(m => (
                                     <option key={m.id_mapel} value={m.id_mapel}>{m.nama_mapel}</option>
                                 ))}
                             </select>

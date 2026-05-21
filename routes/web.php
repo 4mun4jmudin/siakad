@@ -18,12 +18,16 @@ use App\Http\Controllers\Admin\JadwalMengajarController;
 use App\Http\Controllers\Admin\JurnalMengajarController;
 use App\Http\Controllers\Admin\LaporanController;
 use App\Http\Controllers\Siswa\AbsensiController as SiswaAbsensiController;
+use App\Http\Controllers\Siswa\NilaiController as SiswaNilaiController;
+use App\Http\Controllers\Siswa\JadwalController as SiswaJadwalController;
 use App\Http\Controllers\Auth\SiswaLoginController;
 use App\Models\Siswa;
 use App\Models\Guru;
 use App\Models\Pengaturan;
 use App\Models\AbsensiSiswa;
 use Carbon\Carbon;
+use App\Http\Controllers\Admin\MonitoringMateriController;
+use App\Http\Controllers\Admin\MonitoringTugasController;
 
 // Panel Guru
 use App\Http\Controllers\Guru\DashboardController as GuruDashboardController;
@@ -33,6 +37,8 @@ use App\Http\Controllers\Guru\AbsensiHarianController;
 use App\Http\Controllers\Guru\JadwalController;
 // use pindahkan ke sini untuk absesi siswa per mapel
 use App\Http\Controllers\Guru\AbsensiSiswaMapelController as GuruAbsensiSiswaMapelController;
+use App\Http\Controllers\Guru\RencanaMateriController as GuruRencanaMateriController;
+use App\Http\Controllers\Guru\TugasController as GuruTugasController;
 
 // Panel Orang Tua
 use App\Http\Controllers\OrangTua\DashboardController;
@@ -59,10 +65,13 @@ use App\Http\Controllers\Admin\RemedialController;
 use App\Http\Controllers\Admin\PenilaianNilaiController;
 use App\Http\Controllers\Admin\SuratIzinController;
 use App\Http\Controllers\Admin\LogAktivitasController;
+use App\Http\Controllers\Admin\UserController;
 
 // Akun Siswa
 // use App\Http\Controllers\Siswa\AccountController;
 use App\Http\Controllers\Siswa\AccountController as SiswaAccountController;
+use App\Http\Controllers\Siswa\TugasController as SiswaTugasController;
+use App\Http\Controllers\Siswa\MateriController as SiswaMateriController;
 
 
 use App\Http\Controllers\StorageController;
@@ -142,6 +151,19 @@ Route::middleware('auth')->group(function () {
         Route::post('/akun/update-foto', [SiswaAccountController::class, 'updatePhoto'])->name('akun.update-foto');
 
         Route::post('/akun/update-password', [SiswaAccountController::class, 'updatePassword'])->name('akun.update-password');
+
+        // Modul Tugas
+        Route::get('/tugas', [SiswaTugasController::class, 'index'])->name('tugas.index');
+        Route::get('/tugas/{tugas}', [SiswaTugasController::class, 'show'])->name('tugas.show');
+        Route::post('/tugas/{tugas}/kumpulkan', [SiswaTugasController::class, 'kumpulkan'])->name('tugas.kumpulkan');
+
+        // Modul Materi
+        Route::get('/materi', [SiswaMateriController::class, 'index'])->name('materi.index');
+
+        // Akademik
+        Route::get('/nilai', [SiswaNilaiController::class, 'index'])->name('nilai.index');
+        Route::get('/absensi/riwayat', [SiswaAbsensiController::class, 'riwayat'])->name('absensi.index');
+        Route::get('/jadwal', [SiswaJadwalController::class, 'index'])->name('jadwal.index');
     });
 
 
@@ -216,6 +238,15 @@ Route::middleware('auth')->group(function () {
         Route::resource('/jurnal', App\Http\Controllers\Guru\JurnalMengajarController::class);
         Route::post('/jurnal/quick-entry', [App\Http\Controllers\Guru\JurnalMengajarController::class, 'storeQuickEntry'])->name('jurnal.quick_entry');
 
+        // Modul Rencana Materi
+        Route::resource('/rencana-materi', GuruRencanaMateriController::class)->except(['create', 'show', 'edit']);
+
+        // Modul Tugas
+        Route::resource('/tugas', GuruTugasController::class)->parameters([
+            'tugas' => 'tugas'
+        ]);
+        Route::get('/tugas/{tugas}/pengumpulan', [GuruTugasController::class, 'pengumpulan'])->name('tugas.pengumpulan');
+        Route::post('/tugas/{tugas}/nilai/{siswa}', [GuruTugasController::class, 'nilai'])->name('tugas.nilai');
 
         Route::post('/{id_jadwal}/prefill', [GuruAbsensiSiswaMapelController::class, 'refreshPrefill'])->name('prefill');
         Route::get('/{id_jadwal}/export/meeting', [GuruAbsensiSiswaMapelController::class, 'exportMeeting'])->name('export.meeting');
@@ -277,6 +308,12 @@ Route::middleware('auth')->group(function () {
     */
     Route::prefix('admin')->name('admin.')->middleware('check.level:Admin')->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+        // Monitoring Materi
+        Route::get('/monitoring/materi', [MonitoringMateriController::class, 'index'])->name('monitoring.materi');
+
+        // Monitoring Tugas
+        Route::get('/monitoring/tugas', [MonitoringTugasController::class, 'index'])->name('monitoring.tugas');
 
         // Audit Trail (Log Aktivitas)
         Route::get('/log-aktivitas', [LogAktivitasController::class, 'index'])->name('log-aktivitas.index');
@@ -355,6 +392,7 @@ Route::middleware('auth')->group(function () {
 
         // Route::post('orang-tua-wali/{orangTuaWali}/reset-password', [OrangTuaWaliController::class, 'resetPassword'])->name('orang-tua-wali.reset-password');
         Route::resource('pengumuman', App\Http\Controllers\Admin\PengumumanController::class);
+        Route::resource('users', UserController::class)->names('users');
         
         // Kalender Akademik / Hari Libur
         Route::resource('kalender-akademik', App\Http\Controllers\Admin\KalenderAkademikController::class)
