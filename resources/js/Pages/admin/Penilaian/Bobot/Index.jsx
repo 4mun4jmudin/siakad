@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Head, router, usePage } from "@inertiajs/react";
-import AdminPenilaianLayout from "@/Components/layout/AdminPenilaianLayout";
+import AdminLayout from "@/Layouts/AdminLayout";
 
 function PageBobotIndex({ items = { data: [] }, options = { mapel: [], tahunAjaran: [], semester: [] } }) {
   const { props } = usePage();
@@ -33,8 +33,13 @@ function PageBobotIndex({ items = { data: [] }, options = { mapel: [], tahunAjar
   };
 
   return (
-    <div className="space-y-4">
-      <Head title="Pengaturan Bobot Nilai" />
+    <div className="space-y-6">
+      <Head title="Bobot Nilai" />
+
+      <div>
+        <h1 className="text-3xl font-bold text-gray-800">Bobot Nilai</h1>
+        <p className="text-gray-500 text-sm mt-1">Pengaturan komposisi bobot nilai (Tugas, UH, UTS, UAS, Praktik, Proyek) per mata pelajaran.</p>
+      </div>
 
       {flash.success && (
         <div className="p-3 bg-green-50 border border-green-200 rounded text-sm">{flash.success}</div>
@@ -143,7 +148,7 @@ function PageBobotIndex({ items = { data: [] }, options = { mapel: [], tahunAjar
 }
 
 PageBobotIndex.layout = (page) => (
-  <AdminPenilaianLayout title="Pengaturan Bobot Nilai">{page}</AdminPenilaianLayout>
+  <AdminLayout user={page.props.auth.user} header="Bobot Nilai">{page}</AdminLayout>
 );
 
 export default PageBobotIndex;

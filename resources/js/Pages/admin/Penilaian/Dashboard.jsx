@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Head, usePage } from "@inertiajs/react";
-import AdminPenilaianLayout from "@/Components/layout/AdminPenilaianLayout";
+import AdminLayout from "@/Layouts/AdminLayout";
 // Recharts
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -119,15 +119,14 @@ export default function Dashboard({ options = {}, filters = {}, routes = {} }) {
   }, [data.breakdown]);
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <Head title="Dashboard Penilaian – Admin" />
-      <div className="max-w-7xl mx-auto p-4 md:p-6">
-        <header className="mb-4">
-          <h1 className="text-2xl md:text-3xl font-semibold">Dashboard Penilaian – Admin</h1>
-          <p className="text-gray-600 text-sm">
-            Insight nilai, ketercapaian KKM, distribusi, tren, dan antrian remedial.
-          </p>
-        </header>
+    <div className="space-y-6">
+      <Head title="Dashboard Penilaian" />
+      <div>
+        <h1 className="text-3xl font-bold text-gray-800">Dashboard Penilaian</h1>
+        <p className="text-gray-600 text-sm mt-1">
+          Insight nilai, ketercapaian KKM, distribusi, tren, dan antrian remedial.
+        </p>
+      </div>
 
         {/* Filter Bar */}
         <div className="bg-white rounded-2xl shadow p-4 mb-5">
@@ -267,11 +266,10 @@ export default function Dashboard({ options = {}, filters = {}, routes = {} }) {
                       </td>
                     </tr>
                   )}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-        </div>
+              </tbody>
+            </table>
+          </div>
+        </Card>
       </div>
     </div>
   );
@@ -279,7 +277,7 @@ export default function Dashboard({ options = {}, filters = {}, routes = {} }) {
 
 /* ---------- Layout ---------- */
 Dashboard.layout = (page) => (
-  <AdminPenilaianLayout title="Dashboard Penilaian – Admin">{page}</AdminPenilaianLayout>
+  <AdminLayout user={page.props.auth.user} header="Dashboard Penilaian">{page}</AdminLayout>
 );
 
 /* ---------- Subcomponents ---------- */

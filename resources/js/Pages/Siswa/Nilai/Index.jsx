@@ -24,22 +24,30 @@ const StatCard = ({ title, value, subtitle, icon: Icon, gradient }) => {
 };
 
 const GradeComponentBadge = ({ type }) => {
-  const componentMap = {
-    Tugas: 'bg-blue-50 text-blue-700 border-blue-100',
-    UH: 'bg-emerald-50 text-emerald-700 border-emerald-100',
-    PTS: 'bg-purple-50 text-purple-700 border-purple-100',
-    PAS: 'bg-indigo-50 text-indigo-700 border-indigo-100',
-    Praktik: 'bg-amber-50 text-amber-700 border-amber-100',
-    Proyek: 'bg-rose-50 text-rose-700 border-rose-100',
-  };
+  const t = String(type || '').trim().toLowerCase();
+  let colorClass = 'bg-slate-50 text-slate-700 border-slate-100';
+  if (t.includes('tugas') || t.includes('harian') || t === 'uh') {
+    colorClass = 'bg-blue-50 text-blue-700 border-blue-100';
+  } else if (t.includes('uts') || t === 'pts') {
+    colorClass = 'bg-purple-50 text-purple-700 border-purple-100';
+  } else if (t.includes('uas') || t === 'pas') {
+    colorClass = 'bg-indigo-50 text-indigo-700 border-indigo-100';
+  } else if (t.includes('praktik') || t.includes('praktek')) {
+    colorClass = 'bg-amber-50 text-amber-700 border-amber-100';
+  } else if (t.includes('keaktifan') || t.includes('sikap')) {
+    colorClass = 'bg-emerald-50 text-emerald-700 border-emerald-100';
+  } else if (t.includes('proyek') || t.includes('portofolio')) {
+    colorClass = 'bg-rose-50 text-rose-700 border-rose-100';
+  }
+
   return (
-    <span className={cn('px-2.5 py-0.5 rounded-lg text-[10px] font-bold border', componentMap[type] || 'bg-slate-50 text-slate-700 border-slate-100')}>
+    <span className={cn('px-2.5 py-0.5 rounded-lg text-[10px] font-bold border', colorClass)}>
       {type}
     </span>
   );
 };
 
-export default function NilaiIndex({ auth, siswa, penilaian = [], tahunAjarans = [], selectedTahunAjaranId, selectedSemester, stats }) {
+export default function NilaiIndex({ auth, siswa, penilaian = [], tahunAjarans = [], selectedTahunAjaranId, selectedSemester, isKunciJurnalGlobal, stats }) {
   const [expandedId, setExpandedId] = useState(null);
 
   const toggleExpand = (id) => {
@@ -66,6 +74,16 @@ export default function NilaiIndex({ auth, siswa, penilaian = [], tahunAjarans =
 
       <div className="max-w-7xl mx-auto space-y-8 pb-16">
         
+        {/* Global Lock Warning Banner */}
+        {isKunciJurnalGlobal && (
+          <div className="p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-3xl text-xs font-bold flex items-center gap-2.5 shadow-sm">
+            <span className="text-lg">🔒</span>
+            <div>
+              <strong>Pengisian Nilai Terkunci:</strong> Seluruh pengisian nilai dan jurnal akademik semester ini telah dikunci sepenuhnya oleh sistem/administrator. Seluruh nilai di bawah ini bersifat resmi dan final.
+            </div>
+          </div>
+        )}
+
         {/* Banner Section */}
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 p-6 md:p-8 shadow-xl text-white">
           <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 h-64 w-64 rounded-full bg-sky-500/10 blur-3xl pointer-events-none" />
@@ -209,6 +227,20 @@ export default function NilaiIndex({ auth, siswa, penilaian = [], tahunAjarans =
 
                     <div className="flex items-center justify-between w-full md:w-auto gap-6 self-stretch md:self-auto border-t md:border-t-0 pt-3 md:pt-0 border-slate-50">
                       <div className="flex items-center gap-6">
+                        {/* Status Kunci */}
+                        <div className="text-center">
+                          <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider block mb-1">Status</span>
+                          {row.status_kunci || isKunciJurnalGlobal ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-100/50">
+                              🔒 Kunci
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100/50">
+                              🔓 Aktif
+                            </span>
+                          )}
+                        </div>
+
                         {/* Predikat */}
                         <div className="text-center">
                           <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Predikat</span>
@@ -285,7 +317,7 @@ export default function NilaiIndex({ auth, siswa, penilaian = [], tahunAjarans =
                                 {row.details && row.details.length > 0 ? (
                                   row.details.map((detail) => (
                                     <tr key={detail.id_detail} className="hover:bg-slate-50/40">
-                                      <td className="px-5 py-3"><GradeComponentBadge type={detail.komponen} /></td>
+                                      <td className="px-5 py-3"><GradeComponentBadge type={detail.komponen_penilaian?.nama || detail.komponen} /></td>
                                       <td className="px-5 py-3 font-semibold text-slate-500">
                                         {detail.tanggal 
                                           ? new Date(detail.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) 

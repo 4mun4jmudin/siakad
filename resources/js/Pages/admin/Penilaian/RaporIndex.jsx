@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Head, router } from "@inertiajs/react";
+import AdminLayout from "@/Layouts/AdminLayout";
 
 export default function RaporIndex({ options, filters, rekap = [] }) {
   const [f,setF]=useState({ id_tahun_ajaran: filters?.id_tahun_ajaran || "", semester: filters?.semester || "", id_kelas: filters?.id_kelas || "" });
@@ -8,9 +9,12 @@ export default function RaporIndex({ options, filters, rekap = [] }) {
   const recompute=()=>router.post(route("admin.rapor.recompute"), f, { preserveScroll:true });
 
   return (
-    <div className="p-6">
+    <div className="space-y-6">
       <Head title="Rapor & Rekapitulasi" />
-      <h1 className="text-2xl font-semibold mb-4">Rapor & Rekapitulasi</h1>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-800">Rapor & Rekapitulasi</h1>
+        <p className="text-gray-500 text-sm mt-1">Penghitungan rapor akhir semester, peringkat kelas, dan rekapitulasi nilai siswa.</p>
+      </div>
 
       <div className="bg-white p-4 rounded-xl shadow mb-4 grid md:grid-cols-4 gap-3">
         <Select label="TA" value={f.id_tahun_ajaran} onChange={v=>setF(s=>({...s,id_tahun_ajaran:v}))} options={options.tahunAjaran.map(t=>({value:t.id_tahun_ajaran,label:t.tahun_ajaran}))}/>
@@ -45,6 +49,11 @@ export default function RaporIndex({ options, filters, rekap = [] }) {
     </div>
   );
 }
+
+RaporIndex.layout = (page) => (
+  <AdminLayout user={page.props.auth.user} header="Rapor & Rekapitulasi">{page}</AdminLayout>
+);
+
 function Select({label,value,onChange,options}){return(<div><label className="block text-sm mb-1">{label}</label><select className="w-full border rounded px-3 py-2" value={value||""} onChange={e=>onChange(e.target.value)}><option value="">— Pilih —</option>{options.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select></div>);}
 function Th({text,center}){return <th className={`p-2 ${center?"text-center":"text-left"}`}>{text}</th>;}
 function Td({text,center}){return <td className={`p-2 ${center?"text-center":"text-left"}`}>{text}</td>;}

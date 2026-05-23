@@ -15,6 +15,7 @@ const LogAktivitasStatusBadge = ({ aksi }) => {
     if (aksi.toLowerCase().includes('ubah') || aksi.toLowerCase().includes('update') || aksi.toLowerCase().includes('edit')) color = "bg-amber-50 text-amber-700 border-amber-200";
     if (aksi.toLowerCase().includes('hapus') || aksi.toLowerCase().includes('delete') || aksi.toLowerCase().includes('tolak')) color = "bg-red-50 text-red-700 border-red-200";
     if (aksi.toLowerCase().includes('setujui') || aksi.toLowerCase().includes('approve')) color = "bg-teal-50 text-teal-700 border-teal-200";
+    if (aksi.toLowerCase().includes('kunci')) color = "bg-purple-50 text-purple-700 border-purple-200";
 
     return (
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${color}`}>

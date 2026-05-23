@@ -472,6 +472,8 @@ Route::middleware('auth')->group(function () {
             Route::get('/penilaian', [PenilaianNilaiController::class, 'index'])->name('penilaian.index');
             Route::get('/nilai/{id_penilaian}', [PenilaianNilaiController::class, 'showDetail'])->name('nilai.detail.show');
             Route::post('/nilai/{id_penilaian}/detail', [PenilaianNilaiController::class, 'storeDetail'])->name('nilai.detail.store');
+            Route::post('/nilai/{id_penilaian}/toggle-lock', [PenilaianNilaiController::class, 'toggleLock'])->name('nilai.toggle-lock');
+            Route::delete('/nilai/detail/{id_detail}', [PenilaianNilaiController::class, 'destroyDetail'])->name('nilai.detail.destroy');
 
             // API widget dashboard penilaian
             Route::get('/api/summary', [PenilaianDashboardController::class, 'apiSummary'])->name('api.summary');

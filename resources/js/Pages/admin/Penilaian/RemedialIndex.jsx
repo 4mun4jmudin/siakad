@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Head, router } from "@inertiajs/react";
+import AdminLayout from "@/Layouts/AdminLayout";
 
 export default function RemedialIndex({ items }) {
   const [f,setF]=useState({ id_penilaian:"", komponen:"", nilai_awal:"", nilai_remedial:"", tanggal:"", metode:"", catatan:"" });
@@ -10,9 +11,12 @@ export default function RemedialIndex({ items }) {
   const del=(id)=>{ if(confirm("Hapus remedial?")) router.delete(route("admin.remedial.destroy",id),{preserveScroll:true}); };
 
   return (
-    <div className="p-6">
+    <div className="space-y-6">
       <Head title="Remedial Nilai" />
-      <h1 className="text-2xl font-semibold mb-4">Remedial Nilai</h1>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-800">Remedial Nilai</h1>
+        <p className="text-gray-500 text-sm mt-1">Kelola pencatatan dan perbaikan nilai siswa (Remedial) yang berada di bawah KKM.</p>
+      </div>
 
       <div className="bg-white p-4 rounded-xl shadow mb-6 grid md:grid-cols-6 gap-3">
         <Input label="ID Penilaian" value={f.id_penilaian} onChange={v=>setF(s=>({...s,id_penilaian:v}))}/>
@@ -56,6 +60,11 @@ function Row({r,onUpdate,onDelete}){
     </td>
   </tr>);
 }
+
+RemedialIndex.layout = (page) => (
+  <AdminLayout user={page.props.auth.user} header="Remedial Nilai">{page}</AdminLayout>
+);
+
 function Input({label,value,onChange,type="text"}){return(<div><label className="block text-sm mb-1">{label}</label><input type={type} className="w-full border rounded px-3 py-2" value={value||""} onChange={e=>onChange(e.target.value)}/></div>);}
 function Num({label,value,onChange}){return(<div><label className="block text-sm mb-1">{label}</label><input type="number" className="w-full border rounded px-3 py-2" value={value||""} onChange={e=>onChange(e.target.value)}/></div>);}
 function Select({label,value,onChange,options}){return(<div><label className="block text-sm mb-1">{label}</label><select className="w-full border rounded px-3 py-2" value={value??""} onChange={e=>onChange(e.target.value)}>{options.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select></div>);}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { toast } from '@/utils/toast';
 import { useForm } from '@inertiajs/react';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -6,8 +6,7 @@ import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
 import Checkbox from '@/Components/Checkbox';
-import { Clock, Users, User, QrCode, Fingerprint, Save, CheckCircle, XCircle } from 'lucide-react';
-import { MapPin, Target } from 'lucide-react';
+import { Clock, Users, User, QrCode, Fingerprint, Save, CheckCircle, Target, MapPin } from 'lucide-react';
 
 export default function AbsensiSettingsForm({ className = '', pengaturan = {} }) {
   const { data, setData, put, processing, errors, recentlySuccessful } = useForm({
@@ -25,15 +24,6 @@ export default function AbsensiSettingsForm({ className = '', pengaturan = {} })
     lokasi_sekolah_longitude: pengaturan.lokasi_sekolah_longitude || '',
     radius_absen_meters: pengaturan.radius_absen_meters ?? 200,
   });
-
-   // { type: 'success'|'error', message }
-
-  useEffect(() => {
-    if (toast) {
-      const t = setTimeout(() => setToast(null), 5000);
-      return () => clearTimeout(t);
-    }
-  }, [toast]);
 
   const submit = (e) => {
     e.preventDefault();
@@ -86,9 +76,6 @@ export default function AbsensiSettingsForm({ className = '', pengaturan = {} })
           </div>
         </header>
 
-        {/* Toast Notification */}
-        
-
         <form onSubmit={submit} className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
           {/* --- BAGIAN LOKASI & RADIUS (BARU) --- */}
           <div>
@@ -107,7 +94,7 @@ export default function AbsensiSettingsForm({ className = '', pengaturan = {} })
                 <InputLabel htmlFor="lokasi_sekolah_latitude" value="Latitude Sekolah" />
                 <TextInput
                   id="lokasi_sekolah_latitude"
-                  className="mt-1 block w-full"
+                  className="mt-1 block w-full text-sm"
                   value={data.lokasi_sekolah_latitude}
                   onChange={(e) => setData('lokasi_sekolah_latitude', e.target.value)}
                   placeholder="Contoh: -6.200000"
@@ -118,7 +105,7 @@ export default function AbsensiSettingsForm({ className = '', pengaturan = {} })
                 <InputLabel htmlFor="lokasi_sekolah_longitude" value="Longitude Sekolah" />
                 <TextInput
                   id="lokasi_sekolah_longitude"
-                  className="mt-1 block w-full"
+                  className="mt-1 block w-full text-sm"
                   value={data.lokasi_sekolah_longitude}
                   onChange={(e) => setData('lokasi_sekolah_longitude', e.target.value)}
                   placeholder="Contoh: 106.816666"
@@ -135,7 +122,7 @@ export default function AbsensiSettingsForm({ className = '', pengaturan = {} })
                     id="radius_absen_meters"
                     type="number"
                     min="10"
-                    className="block w-full pl-10"
+                    className="block w-full pl-10 text-sm"
                     value={data.radius_absen_meters}
                     onChange={(e) => setData('radius_absen_meters', e.target.value)}
                   />
@@ -145,6 +132,7 @@ export default function AbsensiSettingsForm({ className = '', pengaturan = {} })
               </div>
             </div>
           </div>
+          
           {/* Card: Waktu Siswa */}
           <div className="col-span-1 md:col-span-1 bg-gray-50 p-4 rounded-lg border border-gray-100">
             <div className="flex items-center gap-3">
@@ -164,7 +152,7 @@ export default function AbsensiSettingsForm({ className = '', pengaturan = {} })
                   <TextInput
                     id="jam_masuk_siswa"
                     type="time"
-                    className="mt-1 block w-full pl-10"
+                    className="mt-1 block w-full pl-10 text-sm"
                     value={data.jam_masuk_siswa}
                     onChange={(e) => setData('jam_masuk_siswa', e.target.value)}
                     required
@@ -180,7 +168,7 @@ export default function AbsensiSettingsForm({ className = '', pengaturan = {} })
                   <TextInput
                     id="jam_pulang_siswa"
                     type="time"
-                    className="mt-1 block w-full pl-10"
+                    className="mt-1 block w-full pl-10 text-sm"
                     value={data.jam_pulang_siswa}
                     onChange={(e) => setData('jam_pulang_siswa', e.target.value)}
                     required
@@ -199,7 +187,7 @@ export default function AbsensiSettingsForm({ className = '', pengaturan = {} })
                     inputMode="numeric"
                     min={0}
                     step={1}
-                    className="mt-1 block w-full pl-10"
+                    className="mt-1 block w-full pl-10 text-sm"
                     value={data.batas_terlambat_siswa}
                     onChange={(e) => setData('batas_terlambat_siswa', Number(e.target.value))}
                     required
@@ -230,7 +218,7 @@ export default function AbsensiSettingsForm({ className = '', pengaturan = {} })
                   <TextInput
                     id="jam_masuk_guru"
                     type="time"
-                    className="mt-1 block w-full pl-10"
+                    className="mt-1 block w-full pl-10 text-sm"
                     value={data.jam_masuk_guru}
                     onChange={(e) => setData('jam_masuk_guru', e.target.value)}
                     required
@@ -246,7 +234,7 @@ export default function AbsensiSettingsForm({ className = '', pengaturan = {} })
                   <TextInput
                     id="jam_pulang_guru"
                     type="time"
-                    className="mt-1 block w-full pl-10"
+                    className="mt-1 block w-full pl-10 text-sm"
                     value={data.jam_pulang_guru}
                     onChange={(e) => setData('jam_pulang_guru', e.target.value)}
                     required
@@ -265,7 +253,7 @@ export default function AbsensiSettingsForm({ className = '', pengaturan = {} })
                     inputMode="numeric"
                     min={0}
                     step={1}
-                    className="mt-1 block w-full pl-10"
+                    className="mt-1 block w-full pl-10 text-sm"
                     value={data.batas_terlambat_guru}
                     onChange={(e) => setData('batas_terlambat_guru', Number(e.target.value))}
                     required
@@ -289,7 +277,7 @@ export default function AbsensiSettingsForm({ className = '', pengaturan = {} })
               </div>
             </div>
 
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <label className="flex items-start gap-3 p-2 rounded-lg border hover:bg-gray-50 cursor-pointer">
                 <Checkbox
                   name="login_barcode_enabled"
@@ -297,8 +285,8 @@ export default function AbsensiSettingsForm({ className = '', pengaturan = {} })
                   onChange={(e) => setData('login_barcode_enabled', e.target.checked)}
                 />
                 <div className="text-sm">
-                  <div className="flex items-center gap-2 font-medium text-gray-700"><QrCode className="w-4 h-4" /> Login via Barcode</div>
-                  <div className="text-xs text-gray-500">Siswa/guru memindai QR/barcode.</div>
+                  <div className="flex items-center gap-2 font-medium text-gray-700"><QrCode className="w-4 h-4" /> Login Barcode</div>
+                  <div className="text-xs text-gray-500">Scan QR/barcode.</div>
                 </div>
               </label>
 
@@ -309,8 +297,8 @@ export default function AbsensiSettingsForm({ className = '', pengaturan = {} })
                   onChange={(e) => setData('login_fingerprint_enabled', e.target.checked)}
                 />
                 <div className="text-sm">
-                  <div className="flex items-center gap-2 font-medium text-gray-700"><Fingerprint className="w-4 h-4" /> Login via Sidik Jari</div>
-                  <div className="text-xs text-gray-500">Memerlukan perangkat fingerprint.</div>
+                  <div className="flex items-center gap-2 font-medium text-gray-700"><Fingerprint className="w-4 h-4" /> Sidik Jari</div>
+                  <div className="text-xs text-gray-500">Gunakan scanner usb.</div>
                 </div>
               </label>
 
@@ -321,8 +309,8 @@ export default function AbsensiSettingsForm({ className = '', pengaturan = {} })
                   onChange={(e) => setData('absensi_manual_guru_enabled', e.target.checked)}
                 />
                 <div className="text-sm">
-                  <div className="flex items-center gap-2 font-medium text-gray-700"><User className="w-4 h-4" /> Halaman Absensi Guru (Manual)</div>
-                  <div className="text-xs text-gray-500">Jika non-aktif, guru tidak dapat mengakses form absensi manual dari panel.</div>
+                  <div className="flex items-center gap-2 font-medium text-gray-700 font-semibold"><User className="w-4 h-4" /> Manual Guru</div>
+                  <div className="text-xs text-gray-500">Form absen manual guru.</div>
                 </div>
               </label>
 
@@ -333,8 +321,8 @@ export default function AbsensiSettingsForm({ className = '', pengaturan = {} })
                   onChange={(e) => setData('login_manual_enabled', e.target.checked)}
                 />
                 <div className="text-sm">
-                  <div className="flex items-center gap-2 font-medium text-gray-700"><User className="w-4 h-4" /> Absensi Manual</div>
-                  <div className="text-xs text-gray-500">Petugas dapat memasukkan manual via dashboard.</div>
+                  <div className="flex items-center gap-2 font-medium text-gray-700"><User className="w-4 h-4" /> Manual Petugas</div>
+                  <div className="text-xs text-gray-500">Absen manual di panel.</div>
                 </div>
               </label>
             </div>

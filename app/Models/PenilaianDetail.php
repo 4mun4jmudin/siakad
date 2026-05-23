@@ -11,14 +11,20 @@ class PenilaianDetail extends Model
     public $incrementing = true;
 
     protected $fillable = [
-        'id_penilaian','komponen','deskripsi','tanggal','nilai','bobot',
+        'id_penilaian','id_komponen','komponen','deskripsi','tanggal','nilai','bobot',
     ];
 
     protected $casts = [
-        'tanggal' => 'date',
-        'nilai'   => 'decimal:2',
-        'bobot'   => 'decimal:2',
+        'tanggal'     => 'date',
+        'nilai'       => 'decimal:2',
+        'bobot'       => 'decimal:2',
+        'id_komponen' => 'integer',
     ];
 
     public function penilaian(){ return $this->belongsTo(PenilaianMapel::class,'id_penilaian','id_penilaian'); }
+    
+    public function komponenPenilaian()
+    {
+        return $this->belongsTo(KomponenPenilaian::class, 'id_komponen', 'id_komponen');
+    }
 }

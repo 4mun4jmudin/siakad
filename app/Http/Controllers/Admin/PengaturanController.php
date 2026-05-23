@@ -275,25 +275,51 @@ class PengaturanController extends Controller
     public function manualBackup()
     {
         try {
-            Artisan::call('backup:run', ['--only-db' => true]);
-            $output = Artisan::output();
+            $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
 
-            $lastBackupTime = now()->toDateTimeString();
+            if ($isWindows) {
+                // Run decoupled in the background on Windows to bypass Winsock 10106 restriction (WSAEPROVIDERFAILEDINIT)
+                // that blocks child socket creation inside web request worker threads.
+                $cmd = 'start /B php artisan backup:run --only-db > NUL 2>&1';
+                pclose(popen($cmd, 'r'));
 
-            Log::info('Backup manual berhasil: ' . $output);
-            LogAktivitas::create([
-                'id_pengguna' => Auth::id(),
-                'aksi' => 'Membuat backup database manual',
-                'keterangan' => $output ?: 'Backup manual dibuat pada ' . $lastBackupTime,
-            ]);
+                $lastBackupTime = now()->toDateTimeString();
 
-            // Kembalikan JSON dengan timestamp & output (frontend pakai last_backup)
-            return response()->json([
-                'success' => true,
-                'message' => 'Backup database berhasil dibuat.',
-                'last_backup' => $lastBackupTime,
-                'output' => $output,
-            ]);
+                Log::info('Backup manual dipicu di latar belakang (Windows): ' . $cmd);
+                LogAktivitas::create([
+                    'id_pengguna' => Auth::id(),
+                    'aksi' => 'Memicu backup database manual (Latar Belakang)',
+                    'keterangan' => 'Backup diproses di latar belakang pada ' . $lastBackupTime,
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Backup database sedang diproses di latar belakang. Silakan tunggu beberapa saat.',
+                    'last_backup' => $lastBackupTime,
+                    'async' => true,
+                ]);
+            } else {
+                Artisan::call('backup:run', ['--only-db' => true]);
+                $output = Artisan::output();
+
+                $lastBackupTime = now()->toDateTimeString();
+
+                Log::info('Backup manual berhasil: ' . $output);
+                LogAktivitas::create([
+                    'id_pengguna' => Auth::id(),
+                    'aksi' => 'Membuat backup database manual',
+                    'keterangan' => $output ?: 'Backup manual dibuat pada ' . $lastBackupTime,
+                ]);
+
+                // Kembalikan JSON dengan timestamp & output (frontend pakai last_backup)
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Backup database berhasil dibuat.',
+                    'last_backup' => $lastBackupTime,
+                    'output' => $output,
+                    'async' => false,
+                ]);
+            }
         } catch (\Exception $e) {
             Log::error('Gagal membuat backup manual: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Gagal membuat backup. Silakan periksa log.'], 500);

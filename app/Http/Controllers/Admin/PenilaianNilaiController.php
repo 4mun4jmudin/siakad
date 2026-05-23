@@ -3,8 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\PenilaianMapel;
+use App\Models\PenilaianDetail;
+use App\Models\KomponenPenilaian;
+use App\Models\LogAktivitas;
+use App\Models\Pengaturan;
+use App\Services\PenilaianCalculator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class PenilaianNilaiController extends Controller
@@ -41,7 +48,7 @@ class PenilaianNilaiController extends Controller
             ->join('tbl_mata_pelajaran as m','m.id_mapel','=','pm.id_mapel')
             ->select(
                 'pm.id_penilaian','pm.id_siswa','pm.id_kelas','pm.id_mapel',
-                'pm.id_tahun_ajaran','pm.semester','pm.nilai_akhir','pm.predikat','pm.tuntas',
+                'pm.id_tahun_ajaran','pm.semester','pm.nilai_akhir','pm.predikat','pm.tuntas','pm.status_kunci',
                 's.nis','s.nama_lengkap as nama_siswa','m.nama_mapel'
             );
 
@@ -52,7 +59,6 @@ class PenilaianNilaiController extends Controller
 
         $list = $q->orderBy('s.nama_lengkap')->limit(500)->get();
 
-        // NOTICE: path lowercase "admin" + folder Penilaian/Nilai
         return Inertia::render('admin/Penilaian/Nilai/Index', [
             'options' => [
                 'ta'       => $optsTa,
@@ -72,108 +78,135 @@ class PenilaianNilaiController extends Controller
             ->join('tbl_mata_pelajaran as m','m.id_mapel','=','pm.id_mapel')
             ->select(
                 'pm.id_penilaian','pm.id_siswa','pm.id_kelas','pm.id_mapel',
-                'pm.id_tahun_ajaran','pm.semester','pm.nilai_akhir','pm.predikat','pm.tuntas',
-                's.nama_lengkap as nama_siswa','m.nama_mapel'
+                'pm.id_tahun_ajaran','pm.semester','pm.nilai_akhir','pm.predikat','pm.tuntas','pm.status_kunci',
+                's.nama_lengkap as nama_siswa','m.nama_mapel','m.kkm'
             )
             ->where('pm.id_penilaian', $id_penilaian)->first();
 
         if (!$h) abort(404);
 
-        $details = DB::table('tbl_penilaian_detail')
-            ->where('id_penilaian',$id_penilaian)
-            ->orderBy('tanggal')->orderBy('id_detail')->get();
+        $details = PenilaianDetail::where('id_penilaian', $id_penilaian)
+            ->with('komponenPenilaian')
+            ->orderBy('tanggal')
+            ->orderBy('id_detail')
+            ->get();
+
+        // Get flexible components options
+        $komponenOptions = KomponenPenilaian::orderBy('nama')->get();
 
         return Inertia::render('admin/Penilaian/Nilai/Detail', [
-            'header'=>$h, 'details'=>$details,
+            'header'          => $h,
+            'details'         => $details,
+            'komponenOptions' => $komponenOptions,
         ]);
     }
 
     /** SIMPAN satu baris detail */
     public function storeDetail(Request $r, $id_penilaian)
     {
-        $header = DB::table('tbl_penilaian_mapel')->where('id_penilaian',$id_penilaian)->first();
-        if (!$header) return back()->with('error','Header penilaian tidak ditemukan.');
+        $header = PenilaianMapel::with(['siswa', 'mapel'])->find($id_penilaian);
+        if (!$header) {
+            return back()->with('error', 'Header penilaian tidak ditemukan.');
+        }
+
+        // Check if grade is locked (either individually or globally)
+        $pengaturan = Pengaturan::first();
+        if ($header->isLocked()) {
+            return back()->with('error', 'Penilaian untuk siswa ini telah dikunci oleh administrator.');
+        }
+        if ($pengaturan && $pengaturan->is_kunci_jurnal) {
+            return back()->with('error', 'Seluruh pengisian nilai dan jurnal telah dikunci secara sistem.');
+        }
 
         $data = $r->validate([
-            'komponen'  => 'required|in:Tugas,UH,PTS,PAS,Praktik,Proyek',
-            'deskripsi' => 'nullable|string|max:100',
-            'tanggal'   => 'nullable|date',
-            'nilai'     => 'required|numeric|min:0|max:100',
-            'bobot'     => 'nullable|numeric|min:0|max:100',
+            'id_komponen' => 'required|exists:tbl_komponen_penilaian,id_komponen',
+            'deskripsi'   => 'nullable|string|max:100',
+            'tanggal'     => 'nullable|date',
+            'nilai'       => 'required|numeric|min:0|max:100',
+            'bobot'       => 'nullable|numeric|min:0|max:100',
         ]);
 
-        DB::table('tbl_penilaian_detail')->insert([
-            'id_penilaian'=>$id_penilaian,
-            'komponen'=>$data['komponen'],
-            'deskripsi'=>$data['deskripsi']??null,
-            'tanggal'=>$data['tanggal']??null,
-            'nilai'=>$data['nilai'],
-            'bobot'=>$data['bobot']??null,
-            'created_at'=>now(),'updated_at'=>now(),
+        $komponen = KomponenPenilaian::find($data['id_komponen']);
+
+        $detail = PenilaianDetail::create([
+            'id_penilaian' => $id_penilaian,
+            'id_komponen'  => $data['id_komponen'],
+            'komponen'     => $komponen->nama, // Kept as fallback for old layout compatibility
+            'deskripsi'    => $data['deskripsi'] ?? null,
+            'tanggal'      => $data['tanggal'] ?? null,
+            'nilai'        => $data['nilai'],
+            'bobot'        => $data['bobot'] ?? null,
         ]);
 
-        $this->recalculateHeader($header);
+        // Recalculate using service class
+        $calculator = new PenilaianCalculator();
+        $calculator->compute($header);
 
-        return back()->with('success','Detail nilai ditambahkan.');
+        // Audit Log Entry
+        LogAktivitas::create([
+            'id_pengguna' => Auth::id(),
+            'aksi'        => 'Tambah Nilai',
+            'keterangan'  => 'Menambahkan nilai ' . $komponen->nama . ' sebesar ' . $data['nilai'] . ' untuk Siswa ' . ($header->siswa?->nama_lengkap ?? $header->id_siswa) . ' pada Mapel ' . ($header->mapel?->nama_mapel ?? $header->id_mapel)
+        ]);
+
+        return back()->with('success', 'Detail nilai berhasil ditambahkan.');
     }
 
-    /** Re-calc nilai akhir (versi ringkas) */
-    protected function recalculateHeader(object $header): void
+    /** HAPUS satu baris detail */
+    public function destroyDetail($id_detail)
     {
-        $details = DB::table('tbl_penilaian_detail')
-            ->where('id_penilaian',$header->id_penilaian)->get()->groupBy('komponen');
-
-        $bobot = DB::table('tbl_bobot_nilai_mapel')
-            ->where('id_mapel',$header->id_mapel)
-            ->where('id_tahun_ajaran',$header->id_tahun_ajaran)
-            ->where('semester',$header->semester)->first();
-
-        $def = [
-            'Tugas'   => (float)($bobot->bobot_tugas ?? 0),
-            'UH'      => (float)($bobot->bobot_uh ?? 0),
-            'PTS'     => (float)($bobot->bobot_pts ?? 0),
-            'PAS'     => (float)($bobot->bobot_pas ?? 0),
-            'Praktik' => (float)($bobot->bobot_praktik ?? 0),
-            'Proyek'  => (float)($bobot->bobot_proyek ?? 0),
-        ];
-
-        $sumWeighted = 0.0; $sumBobot = 0.0;
-
-        foreach ($def as $komp=>$B) {
-            if (!$details->has($komp) || $details[$komp]->isEmpty()) continue;
-
-            $rows = $details[$komp];
-            $hasLocal = $rows->contains(fn($d)=>!is_null($d->bobot));
-
-            if ($hasLocal) {
-                $wSum=0;$wTot=0;
-                foreach ($rows as $d) {
-                    $w = is_null($d->bobot)?0:(float)$d->bobot;
-                    if ($w<=0) continue;
-                    $wSum += (float)$d->nilai * $w;
-                    $wTot += $w;
-                }
-                if ($wTot>0 && $B>0){ $sumWeighted += ($wSum/$wTot)*$B; $sumBobot += $B; }
-            } else {
-                $avg = $rows->avg(fn($d)=>(float)$d->nilai);
-                if ($B>0){ $sumWeighted += $avg*$B; $sumBobot += $B; }
-            }
+        $detail = PenilaianDetail::with('penilaian.siswa', 'penilaian.mapel', 'komponenPenilaian')->find($id_detail);
+        if (!$detail) {
+            return back()->with('error', 'Detail nilai tidak ditemukan.');
         }
 
-        $nilaiAkhir = $sumBobot>0 ? ($sumWeighted/$sumBobot) : null;
-        $kkm = (float)(DB::table('tbl_mata_pelajaran')->where('id_mapel',$header->id_mapel)->value('kkm') ?? 0);
+        $header = $detail->penilaian;
 
-        $pred = null; $tuntas = null;
-        if (!is_null($nilaiAkhir)) {
-            $pred = $nilaiAkhir>=90?'A':($nilaiAkhir>=80?'B':($nilaiAkhir>=70?'C':'D'));
-            $tuntas = $nilaiAkhir >= $kkm;
+        // Check locks
+        $pengaturan = Pengaturan::first();
+        if ($header->isLocked()) {
+            return back()->with('error', 'Penilaian untuk siswa ini telah dikunci oleh administrator.');
+        }
+        if ($pengaturan && $pengaturan->is_kunci_jurnal) {
+            return back()->with('error', 'Seluruh pengisian nilai dan jurnal telah dikunci secara sistem.');
         }
 
-        DB::table('tbl_penilaian_mapel')->where('id_penilaian',$header->id_penilaian)->update([
-            'nilai_akhir'=> is_null($nilaiAkhir)?null:round($nilaiAkhir,2),
-            'predikat'   => $pred,
-            'tuntas'     => is_null($tuntas)?null:($tuntas?1:0),
-            'updated_at' => now(),
+        $komponenNama = $detail->komponenPenilaian?->nama ?? $detail->komponen;
+        $nilaiDihapus = $detail->nilai;
+
+        $detail->delete();
+
+        // Recalculate
+        $calculator = new PenilaianCalculator();
+        $calculator->compute($header);
+
+        // Audit Log Entry
+        LogAktivitas::create([
+            'id_pengguna' => Auth::id(),
+            'aksi'        => 'Hapus Nilai',
+            'keterangan'  => 'Menghapus nilai ' . $komponenNama . ' (' . $nilaiDihapus . ') Siswa ' . ($header->siswa?->nama_lengkap ?? $header->id_siswa) . ' pada Mapel ' . ($header->mapel?->nama_mapel ?? $header->id_mapel)
         ]);
+
+        return back()->with('success', 'Detail nilai berhasil dihapus.');
+    }
+
+    /** TOGGLE LOCK STATUS */
+    public function toggleLock($id_penilaian)
+    {
+        $header = PenilaianMapel::with(['siswa', 'mapel'])->findOrFail($id_penilaian);
+        
+        $header->status_kunci = !$header->status_kunci;
+        $header->save();
+
+        $actionText = $header->status_kunci ? 'Mengunci' : 'Membuka kunci';
+        
+        // Audit Log Entry
+        LogAktivitas::create([
+            'id_pengguna' => Auth::id(),
+            'aksi'        => $header->status_kunci ? 'Kunci Nilai' : 'Buka Kunci Nilai',
+            'keterangan'  => $actionText . ' penilaian Mapel ' . ($header->mapel?->nama_mapel ?? $header->id_mapel) . ' untuk Siswa ' . ($header->siswa?->nama_lengkap ?? $header->id_siswa)
+        ]);
+
+        return back()->with('success', 'Status kuncian nilai berhasil diperbarui.');
     }
 }

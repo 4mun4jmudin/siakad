@@ -5,11 +5,10 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import InputLabel from '@/Components/InputLabel';
 import InputError from '@/Components/InputError';
-import { Home, MapPin, User, Calendar, BookOpen, Save, CheckCircle, XCircle } from 'lucide-react';
+import { Home, MapPin, User, Calendar, BookOpen, Save, CheckCircle } from 'lucide-react';
 
 export default function GeneralSettingsForm({ className = '', pengaturan = {}, tahun_ajaran = [] }) {
-    const { data, setData, put, post, processing, errors, recentlySuccessful } = useForm({
-
+    const { data, setData, post, processing, errors, recentlySuccessful } = useForm({
         nama_sekolah: pengaturan.nama_sekolah || '',
         alamat_sekolah: pengaturan.alamat_sekolah || '',
         kepala_sekolah: pengaturan.kepala_sekolah || '',
@@ -17,35 +16,22 @@ export default function GeneralSettingsForm({ className = '', pengaturan = {}, t
         semester_aktif: pengaturan.semester_aktif || '',
     });
 
-     // { type: 'success'|'error', message }
-
-    useEffect(() => {
-        if (toast) {
-            const t = setTimeout(() => setToast(null), 5000);
-            return () => clearTimeout(t);
-        }
-    }, [toast]);
-
-    // preview logo (client-side only)
     const [logoPreview, setLogoPreview] = useState(pengaturan.logo_url || null);
 
     useEffect(() => {
-        // clear preview when pengaturan.logo_url changes
         setLogoPreview(pengaturan.logo_url || null);
     }, [pengaturan.logo_url]);
 
     const submit = (e) => {
-        console.log('Data yang akan dikirim:', data);
         e.preventDefault();
         post(route('admin.pengaturan.update-general'), {
-            _method: 'put', // Spoofing the PUT request
+            _method: 'put', 
             preserveScroll: true,
             onSuccess: () => toast.success('Pengaturan berhasil disimpan!'),
-            onError: (response) => {
-                // Cek jika ada error validasi spesifik
+            onError: () => {
                 const firstError = Object.values(errors)[0];
                 if (firstError) {
-                    setToast({ type: 'error', message: `Gagal menyimpan: ${firstError}` });
+                    toast.error(`Gagal menyimpan: ${firstError}`);
                 } else {
                     toast.error('Gagal menyimpan pengaturan. Silakan coba lagi.');
                 }
@@ -56,11 +42,9 @@ export default function GeneralSettingsForm({ className = '', pengaturan = {}, t
     const handleLogoChange = (e) => {
         const file = e.target.files && e.target.files[0];
         if (!file) return;
-        // preview only — if you want to upload, include file in FormData on submit
         const reader = new FileReader();
         reader.onload = (ev) => setLogoPreview(ev.target.result);
         reader.readAsDataURL(file);
-        // set to form data if backend accepts file fields (example key 'logo')
         setData('logo', file);
     };
 
@@ -76,9 +60,6 @@ export default function GeneralSettingsForm({ className = '', pengaturan = {}, t
                 </div>
             </header>
 
-            {/* Toast Notification */}
-            
-
             <form onSubmit={submit} className="bg-white border rounded-lg shadow-sm p-6 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Left: Form inputs */}
@@ -91,9 +72,8 @@ export default function GeneralSettingsForm({ className = '', pengaturan = {}, t
                                 value={data.nama_sekolah}
                                 onChange={(e) => setData('nama_sekolah', e.target.value)}
                                 required
-                                aria-describedby="namaHelp"
                             />
-                            <p id="namaHelp" className="text-xs text-gray-500 mt-1">Nama resmi sekolah yang akan tampil di laporan dan header aplikasi.</p>
+                            <p className="text-xs text-gray-500 mt-1">Nama resmi sekolah yang akan tampil di laporan dan header aplikasi.</p>
                             <InputError message={errors.nama_sekolah} className="mt-2" />
                         </div>
 
@@ -118,7 +98,7 @@ export default function GeneralSettingsForm({ className = '', pengaturan = {}, t
                                 <div className="p-2 rounded-md bg-gray-50 text-gray-600"><MapPin className="w-5 h-5" /></div>
                                 <textarea
                                     id="alamat_sekolah"
-                                    className="block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm p-2"
+                                    className="block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm p-2 text-sm"
                                     value={data.alamat_sekolah}
                                     onChange={(e) => setData('alamat_sekolah', e.target.value)}
                                     rows={4}
@@ -135,7 +115,7 @@ export default function GeneralSettingsForm({ className = '', pengaturan = {}, t
                                 <div className="mt-1 relative">
                                     <select
                                         id="tahun_ajaran_aktif"
-                                        className="block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm p-2 pr-8"
+                                        className="block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm p-2 pr-8 text-sm"
                                         value={data.tahun_ajaran_aktif}
                                         onChange={(e) => setData('tahun_ajaran_aktif', e.target.value)}
                                         required
@@ -145,7 +125,7 @@ export default function GeneralSettingsForm({ className = '', pengaturan = {}, t
                                             <option key={ta.id_tahun_ajaran} value={ta.tahun_ajaran}>{ta.tahun_ajaran}</option>
                                         ))}
                                     </select>
-                                    <div className="absolute right-2 top-2 text-gray-400"><Calendar className="w-4 h-4" /></div>
+                                    <div className="absolute right-2 top-2.5 text-gray-400 pointer-events-none"><Calendar className="w-4 h-4" /></div>
                                 </div>
                                 <InputError message={errors.tahun_ajaran_aktif} className="mt-2" />
                             </div>
@@ -155,7 +135,7 @@ export default function GeneralSettingsForm({ className = '', pengaturan = {}, t
                                 <div className="mt-1 relative">
                                     <select
                                         id="semester_aktif"
-                                        className="block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm p-2 pr-8"
+                                        className="block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm p-2 pr-8 text-sm"
                                         value={data.semester_aktif}
                                         onChange={(e) => setData('semester_aktif', e.target.value)}
                                         required
@@ -164,7 +144,7 @@ export default function GeneralSettingsForm({ className = '', pengaturan = {}, t
                                         <option value="Ganjil">Ganjil</option>
                                         <option value="Genap">Genap</option>
                                     </select>
-                                    <div className="absolute right-2 top-2 text-gray-400"><BookOpen className="w-4 h-4" /></div>
+                                    <div className="absolute right-2 top-2.5 text-gray-400 pointer-events-none"><BookOpen className="w-4 h-4" /></div>
                                 </div>
                                 <InputError message={errors.semester_aktif} className="mt-2" />
                             </div>
@@ -191,17 +171,16 @@ export default function GeneralSettingsForm({ className = '', pengaturan = {}, t
                             <div className="mt-2 flex items-center justify-center">
                                 <div className="w-36 h-36 rounded-md border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden">
                                     {logoPreview ? (
-                                        // eslint-disable-next-line @next/next/no-img-element
                                         <img src={logoPreview} alt="Logo Sekolah" className="object-contain w-full h-full" />
                                     ) : (
-                                        <div className="text-gray-400">Preview Logo</div>
+                                        <div className="text-gray-400 text-sm">Preview Logo</div>
                                     )}
                                 </div>
                             </div>
 
                             <div className="mt-3">
                                 <input id="logo" name="logo" type="file" accept="image/*" onChange={handleLogoChange} className="text-sm text-gray-500" />
-                                <p id="logoHelp" className="text-xs text-gray-400 mt-1">Ukuran maksimal direkomendasikan 2MB. Hanya preview — file akan dikirim saat submit jika endpoint menerima file.</p>
+                                <p className="text-xs text-gray-400 mt-1">Ukuran maksimal 2MB. Hanya gambar format JPG, JPEG, PNG.</p>
                             </div>
                         </div>
 

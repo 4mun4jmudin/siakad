@@ -12,13 +12,19 @@ class PenilaianMapel extends Model
 
     protected $fillable = [
         'id_siswa','id_kelas','id_mapel','id_tahun_ajaran','semester',
-        'nilai_akhir','predikat','tuntas','catatan',
+        'nilai_akhir','predikat','tuntas','catatan','status_kunci',
     ];
 
     protected $casts = [
-        'nilai_akhir' => 'decimal:2',
-        'tuntas'      => 'boolean',
+        'nilai_akhir'  => 'decimal:2',
+        'tuntas'       => 'boolean',
+        'status_kunci' => 'boolean',
     ];
+
+    public function isLocked(): bool
+    {
+        return $this->status_kunci;
+    }
 
     public function siswa(){ return $this->belongsTo(Siswa::class,'id_siswa','id_siswa'); }
     public function kelas(){ return $this->belongsTo(Kelas::class,'id_kelas','id_kelas'); }

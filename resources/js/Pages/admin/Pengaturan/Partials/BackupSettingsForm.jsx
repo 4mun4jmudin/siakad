@@ -1,56 +1,65 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from '@/utils/toast';
 import { useForm } from '@inertiajs/react';
+import axios from 'axios';
 import PrimaryButton from '@/Components/PrimaryButton';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
 import Checkbox from '@/Components/Checkbox';
 import DangerButton from '@/Components/DangerButton';
-import { RefreshCw, Database, Clock, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { RefreshCw, Database, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
 
-// Full BackupSettingsForm with listing backups and restore support.
-// NOTE: Adjust route name constants below to match your routes if they differ.
-const BACKUP_SETTINGS_ROUTE = 'admin.pengaturan.update-backup'; // put/patch route to save backup settings
+const BACKUP_SETTINGS_ROUTE = 'admin.pengaturan.update-backup'; 
 const LIST_BACKUPS_ROUTE = 'admin.maintenance.backups';
 const MANUAL_BACKUP_ROUTE = 'admin.maintenance.backup-manual';
 const RESTORE_ROUTE = 'admin.maintenance.restore';
 
-function getCsrfToken() {
-  return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-}
-
 async function postJson(url, body = {}) {
-  const res = await fetch(route(url), {
-    method: 'POST',
-    credentials: 'same-origin',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'X-CSRF-TOKEN': getCsrfToken(),
-      'X-Requested-With': 'XMLHttpRequest',
-    },
-    body: JSON.stringify(body),
-  });
-  const payload = await res.json().catch(() => null);
-  return { ok: res.ok, status: res.status, payload };
+  try {
+    const res = await axios.post(route(url), body, {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      }
+    });
+    return { ok: true, status: res.status, payload: res.data };
+  } catch (err) {
+    if (err.response && err.response.status === 419) {
+      window.location.reload();
+      return { ok: false, status: 419, payload: null };
+    }
+    return {
+      ok: false,
+      status: err.response ? err.response.status : 500,
+      payload: err.response ? err.response.data : null
+    };
+  }
 }
 
 async function getJson(url) {
-  const res = await fetch(route(url), {
-    method: 'GET',
-    credentials: 'same-origin',
-    headers: {
-      'Accept': 'application/json',
-      'X-Requested-With': 'XMLHttpRequest',
-    },
-  });
-  const payload = await res.json().catch(() => null);
-  return { ok: res.ok, status: res.status, payload };
+  try {
+    const res = await axios.get(route(url), {
+      headers: {
+        'Accept': 'application/json',
+      }
+    });
+    return { ok: true, status: res.status, payload: res.data };
+  } catch (err) {
+    if (err.response && err.response.status === 419) {
+      window.location.reload();
+      return { ok: false, status: 419, payload: null };
+    }
+    return {
+      ok: false,
+      status: err.response ? err.response.status : 500,
+      payload: err.response ? err.response.data : null
+    };
+  }
 }
 
 export default function BackupSettingsForm({ className = '', pengaturan = {} }) {
-  const { data, setData, put, post, processing, errors, recentlySuccessful } = useForm({
+  const { data, setData, put, processing, errors, recentlySuccessful } = useForm({
     backup_auto_enabled: !!pengaturan.backup_auto_enabled,
     backup_time: pengaturan.backup_time || '',
     backup_retention_days: Number(pengaturan.backup_retention_days ?? 30),
@@ -58,17 +67,9 @@ export default function BackupSettingsForm({ className = '', pengaturan = {} }) 
 
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
-   // { type: 'success'|'error', message }
   const [lastBackup, setLastBackup] = useState(pengaturan.last_backup || null);
   const [availableBackups, setAvailableBackups] = useState([]);
   const [selectedBackup, setSelectedBackup] = useState('');
-
-  useEffect(() => {
-    if (toast) {
-      const t = setTimeout(() => setToast(null), 5000);
-      return () => clearTimeout(t);
-    }
-  }, [toast]);
 
   useEffect(() => {
     fetchBackups();
@@ -78,13 +79,9 @@ export default function BackupSettingsForm({ className = '', pengaturan = {} }) 
     const { ok, payload } = await getJson(LIST_BACKUPS_ROUTE);
     if (ok && payload && payload.backups) {
       setAvailableBackups(payload.backups);
-      // if none selected, pick the most recent
       if (!selectedBackup && payload.backups.length > 0) {
         setSelectedBackup(payload.backups[0].path);
       }
-    } else {
-      // Optionally show a toast if listing fails
-      // toast.error('Gagal mengambil daftar backup.');
     }
   };
 
@@ -102,15 +99,49 @@ export default function BackupSettingsForm({ className = '', pengaturan = {} }) 
     if (isBackingUp) return;
     setIsBackingUp(true);
 
-    // Try to use Inertia's post if you prefer, but here we use fetch helper to receive JSON directly
     const { ok, payload } = await postJson(MANUAL_BACKUP_ROUTE, {});
-    setIsBackingUp(false);
 
     if (ok && payload && payload.success) {
-      toast.success(payload.message || 'Backup berhasil.');
+      toast.success(payload.message || 'Backup berhasil dipicu.');
       if (payload.last_backup) setLastBackup(payload.last_backup);
-      fetchBackups();
+      
+      if (payload.async) {
+        // Start polling dynamically to wait for the decoupled zip generation to finish
+        let attempts = 0;
+        const maxAttempts = 15; // 45 seconds total
+        
+        const interval = setInterval(async () => {
+          attempts++;
+          const listRes = await getJson(LIST_BACKUPS_ROUTE);
+          if (listRes.ok && listRes.payload && listRes.payload.backups) {
+            const hasNewFile = listRes.payload.backups.length > 0 && 
+              (!availableBackups.length || listRes.payload.backups[0].name !== availableBackups[0]?.name);
+            
+            setAvailableBackups(listRes.payload.backups);
+            if (listRes.payload.backups.length > 0) {
+              setSelectedBackup(listRes.payload.backups[0].path);
+            }
+            
+            if (hasNewFile || attempts >= maxAttempts) {
+              clearInterval(interval);
+              setIsBackingUp(false);
+              if (hasNewFile) {
+                toast.success('File backup baru berhasil dideteksi dan diperbarui!');
+              } else {
+                toast.error('Batas waktu polling habis. Silakan periksa log server jika backup belum muncul.');
+              }
+            }
+          } else {
+            clearInterval(interval);
+            setIsBackingUp(false);
+          }
+        }, 3000);
+      } else {
+        setIsBackingUp(false);
+        fetchBackups();
+      }
     } else {
+      setIsBackingUp(false);
       toast.error((payload && payload.message) || 'Backup gagal. Periksa log server.');
     }
   };
@@ -132,7 +163,6 @@ export default function BackupSettingsForm({ className = '', pengaturan = {} }) 
 
     if (ok && payload && payload.success) {
       toast.success(payload.message || 'Restore selesai.');
-      // Optionally refresh state after restore
       fetchBackups();
     } else {
       const msg = (payload && payload.message) || 'Restore gagal. Periksa log server.';
@@ -153,9 +183,6 @@ export default function BackupSettingsForm({ className = '', pengaturan = {} }) 
         </h2>
         <p className="mt-1 text-sm text-gray-600">Atur jadwal backup otomatis dan kelola backup / restore manual.</p>
       </header>
-
-      {/* Toast */}
-      
 
       <form onSubmit={submit} className="mt-6 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -280,7 +307,7 @@ export default function BackupSettingsForm({ className = '', pengaturan = {} }) 
                   <select
                     value={selectedBackup}
                     onChange={(e) => setSelectedBackup(e.target.value)}
-                    className="mt-1 block w-full border-gray-300 rounded-md p-2"
+                    className="mt-1 block w-full border-gray-300 rounded-md p-2 text-sm"
                   >
                     <option value="">-- Pilih backup --</option>
                     {availableBackups.map((b) => (
@@ -307,16 +334,16 @@ export default function BackupSettingsForm({ className = '', pengaturan = {} }) 
 
               <div className="mt-4 bg-amber-50 border border-amber-100 rounded-md p-3">
                 <div className="flex items-start gap-3">
-                  <div className="text-amber-600"><AlertTriangle className="w-5 h-5" /></div>
+                  <div className="text-amber-600"><AlertTriangle className="w-5 h-5 flex-shrink-0" /></div>
                   <div>
                     <p className="font-medium text-amber-800">Peringatan</p>
-                    <p className="text-sm text-amber-700">Operasi restore akan menimpa data saat ini. Lakukan saat jam tidak sibuk.</p>
+                    <p className="text-xs text-amber-700">Operasi restore akan menimpa data saat ini. Lakukan saat jam tidak sibuk.</p>
                   </div>
                 </div>
               </div>
 
               <div className="mt-2 text-xs text-gray-500">
-                Catatan: restore otomatis mungkin belum diimplementasikan pada server. Jika backend mengembalikan pesan bahwa restore belum tersedia, lakukan restore manual melalui admin/SSH.
+                Catatan: restore akan memulihkan data langsung melalui koneksi database internal (PDO).
               </div>
             </div>
           </div>

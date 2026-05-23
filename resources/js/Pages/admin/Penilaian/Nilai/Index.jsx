@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Head, Link, router } from "@inertiajs/react";
 import { Card, CardContent } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
-import AdminPenilaianLayout from "@/Components/layout/AdminPenilaianLayout";
+import AdminLayout from "@/Layouts/AdminLayout";
 
 function NilaiIndex({ options = {}, list = [] }) {
   const [f, setF] = useState({
@@ -22,8 +22,12 @@ function NilaiIndex({ options = {}, list = [] }) {
   };
 
   return (
-    <div className="space-y-4">
-      <Head title="Daftar Nilai Kelas/Mapel" />
+    <div className="space-y-6">
+      <Head title="Kelola Nilai" />
+      <div>
+        <h1 className="text-3xl font-bold text-gray-800">Kelola Nilai</h1>
+        <p className="text-gray-500 text-sm mt-1">Daftar Nilai Siswa per Kelas dan Mata Pelajaran</p>
+      </div>
 
       <Card>
         <CardContent>
@@ -79,6 +83,7 @@ function NilaiIndex({ options = {}, list = [] }) {
                   <Th text="Nilai Akhir" center />
                   <Th text="Predikat" center />
                   <Th text="Tuntas" center />
+                  <Th text="Status" center />
                   <Th text="Aksi" />
                 </tr>
               </thead>
@@ -91,10 +96,21 @@ function NilaiIndex({ options = {}, list = [] }) {
                       <Td text={fmt2(r.nilai_akhir)} center />
                       <Td text={r.predikat || "—"} center />
                       <Td text={r.tuntas ? "Ya" : "Tidak"} center />
+                      <td className="p-2 text-center">
+                        {r.status_kunci ? (
+                          <span className="px-2 py-0.5 text-xs bg-red-100 text-red-800 rounded font-medium">
+                            🔒 Dikunci
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded font-medium">
+                            🔓 Aktif
+                          </span>
+                        )}
+                      </td>
                       <td className="p-2">
                         <Link
                           href={route("admin.penilaian.nilai.detail.show", r.id_penilaian)}
-                          className="px-2 py-1 text-xs bg-indigo-600 text-white rounded"
+                          className="px-2 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700"
                         >
                           Detail
                         </Link>
@@ -102,7 +118,7 @@ function NilaiIndex({ options = {}, list = [] }) {
                     </tr>
                   ))
                 ) : (
-                  <tr><td className="p-4 text-gray-500" colSpan={6}>Belum ada data.</td></tr>
+                  <tr><td className="p-4 text-gray-500" colSpan={7}>Belum ada data.</td></tr>
                 )}
               </tbody>
             </table>
@@ -115,7 +131,7 @@ function NilaiIndex({ options = {}, list = [] }) {
 
 /* set layout */
 NilaiIndex.layout = (page) => (
-  <AdminPenilaianLayout title="Daftar Nilai Kelas/Mapel">{page}</AdminPenilaianLayout>
+  <AdminLayout user={page.props.auth.user} header="Kelola Nilai">{page}</AdminLayout>
 );
 
 export default NilaiIndex;

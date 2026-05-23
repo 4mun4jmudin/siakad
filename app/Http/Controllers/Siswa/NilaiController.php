@@ -40,12 +40,16 @@ class NilaiController extends Controller
         $selectedTahunAjaranId = $request->input('id_tahun_ajaran', $tahunAjaranAktif?->id_tahun_ajaran);
         $selectedSemester = $request->input('semester', $tahunAjaranAktif?->semester ?? 'Ganjil');
 
-        // Fetch grades for the student
+        // Fetch grades for the student with relation to component names
         $penilaian = PenilaianMapel::where('id_siswa', $siswa->id_siswa)
             ->where('id_tahun_ajaran', $selectedTahunAjaranId)
             ->where('semester', $selectedSemester)
-            ->with(['mapel', 'details', 'remedials'])
+            ->with(['mapel', 'details.komponenPenilaian', 'remedials'])
             ->get();
+
+        // Ambil pengaturan sistem untuk mengetahui status kunci global
+        $pengaturan = \App\Models\Pengaturan::first();
+        $isKunciJurnalGlobal = $pengaturan ? (bool)$pengaturan->is_kunci_jurnal : false;
 
         // Calculate some simple overview stats for student
         $totalMapel = $penilaian->count();
@@ -61,6 +65,7 @@ class NilaiController extends Controller
             'tahunAjarans' => $tahunAjarans,
             'selectedTahunAjaranId' => $selectedTahunAjaranId,
             'selectedSemester' => $selectedSemester,
+            'isKunciJurnalGlobal' => $isKunciJurnalGlobal,
             'stats' => [
                 'total_mapel' => $totalMapel,
                 'mapel_tuntas' => $mapelTuntas,

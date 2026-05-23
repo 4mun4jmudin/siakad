@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { toast } from '@/utils/toast';
 import { useForm } from '@inertiajs/react';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -7,7 +7,7 @@ import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
 import ToggleSwitch from '@/Components/ToggleSwitch';
 import StatCard from '@/Pages/admin/Laporan/Partials/StatCard';
-import { ShieldCheck, Users, Key, Hash, Clock, Save, CheckCircle, XCircle } from 'lucide-react';
+import { ShieldCheck, Users, Key, Hash, Clock, Save, CheckCircle } from 'lucide-react';
 
 export default function UserSettingsForm({ className = '', pengaturan = {}, stats = {} }) {
   const { data, setData, put, processing, errors, recentlySuccessful } = useForm({
@@ -18,15 +18,6 @@ export default function UserSettingsForm({ className = '', pengaturan = {}, stat
     password_expiry_days: pengaturan.password_expiry_days ?? 90,
     auto_create_user: !!pengaturan.auto_create_user,
   });
-
-   // { type: 'success'|'error', message }
-
-  useEffect(() => {
-    if (toast) {
-      const t = setTimeout(() => setToast(null), 5000);
-      return () => clearTimeout(t);
-    }
-  }, [toast]);
 
   const submit = (e) => {
     e.preventDefault();
@@ -39,7 +30,6 @@ export default function UserSettingsForm({ className = '', pengaturan = {}, stat
 
   const classNames = (...c) => c.filter(Boolean).join(' ');
 
-  // Simple password strength hint derived from current policy
   const passwordStrength = useMemo(() => {
     const score = [
       Number(data.password_min_length) >= 8,
@@ -84,9 +74,6 @@ export default function UserSettingsForm({ className = '', pengaturan = {}, stat
             </PrimaryButton>
           </div>
         </header>
-
-        {/* Toast Notification */}
-        
 
         <form onSubmit={submit} className="mt-6 space-y-6">
           {/* Statistik */}
@@ -269,7 +256,6 @@ export default function UserSettingsForm({ className = '', pengaturan = {}, stat
   );
 }
 
-// Small fallback icon component used in StatCard when an icon is not passed
 function UserPlusIconFallback() {
   return (
     <svg className="w-5 h-5 text-indigo-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>

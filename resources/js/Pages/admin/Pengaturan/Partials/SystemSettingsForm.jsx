@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { toast } from '@/utils/toast';
 import { useForm } from '@inertiajs/react';
+import axios from 'axios';
 import PrimaryButton from '@/Components/PrimaryButton';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
 import ToggleSwitch from '@/Components/ToggleSwitch';
-import { Info, Bell, Mail, Server, Database, RefreshCw, Cog, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { Info, Bell, Mail, Server, Database, RefreshCw, Cog, AlertTriangle } from 'lucide-react';
 
 export default function SystemSettingsForm({ className = '', pengaturan = {} }) {
     const { data, setData, put, processing, errors, recentlySuccessful } = useForm({
@@ -23,58 +24,39 @@ export default function SystemSettingsForm({ className = '', pengaturan = {} }) 
         is_kunci_jurnal: !!pengaturan.is_kunci_jurnal,
     });
 
-     // { type: 'success'|'error', message }
-
-    useEffect(() => {
-        if (toast) {
-            const t = setTimeout(() => setToast(null), 5000);
-            return () => clearTimeout(t);
-        }
-    }, [toast]);
-
     const submit = (e) => {
         e.preventDefault();
-        put(route('admin.pengaturan.system.update'), {
+        put(route('admin.pengaturan.update-system'), {
             preserveScroll: true,
             onSuccess: () => toast.success('Pengaturan Sistem berhasil diperbarui.'),
             onError: () => toast.error('Gagal memperbarui pengaturan sistem. Cek input dan coba lagi.'),
         });
     };
 
-
     const confirmAndCall = async (title, routeName) => {
         if (!confirm(`Yakin ingin ${title}? Operasi ini mungkin mempengaruhi kinerja sistem.`)) return;
 
         try {
-            const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-
-            const res = await fetch(route(routeName), {
-                method: 'POST',
+            const res = await axios.post(route(routeName), {}, {
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': csrf || '',
                     'Accept': 'application/json',
                     'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({}), // kosong, tapi body agar beberapa server tidak menolak
-                credentials: 'same-origin',
+                }
             });
 
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({ message: 'Response not JSON' }));
-                toast.error(err.message || 'Terjadi error saat menjalankan operasi.');
-                return;
-            }
-
-            const payload = await res.json();
-            if (payload.success) {
-                setToast({ type: 'success', message: payload.message || `${title} berhasil.` });
+            if (res.data && res.data.success) {
+                toast.success(res.data.message || `${title} berhasil.`);
             } else {
-                setToast({ type: 'error', message: payload.message || `${title} gagal.` });
+                toast.error(res.data.message || `${title} gagal.`);
             }
         } catch (err) {
             console.error(err);
-            setToast({ type: 'error', message: `${title} gagal. Cek log server.` });
+            if (err.response && err.response.status === 419) {
+                window.location.reload();
+                return;
+            }
+            const msg = err.response?.data?.message || `${title} gagal. Cek log server.`;
+            toast.error(msg);
         }
     };
 
@@ -86,9 +68,6 @@ export default function SystemSettingsForm({ className = '', pengaturan = {} }) 
                 </h2>
                 <p className="mt-1 text-sm text-gray-600">Detail sistem, notifikasi, dan alat pemeliharaan.</p>
             </header>
-
-            {/* Toast Notification */}
-            
 
             <form onSubmit={submit} className="space-y-6">
                 {/* Informasi Sistem */}
@@ -143,7 +122,6 @@ export default function SystemSettingsForm({ className = '', pengaturan = {} }) 
                             </div>
                         </div>
 
-                        {/* big toggle -- mimic screenshot with larger switch */}
                         <div className="flex items-center gap-3">
                             <span className="hidden sm:inline text-sm text-gray-500">Aktifkan Notifikasi</span>
                             <div>

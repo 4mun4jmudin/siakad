@@ -228,6 +228,13 @@ export default function AdminLayout({ user, header, children }) {
             route().current("admin.absensi-siswa.bulanan.*") ||
             route().current("admin.surat-izin.*");
 
+        const penilaianActive =
+            route().current("admin.penilaian.dashboard") ||
+            route().current("admin.penilaian.bobot.*") ||
+            route().current("admin.penilaian.nilai.*") ||
+            route().current("admin.rapor.*") ||
+            route().current("admin.remedial.*");
+
         return (
             <div className="flex flex-col h-full">
                 <SidebarHeader isCollapsed={!isSidebarOpen && !isMobile} />
@@ -391,6 +398,57 @@ export default function AdminLayout({ user, header, children }) {
                                 </NavLink>
                             </li>
                         </CollapsibleNavGroup>
+
+                        {/* Penilaian & Rapor */}
+                        {!isAbsensiMode && (
+                            <CollapsibleNavGroup
+                                title="Penilaian & Rapor"
+                                icon={<ChartBarIcon className="w-6 h-6" />}
+                                isCollapsed={!isSidebarOpen && !isMobile}
+                                active={penilaianActive}
+                            >
+                                <li>
+                                    <NavLink
+                                        href={route("admin.penilaian.dashboard")}
+                                        active={route().current("admin.penilaian.dashboard")}
+                                        isCollapsed={false}
+                                        label="Dashboard Penilaian"
+                                    >
+                                        <ChartPieIcon className="w-5 h-5" />
+                                    </NavLink>
+                                </li>
+                                <li>
+                                    <NavLink
+                                        href={route("admin.penilaian.bobot.index")}
+                                        active={route().current("admin.penilaian.bobot.*")}
+                                        isCollapsed={false}
+                                        label="Bobot Nilai"
+                                    >
+                                        <RectangleStackIcon className="w-5 h-5" />
+                                    </NavLink>
+                                </li>
+                                <li>
+                                    <NavLink
+                                        href={route("admin.penilaian.nilai.index")}
+                                        active={route().current("admin.penilaian.nilai.*")}
+                                        isCollapsed={false}
+                                        label="Kelola Nilai"
+                                    >
+                                        <ClipboardDocumentListIcon className="w-5 h-5" />
+                                    </NavLink>
+                                </li>
+                                <li>
+                                    <NavLink
+                                        href={route("admin.rapor.index")}
+                                        active={route().current("admin.rapor.*")}
+                                        isCollapsed={false}
+                                        label="Cetak Rapor"
+                                    >
+                                        <DocumentTextIcon className="w-5 h-5" />
+                                    </NavLink>
+                                </li>
+                            </CollapsibleNavGroup>
+                        )}
 
                         {/* Jadwal, Jurnal */}
                         <MenuSectionLabel isCollapsed={!isSidebarOpen && !isMobile}>Jadwal & Jurnal</MenuSectionLabel>
