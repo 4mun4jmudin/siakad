@@ -163,12 +163,14 @@ export default function Index({ auth, gurus, stats, filters }) {
         });
     };
 
+    const [perPage, setPerPage] = useState(filters?.per_page || '10');
+
     const debouncedSearch = useMemo(
         () =>
-            debounce((value) => {
+            debounce((searchValue, perPageValue) => {
                 router.get(
                     route('admin.guru.index'),
-                    { search: value },
+                    { search: searchValue, per_page: perPageValue },
                     {
                         preserveState: true,
                         replace: true,
@@ -179,6 +181,16 @@ export default function Index({ auth, gurus, stats, filters }) {
             }, 300),
         []
     );
+
+    const handleSearchChange = (e) => {
+        debouncedSearch(e.target.value, perPage);
+    };
+
+    const handlePerPageChange = (e) => {
+        const val = e.target.value;
+        setPerPage(val);
+        debouncedSearch(filters?.search || '', val);
+    };
 
     useEffect(() => {
         return () => debouncedSearch.cancel();
@@ -313,19 +325,35 @@ export default function Index({ auth, gurus, stats, filters }) {
                                     <p className="mt-1 text-sm text-slate-500">
                                         Total hasil:{' '}
                                         <span className="font-semibold text-slate-700">
-                                            {gurus?.data?.length ?? 0}
+                                            {gurus?.total ?? 0}
                                         </span>
                                     </p>
                                 </div>
-                                <div className="relative w-full lg:w-[360px]">
-                                    <MagnifyingGlassIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                                    <input
-                                        type="text"
-                                        placeholder="Cari nama, NIP, atau akun login..."
-                                        defaultValue={filters?.search ?? ''}
-                                        onChange={(e) => debouncedSearch(e.target.value)}
-                                        className="w-full rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md py-3.5 pl-12 pr-4 text-sm text-slate-900 outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 focus:bg-white/90 shadow-inner"
-                                    />
+                                <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+                                    <div className="relative flex items-center">
+                                        <span className="text-sm text-slate-500 mr-2 whitespace-nowrap">Tampilkan:</span>
+                                        <select
+                                            value={perPage}
+                                            onChange={handlePerPageChange}
+                                            className="rounded-xl border border-white/40 bg-white/60 backdrop-blur-md py-2 pl-3 pr-8 text-sm text-slate-700 outline-none transition-all focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 cursor-pointer"
+                                        >
+                                            <option value="10">10 baris</option>
+                                            <option value="20">20 baris</option>
+                                            <option value="50">50 baris</option>
+                                            <option value="100">100 baris</option>
+                                            <option value="all">Semua Data</option>
+                                        </select>
+                                    </div>
+                                    <div className="relative w-full sm:w-64">
+                                        <MagnifyingGlassIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                                        <input
+                                            type="text"
+                                            placeholder="Cari nama, NIP..."
+                                            defaultValue={filters?.search ?? ''}
+                                            onChange={handleSearchChange}
+                                            className="w-full rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md py-2.5 pl-12 pr-4 text-sm text-slate-900 outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 focus:bg-white/90 shadow-inner"
+                                        />
+                                    </div>
                                 </div>
                             </div>
 

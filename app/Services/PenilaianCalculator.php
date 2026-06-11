@@ -22,16 +22,10 @@ class PenilaianCalculator
             'semester'        => $pen->semester,
         ])->get()->pluck('bobot', 'id_komponen')->toArray();
 
-        // Standard default weights mapping if no weights are configured in DB at all
-        $defaultWeights = [
-            'Tugas' => 30.0,
-            'UTS'   => 30.0,
-            'UAS'   => 40.0,
-        ];
-
         $w = [];
         foreach ($components as $comp) {
-            $w[$comp->id_komponen] = (float)($weights[$comp->id_komponen] ?? ($defaultWeights[$comp->nama] ?? 0.0));
+            // Ambil bobot custom jika ada, jika tidak fallback ke bobot_default dari tabel komponen
+            $w[$comp->id_komponen] = (float)($weights[$comp->id_komponen] ?? ($comp->bobot_default ?? 0.0));
         }
 
         // If the sum of all configured weights is 0, distribute equally
@@ -43,27 +37,7 @@ class PenilaianCalculator
         }
 
         // 3. Retrieve all grade details for this header, grouped by id_komponen
-        // If id_komponen is null, map it by matching the string 'komponen' with the component names in DB
-        $details = $pen->details()->get();
-        
-        $compNames = $components->pluck('id_komponen', 'nama')->toArray();
-        foreach ($details as $d) {
-            if (is_null($d->id_komponen) && !empty($d->komponen)) {
-                // Try mapping old string
-                $mappedName = $d->komponen;
-                if ($mappedName === 'PTS') $mappedName = 'UTS';
-                if ($mappedName === 'PAS') $mappedName = 'UAS';
-                if ($mappedName === 'UH') $mappedName = 'Tugas';
-                
-                if (isset($compNames[$mappedName])) {
-                    $d->id_komponen = $compNames[$mappedName];
-                    $d->save();
-                }
-            }
-        }
-
-        // Re-fetch details after potential mapping update
-        $groupedDetails = $pen->details()->whereNotNull('id_komponen')->get()->groupBy('id_komponen');
+        $groupedDetails = $pen->details()->get()->groupBy('id_komponen');
         
         $avg = [];
         foreach ($w as $idKomp => $wb) {

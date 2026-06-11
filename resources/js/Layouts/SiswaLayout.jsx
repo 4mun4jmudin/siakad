@@ -58,16 +58,24 @@ function NavLink({ href, active, children, label, method, as }) {
   );
 }
 
+
+function normalizeLogoUrl(url) {
+  if (!url) return null;
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/')) return url;
+  return /storage/;
+}
+
 export default function SiswaLayout({ children, header }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // Ambil data app & user
-  const { auth, app } = usePage().props; 
+  const { auth, app, pengaturan } = usePage().props; 
   const user = auth?.user;
 
   // Data Sekolah & Logo
-  const schoolName = app?.nama_sekolah || "Sistem Absensi";
-  const logoUrl = app?.logo_url || "https://ui-avatars.com/api/?name=S&background=0ea5e9&color=fff";
+  const schoolName = pengaturan?.nama_sekolah || "Sistem Absensi";
+  const rawLogo = pengaturan?.logo_url || app?.logo_url;
+  const logoUrl = normalizeLogoUrl(rawLogo) || "https://ui-avatars.com/api/?name=S&background=0ea5e9&color=fff";
   const appLabel = "STUDENT PORTAL";
 
   const SidebarContent = () => (
@@ -266,9 +274,21 @@ export default function SiswaLayout({ children, header }) {
                 <Menu.Button className="-m-1.5 flex items-center p-1.5 transition hover:bg-slate-100 rounded-full pr-3 pl-2">
                   <span className="sr-only">Open user menu</span>
                   <div className="h-8 w-8 rounded-full bg-gradient-to-br from-sky-400 to-indigo-500 p-[2px]">
-                     <div className="h-full w-full rounded-full bg-white flex items-center justify-center">
-                        <UserCircleIcon className="h-6 w-6 text-slate-400" />
-                     </div>
+                     {user?.foto_profil ? (
+                        <img 
+                            src={`/storage-public/${user.foto_profil.replace(/^\/+/, '')}`} 
+                            alt={user?.nama_lengkap || 'Siswa'} 
+                            className="h-full w-full rounded-full object-cover bg-white" 
+                            onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.nama_lengkap || 'Siswa')}&background=0ea5e9&color=fff`;
+                            }}
+                        />
+                     ) : (
+                        <div className="h-full w-full rounded-full bg-white flex items-center justify-center">
+                           <UserCircleIcon className="h-6 w-6 text-slate-400" />
+                        </div>
+                     )}
                   </div>
                   <span className="hidden lg:flex lg:items-center">
                     <span className="ml-3 text-sm font-semibold leading-6 text-slate-700 max-w-[100px] truncate">
@@ -295,7 +315,7 @@ export default function SiswaLayout({ children, header }) {
                     <Menu.Item>
                       {({ active }) => (
                         <Link
-                          href={route("profile.edit")}
+                          href={route("siswa.akun.edit")}
                           className={`${active ? "bg-sky-50 text-sky-600" : "text-slate-700"} block px-4 py-2 text-sm font-medium transition-colors`}
                         >
                           Pengaturan Profil

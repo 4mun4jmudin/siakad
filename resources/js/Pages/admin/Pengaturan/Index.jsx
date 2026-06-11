@@ -7,7 +7,8 @@ import AbsensiSettingsForm from './Partials/AbsensiSettingsForm';
 import UserSettingsForm from './Partials/UserSettingsForm';
 import BackupSettingsForm from './Partials/BackupSettingsForm';
 import SystemSettingsForm from './Partials/SystemSettingsForm';
-import { Home, Clock, Users, Server, Database, ChevronLeft, ChevronRight } from 'lucide-react';
+import JadwalSettingsForm from './Partials/JadwalSettingsForm';
+import { Home, Clock, Users, Server, Database, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import CenterPopupNotice from "@/Components/CenterPopupNotice";
 
 
@@ -45,7 +46,7 @@ export default function Pengaturan({ auth, pengaturan = {}, tahun_ajaran = [], s
   useEffect(() => {
     const keys = (e) => {
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-        const order = ['umum', 'absensi', 'pengguna', 'sistem', 'backup'];
+        const order = ['umum', 'jadwal', 'absensi', 'pengguna', 'sistem', 'backup'];
         const idx = order.indexOf(activeTab);
         if (idx === -1) return;
         const next = e.key === 'ArrowLeft' ? order[(idx - 1 + order.length) % order.length] : order[(idx + 1) % order.length];
@@ -58,6 +59,7 @@ export default function Pengaturan({ auth, pengaturan = {}, tahun_ajaran = [], s
 
   const tabs = useMemo(() => ([
     { id: 'umum', label: 'Umum', icon: Home },
+    { id: 'jadwal', label: 'Jadwal', icon: Calendar },
     { id: 'absensi', label: 'Absensi', icon: Clock },
     { id: 'pengguna', label: 'Pengguna', icon: Users },
     { id: 'sistem', label: 'Sistem', icon: Server },
@@ -68,6 +70,8 @@ export default function Pengaturan({ auth, pengaturan = {}, tahun_ajaran = [], s
     switch (activeTab) {
       case 'umum':
         return <GeneralSettingsForm pengaturan={pengaturan} tahun_ajaran={tahun_ajaran} className="" />;
+      case 'jadwal':
+        return <JadwalSettingsForm pengaturan={pengaturan} className="" />;
       case 'absensi':
         return <AbsensiSettingsForm pengaturan={pengaturan} className="" />;
       case 'pengguna':

@@ -49,26 +49,54 @@ class Pengaturan extends Model
         'lokasi_sekolah_latitude',
         'lokasi_sekolah_longitude',
         'radius_absen_meters',
-        'radius_absen_meters',
+        'jadwal_hari',
+        'jadwal_waktu',
         'is_kunci_absensi',
         'is_kunci_jurnal',
     ];
 
     /**
-     * Atribut yang harus diubah ke tipe data tertentu.
+     * Tipe data yang dicasting.
      *
      * @var array
      */
     protected $casts = [
+        'is_kunci_absensi' => 'boolean',
+        'is_kunci_jurnal' => 'boolean',
         'login_barcode_enabled' => 'boolean',
         'login_fingerprint_enabled' => 'boolean',
         'login_manual_enabled' => 'boolean',
         'absensi_manual_guru_enabled' => 'boolean',
         'password_require_upper' => 'boolean',
         'auto_create_user' => 'boolean',
-        'auto_create_user' => 'boolean',
         'backup_auto_enabled' => 'boolean',
-        'is_kunci_absensi' => 'boolean',
-        'is_kunci_jurnal' => 'boolean',
+        'jadwal_hari' => 'array',
+        'jadwal_waktu' => 'array',
     ];
+
+    /**
+     * Accessor untuk jadwal_hari fallback
+     */
+    public function getJadwalHariAttribute($value)
+    {
+        $decoded = json_decode($value, true);
+        return $decoded ?: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    }
+
+    /**
+     * Accessor untuk jadwal_waktu fallback
+     */
+    public function getJadwalWaktuAttribute($value)
+    {
+        $decoded = json_decode($value, true);
+        return $decoded ?: [
+            ["id" => "duha", "type" => "istirahat", "label" => "07:00 - 08:00", "keterangan" => "Wajib Shalat Duha", "start" => "07:00", "end" => "08:00"],
+            ["id" => "1", "type" => "pelajaran", "label" => "08:00 - 09:30", "start" => "08:00", "end" => "09:30"],
+            ["id" => "2", "type" => "pelajaran", "label" => "09:30 - 11:00", "start" => "09:30", "end" => "11:00"],
+            ["id" => "ist1", "type" => "istirahat", "label" => "11:00 - 11:15", "keterangan" => "Istirahat", "start" => "11:00", "end" => "11:15"],
+            ["id" => "3", "type" => "pelajaran", "label" => "11:15 - 12:00", "start" => "11:15", "end" => "12:00"],
+            ["id" => "ist2", "type" => "istirahat", "label" => "12:00 - 13:00", "keterangan" => "Istirahat & Shalat Dzuhur", "start" => "12:00", "end" => "13:00"],
+            ["id" => "4", "type" => "pelajaran", "label" => "13:00 - 14:30", "start" => "13:00", "end" => "14:30"]
+        ];
+    }
 }

@@ -51,6 +51,7 @@ const StatusBadge = ({ status }) => {
 export default function Index({ auth, stats, mataPelajaran, guruPengampuList, filters }) {
     const { flash } = usePage().props;
     const [confirmingDeletion, setConfirmingDeletion] = useState(false);
+    const [confirmingAutoAssign, setConfirmingAutoAssign] = useState(false);
     const [mapelToDelete, setMapelToDelete] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -69,14 +70,38 @@ export default function Index({ auth, stats, mataPelajaran, guruPengampuList, fi
         setMapelToDelete(null);
     };
 
-    const deleteMapel = (e) => {
-        e.preventDefault();
-        if (mapelToDelete) {
-            router.delete(route('admin.mata-pelajaran.destroy', mapelToDelete.id_mapel), {
-                onSuccess: () => closeDeleteModal(),
-                preserveScroll: true,
-            });
-        }
+    const handleDelete = () => {
+        if (!mapelToDelete) return;
+        router.delete(route('admin.mata-pelajaran.destroy', mapelToDelete.id_mapel), {
+            onSuccess: () => {
+                closeDeleteModal();
+                toast.success('Mata pelajaran berhasil dihapus');
+            },
+            preserveScroll: true
+        });
+    };
+
+    const openAutoAssignModal = () => {
+        setConfirmingAutoAssign(true);
+    };
+
+    const closeAutoAssignModal = () => {
+        setConfirmingAutoAssign(false);
+    };
+
+    const handleAutoAssign = () => {
+        router.post(route('admin.mata-pelajaran.auto-assign-guru'), {}, {
+            onStart: () => setIsLoading(true),
+            onSuccess: () => {
+                closeAutoAssignModal();
+                toast.success('Auto-Assign berhasil dijalankan');
+            },
+            onError: () => {
+                toast.error('Gagal menjalankan Auto-Assign');
+            },
+            onFinish: () => setIsLoading(false),
+            preserveScroll: true
+        });
     };
 
     const handleSearch = debounce((e) => {
@@ -101,12 +126,22 @@ export default function Index({ auth, stats, mataPelajaran, guruPengampuList, fi
                             <h1 className="text-3xl font-bold tracking-tight text-slate-900">Mata Pelajaran</h1>
                             <p className="text-sm text-slate-500 mt-1">Kelola kurikulum dan daftar mata pelajaran sekolah</p>
                         </div>
-                        <Link href={route('admin.mata-pelajaran.create')}>
-                            <button className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition-all hover:from-blue-700 hover:to-indigo-700 hover:scale-105 active:scale-95 w-full sm:w-auto">
-                                <PlusIcon className="h-5 w-5 mr-2" />
-                                Tambah Mata Pelajaran
+                        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                            <button
+                                onClick={openAutoAssignModal}
+                                disabled={isLoading}
+                                className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 transition-all hover:from-emerald-600 hover:to-teal-700 hover:scale-105 active:scale-95 w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <AcademicCapIcon className="h-5 w-5 mr-2" />
+                                Auto-Assign Guru
                             </button>
-                        </Link>
+                            <Link href={route('admin.mata-pelajaran.create')} className="w-full sm:w-auto">
+                                <button className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition-all hover:from-blue-700 hover:to-indigo-700 hover:scale-105 active:scale-95 w-full sm:w-auto">
+                                    <PlusIcon className="h-5 w-5 mr-2" />
+                                    Tambah Mata Pelajaran
+                                </button>
+                            </Link>
+                        </div>
                     </div>
 
                     {/* Kartu Statistik */}
@@ -124,20 +159,43 @@ export default function Index({ auth, stats, mataPelajaran, guruPengampuList, fi
                                 <h2 className="text-xl font-bold text-slate-800">Daftar Mata Pelajaran</h2>
                                 <p className="text-sm text-slate-500 mt-1">Daftar kurikulum mata pelajaran yang diajarkan</p>
                             </div>
-                            <div className="relative w-full sm:w-72">
-                                <input
-                                    type="text"
-                                    defaultValue={filters.search}
-                                    onChange={handleSearch}
-                                    placeholder="Cari mapel atau kode..."
-                                    className="w-full rounded-xl border border-slate-200 bg-white/80 py-2.5 pl-4 pr-10 text-sm shadow-sm outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                                />
-                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                                    {isLoading ? (
-                                        <svg className="h-4 w-4 animate-spin text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                    ) : (
-                                        <svg className="h-5 w-5 text-slate-400" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clipRule="evenodd" /></svg>
-                                    )}
+                            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                                <select
+                                    defaultValue={filters.per_page || 10}
+                                    onChange={(e) => {
+                                        router.get(route('admin.mata-pelajaran.index'), { search: filters.search, per_page: e.target.value }, {
+                                            preserveState: true,
+                                            replace: true,
+                                            onStart: () => setIsLoading(true),
+                                            onFinish: () => setIsLoading(false),
+                                        });
+                                    }}
+                                    className="rounded-xl border border-slate-200 bg-white/80 py-2.5 pl-4 pr-10 text-sm shadow-sm outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                                >
+                                    <option value="10">10 Data</option>
+                                    <option value="20">20 Data</option>
+                                    <option value="50">50 Data</option>
+                                    <option value="100">100 Data</option>
+                                    <option value="all">Semua Data</option>
+                                </select>
+                                <div className="relative w-full sm:w-72">
+                                    <input
+                                        type="text"
+                                        defaultValue={filters.search}
+                                        onChange={(e) => {
+                                            filters.search = e.target.value; // simpan secara lokal agar per_page tidak kehilangan search term
+                                            handleSearch(e);
+                                        }}
+                                        placeholder="Cari mapel atau kode..."
+                                        className="w-full rounded-xl border border-slate-200 bg-white/80 py-2.5 pl-4 pr-10 text-sm shadow-sm outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                                    />
+                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                                        {isLoading ? (
+                                            <svg className="h-4 w-4 animate-spin text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                        ) : (
+                                            <svg className="h-5 w-5 text-slate-400" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clipRule="evenodd" /></svg>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -242,7 +300,7 @@ export default function Index({ auth, stats, mataPelajaran, guruPengampuList, fi
             </div>
 
             <Modal show={confirmingDeletion} onClose={closeDeleteModal} maxWidth="md">
-                <form onSubmit={deleteMapel} className="p-8">
+                <form onSubmit={(e) => { e.preventDefault(); handleDelete(); }} className="p-8">
                     <div className="flex items-center justify-center mb-6">
                         <div className="bg-rose-100 p-4 rounded-full">
                             <TrashIcon className="h-10 w-10 text-rose-600" />
@@ -259,6 +317,32 @@ export default function Index({ auth, stats, mataPelajaran, guruPengampuList, fi
                         <DangerButton className="px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700">Ya, Hapus Data</DangerButton>
                     </div>
                 </form>
+            </Modal>
+
+            <Modal show={confirmingAutoAssign} onClose={closeAutoAssignModal} maxWidth="md">
+                <div className="p-8">
+                    <div className="flex items-center justify-center mb-6">
+                        <div className="bg-emerald-100 p-4 rounded-full">
+                            <AcademicCapIcon className="h-10 w-10 text-emerald-600" />
+                        </div>
+                    </div>
+                    <h2 className="text-xl font-bold text-slate-900 text-center mb-2">
+                        Jalankan Auto-Assign Guru?
+                    </h2>
+                    <p className="text-sm text-slate-500 text-center mb-8">
+                        Sistem akan secara otomatis membagikan mata pelajaran yang <strong>belum memiliki guru</strong> kepada semua guru yang berstatus aktif secara merata.
+                    </p>
+                    <div className="flex justify-center gap-3">
+                        <SecondaryButton type="button" onClick={closeAutoAssignModal} className="px-6 py-2.5 rounded-xl">Batal</SecondaryButton>
+                        <button 
+                            onClick={handleAutoAssign}
+                            disabled={isLoading}
+                            className="inline-flex items-center justify-center px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold hover:from-emerald-600 hover:to-teal-700 transition-all disabled:opacity-50"
+                        >
+                            {isLoading ? 'Memproses...' : 'Ya, Jalankan'}
+                        </button>
+                    </div>
+                </div>
             </Modal>
         </AdminLayout>
     );

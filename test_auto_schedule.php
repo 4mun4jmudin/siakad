@@ -1,0 +1,1 @@
+<?php require 'vendor/autoload.php'; $app = require_once 'bootstrap/app.php'; $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class); $kernel->bootstrap(); $controller = app()->make('App\Http\Controllers\Admin\JadwalInteractiveController'); print_r($controller->autoSchedule(request())->getContent());

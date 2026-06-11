@@ -18,6 +18,11 @@ export default function Edit({ auth, guru }) {
         nip: guru.nip || '',
         jenis_kelamin: guru.jenis_kelamin,
         status: guru.status,
+        tempat_lahir: guru.tempat_lahir || '',
+        tanggal_lahir: guru.tanggal_lahir || '',
+        agama: guru.agama || '',
+        no_telepon: guru.no_telepon || '',
+        alamat: guru.alamat || '',
         foto_profil: null,
         barcode_id: guru.barcode_id || '',
         sidik_jari_template: guru.sidik_jari_template || '',
@@ -248,6 +253,69 @@ export default function Edit({ auth, guru }) {
                                             <span className={`h-2.5 w-2.5 rounded-full ${data.status === 'Aktif' ? 'bg-green-500' : 'bg-gray-400'}`}></span>
                                         </div>
                                     </div>
+                                </div>
+                                
+                                {/* Tempat Lahir */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Tempat Lahir</label>
+                                    <input 
+                                        type="text" 
+                                        value={data.tempat_lahir} 
+                                        onChange={e => setData('tempat_lahir', e.target.value)}
+                                        className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                </div>
+
+                                {/* Tanggal Lahir */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal Lahir</label>
+                                    <input 
+                                        type="date" 
+                                        value={data.tanggal_lahir} 
+                                        onChange={e => setData('tanggal_lahir', e.target.value)}
+                                        className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                </div>
+
+                                {/* Agama */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Agama</label>
+                                    <select 
+                                        value={data.agama} 
+                                        onChange={e => setData('agama', e.target.value)}
+                                        className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                    >
+                                        <option value="">Pilih Agama</option>
+                                        <option value="Islam">Islam</option>
+                                        <option value="Kristen">Kristen</option>
+                                        <option value="Katolik">Katolik</option>
+                                        <option value="Hindu">Hindu</option>
+                                        <option value="Buddha">Buddha</option>
+                                        <option value="Konghucu">Konghucu</option>
+                                    </select>
+                                </div>
+
+                                {/* No Telepon */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">No. Telepon</label>
+                                    <input 
+                                        type="text" 
+                                        value={data.no_telepon} 
+                                        onChange={e => setData('no_telepon', e.target.value)}
+                                        className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="08xxxxxxxxxx"
+                                    />
+                                </div>
+
+                                {/* Alamat */}
+                                <div className="sm:col-span-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Alamat Lengkap</label>
+                                    <textarea 
+                                        value={data.alamat} 
+                                        onChange={e => setData('alamat', e.target.value)}
+                                        className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                        rows={3}
+                                    ></textarea>
                                 </div>
                             </div>
                         </div>

@@ -401,7 +401,18 @@ export default function Index({ auth, kelasList, stats, filters, guruOptions }) 
                                                                 {kelas.tingkat} {kelas.jurusan}
                                                             </span>
                                                         </td>
-                                                        <td className="px-6 py-5 whitespace-nowrap text-sm text-slate-700">{kelas.wali_kelas?.nama_lengkap || <span className="text-rose-500 italic text-xs">Belum diatur</span>}</td>
+                                                        <td className="px-6 py-5 whitespace-nowrap">
+                                                            {kelas.wali_kelas?.nama_lengkap ? (
+                                                                <div className="flex items-center gap-2">
+                                                                    <UserCircleIcon className="w-5 h-5 text-indigo-500" />
+                                                                    <span className="font-semibold text-slate-800 text-sm">{kelas.wali_kelas.nama_lengkap}</span>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700 border border-rose-200 shadow-sm">
+                                                                    <XCircleIcon className="w-4 h-4" /> Belum memiliki wali kelas
+                                                                </span>
+                                                            )}
+                                                        </td>
                                                         <td className="px-6 py-5 whitespace-nowrap text-sm text-slate-500 font-semibold">{kelas.siswa_count} Siswa</td>
                                                         <td className="px-6 py-5 whitespace-nowrap text-sm font-medium text-right">
                                                             <div className="flex items-center justify-end gap-x-2">

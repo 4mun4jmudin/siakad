@@ -1,3 +1,4 @@
+// resources/js/Layouts/GuruLayout.jsx
 import React, { useState, Fragment, useEffect, useMemo } from 'react';
 import { Link, Head, usePage } from '@inertiajs/react';
 import { Toaster, toast } from 'react-hot-toast';
@@ -19,106 +20,352 @@ import {
   Sparkles,
   FolderOpen,
   ClipboardList,
+  GraduationCap,
+  Search,
+  Bell,
+  UserRound,
+  ShieldCheck,
+  PanelLeft,
 } from 'lucide-react';
 import NotificationDropdown from '@/Components/NotificationDropdown';
-
-// Helper: aman memanggil route ziggy
-function routeExists(name) {
-  try {
-    window.route(name);
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
-function safeRoute(name, params = {}, fallback = '#') {
-  return routeExists(name) ? window.route(name, params) : fallback;
-}
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(' ');
 }
 
-// Normalisasi logo url: bisa http(s), /storage/..., atau path biasa (logos/x.png)
+function routeExists(name) {
+  try {
+    if (typeof window === 'undefined' || !window.route) return false;
+    window.route(name);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function safeRoute(name, params = {}, fallback = '#') {
+  try {
+    if (typeof window === 'undefined' || !window.route) return fallback;
+    return routeExists(name) ? window.route(name, params) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function isCurrentRoute(name) {
+  try {
+    if (typeof window === 'undefined' || !window.route) return false;
+    return window.route().current(name);
+  } catch {
+    return false;
+  }
+}
+
 function normalizeLogoUrl(url) {
   if (!url) return null;
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/')) return url;
   return `/storage/${url.replace(/^\/+/, '')}`;
 }
 
-const navigationItems = [
-  { name: 'Dashboard', href: 'guru.dashboard', icon: Home },
-  { name: 'Rencana Materi', href: 'guru.rencana-materi.index', icon: FolderOpen },
-  { name: 'Jurnal & Absensi', href: 'guru.jurnal.index', icon: BookOpen },
-  { name: 'Manajemen Tugas', href: 'guru.tugas.index', icon: ClipboardList },
-  { name: 'Absensi Siswa', href: 'guru.absensi-mapel.index', icon: Users },
-  { name: 'Absensi Harian', href: 'guru.absensi-harian.index', icon: ClipboardCheck },
-  { name: 'Jadwal Saya', href: 'guru.jadwal.index', icon: CalendarDays },
-  { name: 'Daftar Siswa', href: 'guru.siswa.index', icon: Users },
-  { name: 'Laporan', href: 'guru.laporan.index', icon: FileText },
+const navigationStructure = [
+  {
+    type: 'item',
+    name: 'Dashboard',
+    href: 'guru.dashboard',
+    icon: Home,
+  },
+  {
+    type: 'group',
+    name: 'Pembelajaran',
+    icon: BookOpen,
+    items: [
+      { name: 'Jadwal Saya', href: 'guru.jadwal.index', icon: CalendarDays },
+      { name: 'Rencana Materi', href: 'guru.rencana-materi.index', icon: FolderOpen },
+      { name: 'Jurnal & Absensi', href: 'guru.jurnal.index', icon: BookOpen },
+      { name: 'Manajemen Tugas', href: 'guru.tugas.index', icon: ClipboardList },
+      { name: 'Penilaian Siswa', href: 'guru.penilaian.index', icon: FileText },
+    ],
+  },
+  {
+    type: 'group',
+    name: 'Akademik & Kehadiran',
+    icon: ClipboardCheck,
+    items: [
+      { name: 'Absensi Siswa', href: 'guru.absensi-mapel.index', icon: Users },
+      { name: 'Absensi Harian', href: 'guru.absensi-harian.index', icon: ClipboardCheck },
+      { name: 'Kelas Perwalian', href: 'guru.walikelas.index', icon: Users },
+      { name: 'Daftar Siswa', href: 'guru.siswa.index', icon: Users },
+    ],
+  },
+  {
+    type: 'item',
+    name: 'Laporan',
+    href: 'guru.laporan.index',
+    icon: FileText,
+  },
 ];
 
-/** Nav item component with animated active indicator and tooltip when collapsed */
-function NavItem({ item, collapsed }) {
+function UserAvatar({ user, size = 'md' }) {
+  const sizeClass = size === 'lg' ? 'h-11 w-11' : 'h-9 w-9';
+
+  return (
+    <img
+      src={
+        user?.foto_profil
+          ? `/storage-public/${user.foto_profil.replace(/^\/+/, '')}`
+          : `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.nama_lengkap || 'Guru')}&background=4f46e5&color=fff`
+      }
+      alt={user?.nama_lengkap || 'Guru'}
+      className={classNames(
+        sizeClass,
+        'rounded-2xl border border-white/70 bg-white object-cover shadow-sm ring-1 ring-slate-200/70'
+      )}
+      onError={(e) => {
+        e.target.onerror = null;
+        e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.nama_lengkap || 'Guru')}&background=4f46e5&color=fff`;
+      }}
+    />
+  );
+}
+
+function NavTooltip({ text }) {
+  return (
+    <span
+      className={classNames(
+        'pointer-events-none absolute left-full top-1/2 z-[90] ml-3 hidden -translate-y-1/2',
+        'whitespace-nowrap rounded-2xl border border-slate-700/40 bg-slate-950/95 px-3 py-2',
+        'text-xs font-black text-white shadow-2xl backdrop-blur-xl group-hover/nav:block'
+      )}
+    >
+      {text}
+    </span>
+  );
+}
+
+function NavItem({ item, collapsed, isSubItem = false, onClick }) {
   const targetHref = safeRoute(item.href);
-  const isActive = targetHref !== '#' && window.route().current(item.href);
+  const isActive = targetHref !== '#' && isCurrentRoute(item.href);
   const Icon = item.icon;
 
   return (
     <Link
       href={targetHref}
+      onClick={onClick}
       className={classNames(
-        'group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition duration-200 ease-in-out',
+        'group/nav relative flex min-h-11 items-center gap-3 rounded-2xl text-sm font-bold',
+        'transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300',
+        isSubItem ? 'px-3 py-2 text-[13px]' : 'px-3 py-2.5',
         isActive
-          ? 'bg-gradient-to-r from-sky-700 to-sky-600 text-white shadow-md'
-          : 'text-slate-100 hover:bg-slate-700 hover:text-white/95'
+          ? 'bg-white text-indigo-700 shadow-lg shadow-indigo-950/10'
+          : isSubItem
+            ? 'text-indigo-50/80 hover:bg-white/10 hover:text-white'
+            : 'text-white/78 hover:bg-white/10 hover:text-white'
       )}
       aria-current={isActive ? 'page' : undefined}
       title={collapsed ? item.name : undefined}
     >
-      {/* Left active bar */}
-      <span
-        aria-hidden
-        className={classNames(
-          'absolute -left-2 top-1/2 -translate-y-1/2 h-8 w-1 rounded-r-md transition-all',
-          isActive ? 'bg-white/90 shadow' : 'opacity-0 group-hover:opacity-100 bg-white/10'
-        )}
-      />
+      {isActive && !collapsed && !isSubItem && (
+        <span className="absolute left-0 top-1/2 h-7 w-1 -translate-y-1/2 rounded-r-full bg-indigo-300" />
+      )}
 
-      <span className={classNames(collapsed ? 'mx-auto' : 'flex-none')}>
-        <Icon className={classNames('h-5 w-5 transition-colors', isActive ? 'text-white' : 'text-slate-200')} />
+      {isActive && !collapsed && isSubItem && (
+        <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-sky-300" />
+      )}
+
+      <span
+        className={classNames(
+          'flex shrink-0 items-center justify-center rounded-xl transition-all duration-300',
+          collapsed ? 'mx-auto h-8 w-8' : isSubItem ? 'h-7 w-7' : 'h-8 w-8',
+          isActive
+            ? 'bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-200'
+            : 'bg-white/10 text-white/85 group-hover/nav:bg-white/15 group-hover/nav:text-white'
+        )}
+      >
+        <Icon className={classNames(isSubItem ? 'h-3.5 w-3.5' : 'h-4 w-4')} />
       </span>
 
-      {!collapsed && <span className="truncate font-medium text-sm leading-5">{item.name}</span>}
-
-      {collapsed && (
-        <span className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-3 hidden whitespace-nowrap rounded-md bg-slate-900/95 px-3 py-1 text-xs font-semibold text-white group-hover:block z-20 shadow">
+      {!collapsed && (
+        <span className="min-w-0 flex-1 truncate">
           {item.name}
         </span>
       )}
+
+      {!collapsed && isActive && (
+        <span className="h-2 w-2 rounded-full bg-sky-300 shadow-[0_0_14px_rgba(125,211,252,0.85)]" />
+      )}
+
+      {collapsed && <NavTooltip text={item.name} />}
     </Link>
   );
 }
 
-/** Main layout */
+function NavGroup({ group, collapsed, onItemClick }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const Icon = group.icon;
+
+  const isActive = group.items.some((item) => {
+    const targetHref = safeRoute(item.href);
+    return targetHref !== '#' && isCurrentRoute(item.href);
+  });
+
+  useEffect(() => {
+    if (isActive) setIsOpen(true);
+  }, [isActive]);
+
+  return (
+    <div className="mb-1">
+      <button
+        type="button"
+        onClick={() => {
+          if (!collapsed) setIsOpen((value) => !value);
+        }}
+        className={classNames(
+          'group/nav relative flex min-h-11 w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-bold',
+          'transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300',
+          isActive
+            ? 'bg-white/14 text-white shadow-lg shadow-indigo-950/10'
+            : 'text-white/78 hover:bg-white/10 hover:text-white'
+        )}
+        title={collapsed ? group.name : undefined}
+        aria-expanded={isOpen}
+      >
+        {isActive && !collapsed && (
+          <span className="absolute left-0 top-1/2 h-7 w-1 -translate-y-1/2 rounded-r-full bg-violet-300" />
+        )}
+
+        <span
+          className={classNames(
+            'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-all duration-300',
+            collapsed ? 'mx-auto' : '',
+            isActive
+              ? 'bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-md shadow-indigo-950/20'
+              : 'bg-white/10 text-white/85 group-hover/nav:bg-white/15 group-hover/nav:text-white'
+          )}
+        >
+          <Icon className="h-4 w-4" />
+        </span>
+
+        {!collapsed && (
+          <>
+            <span className="min-w-0 flex-1 truncate text-left">
+              {group.name}
+            </span>
+
+            <ChevronDown
+              className={classNames(
+                'h-4 w-4 shrink-0 transition-transform duration-300',
+                isOpen ? 'rotate-180 text-white' : 'text-white/45'
+              )}
+            />
+          </>
+        )}
+
+        {collapsed && <NavTooltip text={group.name} />}
+      </button>
+
+      <Transition
+        show={isOpen && !collapsed}
+        enter="transition-all ease-out duration-300"
+        enterFrom="opacity-0 max-h-0 overflow-hidden"
+        enterTo="opacity-100 max-h-[500px] overflow-hidden"
+        leave="transition-all ease-in duration-200"
+        leaveFrom="opacity-100 max-h-[500px] overflow-hidden"
+        leaveTo="opacity-0 max-h-0 overflow-hidden"
+      >
+        <div className="mt-1 space-y-1 pl-4">
+          {group.items.map((item) => (
+            <NavItem
+              key={item.name}
+              item={item}
+              collapsed={false}
+              isSubItem
+              onClick={onItemClick}
+            />
+          ))}
+        </div>
+      </Transition>
+    </div>
+  );
+}
+
+function Brand({ collapsed, schoolName, logoSrc }) {
+  const [logoOk, setLogoOk] = useState(true);
+
+  useEffect(() => {
+    setLogoOk(true);
+  }, [logoSrc]);
+
+  return (
+    <div className={classNames('flex min-w-0 items-center gap-3', collapsed ? 'justify-center' : '')}>
+      <div
+        className={classNames(
+          'relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl',
+          'border border-white/25 bg-white/12 text-white shadow-xl backdrop-blur-md'
+        )}
+        title={schoolName}
+      >
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
+
+        {logoSrc && logoOk ? (
+          <img
+            src={logoSrc}
+            alt={schoolName}
+            className="relative h-full w-full object-cover"
+            loading="lazy"
+            onError={() => setLogoOk(false)}
+          />
+        ) : (
+          <Sparkles className="relative h-5 w-5 text-white" />
+        )}
+      </div>
+
+      {!collapsed && (
+        <div className="min-w-0">
+          <div className="truncate text-sm font-black leading-tight text-white">
+            {schoolName}
+          </div>
+
+          <div className="mt-0.5 flex items-center gap-1.5 truncate text-[11px] font-semibold text-indigo-100/80">
+            <GraduationCap className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">Panel Guru</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function GuruLayout({ children, header = 'Panel Guru' }) {
-  const { auth, flash, app } = usePage().props;
+  const { auth, flash, app, pengaturan } = usePage().props;
 
-  const user = auth?.user ?? { nama_lengkap: 'Pengguna', level: 'Guru' };
+  const user = auth?.user ?? {
+    nama_lengkap: 'Pengguna',
+    level: 'Guru',
+  };
 
-  // sekolah dari pengaturan (share inertia)
-  const schoolName = app?.nama_sekolah ?? 'Sekolah Pintar';
-  const logoSrc = normalizeLogoUrl(app?.logo_url);
+  const schoolName = pengaturan?.nama_sekolah ?? app?.nama_sekolah ?? 'Sekolah Pintar';
+  const rawLogo = pengaturan?.logo_url ?? app?.logo_url;
+  const logoSrc = normalizeLogoUrl(rawLogo);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
-    if (flash?.success) toast.success(flash.success, { id: 'flash-success', position: 'top-right' });
-    if (flash?.error) toast.error(flash.error, { id: 'flash-error', position: 'top-right' });
+    if (flash?.success) {
+      toast.success(flash.success, {
+        id: 'flash-success',
+        position: 'top-right',
+      });
+    }
+
+    if (flash?.error) {
+      toast.error(flash.error, {
+        id: 'flash-error',
+        position: 'top-right',
+      });
+    }
   }, [flash]);
 
-  // small sample notifications (fallback)
   const notifications = useMemo(
     () => [
       { id: 1, title: 'Pengumuman: Rapat GTK', time: '2 jam lalu' },
@@ -127,103 +374,134 @@ export default function GuruLayout({ children, header = 'Panel Guru' }) {
     []
   );
 
-  const SidebarContent = ({ isMobile = false }) => (
-    <>
-      <div className={classNames('flex h-16 items-center', isMobile ? 'px-4' : 'px-4')}>
-        <Link href={safeRoute('guru.dashboard')} className="flex items-center gap-3 min-w-0">
-          <div
-            className={classNames(
-              'flex h-10 w-10 items-center justify-center rounded-lg shadow-sm overflow-hidden',
-              collapsed && !isMobile ? 'bg-gradient-to-br from-sky-700 to-sky-600' : 'bg-white/10'
-            )}
+  const SIDEBAR_EXPANDED = 272;
+  const SIDEBAR_COLLAPSED = 88;
+
+  const SidebarContent = ({ isMobile = false }) => {
+    const isCollapsed = !isMobile && collapsed;
+
+    return (
+      <>
+        <div className={classNames('flex h-20 items-center', isMobile ? 'px-4' : isCollapsed ? 'justify-center px-3' : 'px-5')}>
+          <Link
+            href={safeRoute('guru.dashboard')}
+            className="min-w-0"
+            onClick={() => isMobile && setSidebarOpen(false)}
           >
-            {logoSrc ? (
-              <img src={logoSrc} alt={schoolName} className="h-full w-full object-cover" loading="lazy" />
-            ) : (
-              <Sparkles className="h-5 w-5 text-white" />
-            )}
-          </div>
-
-          {!collapsed && (
-            <div className="flex flex-col min-w-0">
-              <span className="text-lg font-bold tracking-tight truncate">{schoolName}</span>
-              <span className="text-xs text-sky-200/80 -mt-0.5">Panel Guru</span>
-            </div>
-          )}
-        </Link>
-      </div>
-
-      <nav className="flex-1 overflow-y-auto px-2 py-4 space-y-1">
-        <div className="px-1">
-          <div className="text-xs uppercase text-sky-200/80 px-3 py-1 font-semibold tracking-wider">
-            {!collapsed && 'Menu Utama'}
-          </div>
+            <Brand
+              collapsed={isCollapsed}
+              schoolName={schoolName}
+              logoSrc={logoSrc}
+            />
+          </Link>
         </div>
 
-        {navigationItems.map((item) => (
-          <NavItem key={item.name} item={item} collapsed={!isMobile && collapsed} />
-        ))}
-      </nav>
+        {!isCollapsed && (
+          <div className="px-4">
+            <div className="rounded-3xl border border-white/15 bg-white/10 p-3 text-white shadow-lg shadow-indigo-950/10 backdrop-blur-md">
+              <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-wide text-indigo-100/90">
+                <Sparkles className="h-3.5 w-3.5" />
+                Ruang Guru
+              </div>
 
-      <div className="p-3 border-t border-sky-800">
-        {!collapsed || isMobile ? (
-          <div className="flex items-center gap-3">
-            <img
-              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.nama_lengkap)}&background=0ea5e9&color=fff`}
-              alt={user.nama_lengkap}
-              className="h-10 w-10 rounded-full object-cover ring-2 ring-white/20 shadow-sm"
-            />
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold truncate">{user.nama_lengkap}</div>
-              <div className="text-xs text-sky-200/80">{user.level || 'Guru'}</div>
+              <p className="mt-2 text-xs leading-relaxed text-white/70">
+                Kelola jadwal, jurnal, absensi, penilaian, dan laporan pembelajaran.
+              </p>
             </div>
+          </div>
+        )}
 
-            <div className="flex items-center gap-2">
+        <nav
+          className={classNames(
+            'custom-scrollbar flex-1 space-y-1.5 overflow-y-auto py-4',
+            isCollapsed ? 'px-3' : 'px-4'
+          )}
+          aria-label="Sidebar Guru"
+        >
+          {!isCollapsed && (
+            <div className="px-3 pb-2 text-[10px] font-black uppercase tracking-[0.18em] text-indigo-100/55">
+              Menu Utama
+            </div>
+          )}
+
+          {navigationStructure.map((item) => (
+            item.type === 'group' ? (
+              <NavGroup
+                key={item.name}
+                group={item}
+                collapsed={isCollapsed}
+                onItemClick={() => isMobile && setSidebarOpen(false)}
+              />
+            ) : (
+              <NavItem
+                key={item.name}
+                item={item}
+                collapsed={isCollapsed}
+                onClick={() => isMobile && setSidebarOpen(false)}
+              />
+            )
+          ))}
+        </nav>
+
+        <div className="border-t border-white/10 p-3">
+          {!isCollapsed ? (
+            <div className="rounded-3xl border border-white/15 bg-white/10 p-3 text-white shadow-lg backdrop-blur-md">
+              <div className="flex items-center gap-3">
+                <UserAvatar user={user} size="lg" />
+
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-black text-white">
+                    {user.nama_lengkap}
+                  </div>
+
+                  <div className="truncate text-xs font-semibold text-indigo-100/75">
+                    {user.level || 'Guru'}
+                  </div>
+                </div>
+
+                <Link
+                  href={safeRoute('guru.profile.show')}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-white/80 transition hover:bg-white/20 hover:text-white"
+                  title="Profil"
+                >
+                  <Settings className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-center">
               <Link
-                href={safeRoute('profile.edit')}
-                className="text-sky-200 hover:text-white p-2 rounded-md"
+                href={safeRoute('guru.profile.show')}
+                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-white/80 transition hover:bg-white/20 hover:text-white"
                 title="Profil"
               >
                 <Settings className="h-5 w-5" />
               </Link>
             </div>
-          </div>
-        ) : (
-          <div className="flex items-center justify-center">
-            <Link
-              href={safeRoute('profile.edit')}
-              className="text-sky-200 hover:text-white p-2 rounded-md"
-              title="Profil"
-            >
-              <Settings className="h-5 w-5" />
-            </Link>
-          </div>
-        )}
-      </div>
-    </>
-  );
-
-  // ✅ tombol toggle sidebar DI LUAR aside (floating di tepi sidebar)
-  const SIDEBAR_EXPANDED = 256; // lg:w-64
-  const SIDEBAR_COLLAPSED = 80; // lg:w-20
+          )}
+        </div>
+      </>
+    );
+  };
 
   const DesktopSidebarToggle = () => (
     <button
       type="button"
-      onClick={() => setCollapsed((v) => !v)}
+      onClick={() => setCollapsed((value) => !value)}
       className={classNames(
-        'hidden lg:flex',
-        'fixed z-[60]',
-        'top-1/2 -translate-y-1/2 -translate-x-1/2',
-        'h-10 w-10 items-center justify-center rounded-full',
-        'bg-sky-950 text-white shadow-lg ring-1 ring-white/15',
-        'hover:bg-sky-900 focus:outline-none focus:ring-2 focus:ring-sky-400'
+        'fixed top-1/2 z-[70] hidden h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full lg:flex',
+        'border border-white/70 bg-white text-indigo-700 shadow-2xl shadow-slate-900/10 backdrop-blur-xl',
+        'transition-all duration-300 hover:scale-105 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300'
       )}
       style={{ left: collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED }}
       aria-label={collapsed ? 'Perbesar sidebar' : 'Ciutkan sidebar'}
       title={collapsed ? 'Perbesar sidebar' : 'Ciutkan sidebar'}
     >
-      {collapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
+      {collapsed ? (
+        <ChevronRight className="h-5 w-5" />
+      ) : (
+        <ChevronLeft className="h-5 w-5" />
+      )}
     </button>
   );
 
@@ -232,24 +510,30 @@ export default function GuruLayout({ children, header = 'Panel Guru' }) {
       <Head title={header} />
       <Toaster position="top-right" />
 
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 text-slate-800">
-        {/* Desktop sidebar */}
+      <div className="min-h-screen bg-slate-50 text-slate-800">
+        {/* Desktop Sidebar */}
         <aside
           className={classNames(
-            'hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:flex-col text-white transition-all duration-300',
-            collapsed ? 'lg:w-20' : 'lg:w-64',
-            'bg-[linear-gradient(180deg,#0369a1,rgba(3,105,161,0.95))]'
+            'hidden overflow-hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:flex-col',
+            'bg-gradient-to-b from-indigo-800 via-violet-900 to-sky-950 text-white',
+            'shadow-[18px_0_60px_-35px_rgba(15,23,42,0.9)] transition-all duration-300',
+            collapsed ? 'lg:w-[88px]' : 'lg:w-[272px]'
           )}
         >
-          <SidebarContent />
+          <div className="pointer-events-none absolute -left-16 top-10 h-56 w-56 rounded-full bg-indigo-300/20 blur-3xl" />
+          <div className="pointer-events-none absolute -right-20 bottom-20 h-64 w-64 rounded-full bg-sky-300/15 blur-3xl" />
+          <div className="pointer-events-none absolute left-1/3 top-1/3 h-52 w-52 rounded-full bg-violet-300/10 blur-3xl" />
+
+          <div className="relative flex min-h-0 flex-1 flex-col">
+            <SidebarContent />
+          </div>
         </aside>
 
-        {/* ✅ Toggle button floating (outside sidebar) */}
         <DesktopSidebarToggle />
 
-        {/* Mobile sidebar (dialog) */}
+        {/* Mobile Sidebar */}
         <Transition.Root show={sidebarOpen} as={Fragment}>
-          <Dialog as="div" className="relative z-50 lg:hidden" onClose={setSidebarOpen}>
+          <Dialog as="div" className="relative z-[90] lg:hidden" onClose={setSidebarOpen}>
             <Transition.Child
               as={Fragment}
               enter="transition-opacity ease-linear duration-300"
@@ -259,183 +543,225 @@ export default function GuruLayout({ children, header = 'Panel Guru' }) {
               leaveFrom="opacity-100"
               leaveTo="opacity-0"
             >
-              <div className="fixed inset-0 bg-black/40" />
+              <div className="fixed inset-0 bg-slate-950/55 backdrop-blur-sm" />
             </Transition.Child>
 
             <div className="fixed inset-0 flex">
               <Transition.Child
                 as={Fragment}
-                enter="transition ease-in-out duration-300 transform"
+                enter="transition ease-out duration-300 transform"
                 enterFrom="-translate-x-full"
                 enterTo="translate-x-0"
-                leave="transition ease-in-out duration-300 transform"
+                leave="transition ease-in duration-250 transform"
                 leaveFrom="translate-x-0"
                 leaveTo="-translate-x-full"
               >
-                <Dialog.Panel className="relative flex w-full max-w-xs flex-1 flex-col bg-sky-900 text-white">
+                <Dialog.Panel className="relative flex w-full max-w-[320px] flex-1 flex-col overflow-hidden bg-gradient-to-b from-indigo-800 via-violet-900 to-sky-950 text-white shadow-2xl">
+                  <div className="pointer-events-none absolute -left-16 top-10 h-56 w-56 rounded-full bg-indigo-300/20 blur-3xl" />
+                  <div className="pointer-events-none absolute -right-20 bottom-20 h-64 w-64 rounded-full bg-sky-300/15 blur-3xl" />
+
                   <button
-                    className="absolute top-4 right-4 p-1 text-white"
+                    type="button"
+                    className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20"
                     onClick={() => setSidebarOpen(false)}
                     aria-label="Tutup sidebar"
                   >
-                    <X className="h-6 w-6" />
+                    <X className="h-5 w-5" />
                   </button>
 
-                  <SidebarContent isMobile />
+                  <div className="relative flex min-h-0 flex-1 flex-col">
+                    <SidebarContent isMobile />
+                  </div>
                 </Dialog.Panel>
               </Transition.Child>
             </div>
           </Dialog>
         </Transition.Root>
 
-        {/* Main content column */}
+        {/* Main Content */}
         <div
           className={classNames(
             'flex min-w-0 flex-1 flex-col transition-all duration-300',
-            collapsed ? 'lg:pl-20' : 'lg:pl-64'
+            collapsed ? 'lg:pl-[88px]' : 'lg:pl-[272px]'
           )}
         >
           {/* Topbar */}
-          <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-slate-200 bg-white/70 backdrop-blur-sm px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                className="-m-2.5 p-2.5 text-gray-700 lg:hidden rounded-md hover:bg-gray-100 transition"
-                onClick={() => setSidebarOpen(true)}
-                aria-label="Buka menu"
-              >
-                <MenuIcon className="h-6 w-6" />
-              </button>
+          <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-white/70 bg-white/80 px-3 shadow-sm shadow-slate-200/40 backdrop-blur-xl sm:px-5 lg:px-7">
+            <button
+              type="button"
+              className="flex h-10 w-10 items-center justify-center rounded-2xl text-slate-700 transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 lg:hidden"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Buka menu"
+            >
+              <MenuIcon className="h-5 w-5" />
+            </button>
 
-              <div className="hidden sm:flex sm:items-center sm:gap-4">
-                <h2 className="text-lg font-semibold text-slate-900">{header}</h2>
-              </div>
-            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <h1 className="truncate text-sm font-black text-slate-900 sm:text-base">
+                      {header}
+                    </h1>
 
-            <div className="flex flex-1 items-center justify-end gap-4">
-              {/* Search */}
-              <div className="hidden md:flex items-center w-full max-w-md">
-                <label htmlFor="topbar-search" className="sr-only">
-                  Cari
-                </label>
-                <div className="relative w-full">
-                  <input
-                    id="topbar-search"
-                    type="search"
-                    placeholder="Cari pengumuman, siswa, jadwal..."
-                    className="w-full rounded-full border border-slate-200 bg-white py-2 px-4 pl-10 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 transition"
-                  />
-                  <svg
-                    className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    aria-hidden
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z"
-                    />
-                  </svg>
-                </div>
-              </div>
-
-              {/* Icons group */}
-              <div className="flex items-center gap-3">
-                {/* Notification dropdown */}
-                <NotificationDropdown />
-
-                {/* Quick action */}
-                <Link
-                  href={safeRoute('guru.jurnal.index')}
-                  className="hidden sm:inline-flex items-center gap-2 rounded-md bg-gradient-to-r from-emerald-500 to-sky-500 px-3 py-1.5 text-sm font-semibold text-white shadow hover:scale-105 transform transition"
-                >
-                  <BookOpen className="h-4 w-4" /> Jurnal
-                </Link>
-
-                <div className="hidden lg:block h-6 w-px bg-gray-200" />
-
-                {/* Profile menu */}
-                <Menu as="div" className="relative">
-                  <Menu.Button className="-m-1.5 flex items-center p-1.5 rounded-md hover:bg-gray-100 transition">
-                    <img
-                      className="h-8 w-8 rounded-full ring-1 ring-slate-200"
-                      src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.nama_lengkap)}&background=0ea5e9&color=fff`}
-                      alt={user.nama_lengkap}
-                    />
-                    <span className="hidden lg:flex lg:items-center">
-                      <span className="ml-3 text-sm font-semibold leading-6 text-slate-900">
-                        {user.nama_lengkap}
-                      </span>
-                      <ChevronDown className="ml-2 h-4 w-4 text-slate-400" />
+                    <span className="hidden rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-indigo-700 sm:inline-flex">
+                      Guru
                     </span>
-                  </Menu.Button>
+                  </div>
 
-                  <Transition
-                    as={Fragment}
-                    enter="transition ease-out duration-150"
-                    enterFrom="transform opacity-0 scale-95"
-                    enterTo="transform opacity-100 scale-100"
-                    leave="transition ease-in duration-100"
-                    leaveFrom="transform opacity-100 scale-100"
-                    leaveTo="transform opacity-0 scale-95"
+                  <div className="mt-0.5 hidden min-w-0 items-center gap-1.5 text-xs font-semibold text-slate-400 sm:flex">
+                    <GraduationCap className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">
+                      {schoolName}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {/* Search */}
+                  <div className="hidden md:block">
+                    <label htmlFor="topbar-search" className="sr-only">
+                      Cari
+                    </label>
+
+                    <div className="relative w-[320px] lg:w-[380px]">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+                      <input
+                        id="topbar-search"
+                        type="search"
+                        placeholder="Cari siswa, jadwal, jurnal..."
+                        className="min-h-10 w-full rounded-2xl border border-slate-200 bg-white/80 py-2 pl-10 pr-3 text-sm font-semibold text-slate-700 shadow-sm outline-none placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Notification */}
+                  <div className="relative">
+                    <NotificationDropdown />
+                  </div>
+
+                  {/* Quick action */}
+                  <Link
+                    href={safeRoute('guru.jurnal.index')}
+                    className={classNames(
+                      'hidden min-h-10 items-center justify-center gap-2 rounded-2xl px-3.5 py-2 text-sm font-black text-white sm:inline-flex',
+                      'bg-gradient-to-r from-indigo-600 to-violet-600 shadow-lg shadow-indigo-200',
+                      'transition-all duration-300 hover:-translate-y-0.5 hover:brightness-105'
+                    )}
                   >
-                    <Menu.Items className="absolute right-0 z-50 mt-2.5 w-48 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 focus:outline-none">
-                      <Menu.Item>
-                        {({ active }) => (
-                          <Link
-                            href={safeRoute('profile.edit')}
-                            className={classNames(active ? 'bg-gray-50' : '', 'block px-3 py-2 text-sm text-slate-900')}
-                          >
-                            <div className="flex items-center gap-2">
-                              <Settings className="h-4 w-4" /> Profil Saya
-                            </div>
-                          </Link>
-                        )}
-                      </Menu.Item>
+                    <BookOpen className="h-4 w-4" />
+                    Jurnal
+                  </Link>
 
-                      <Menu.Item>
-                        {({ active }) => (
-                          <Link
-                            href={safeRoute('logout')}
-                            method="post"
-                            as="button"
-                            className={classNames(active ? 'bg-gray-50' : '', 'block w-full text-left px-3 py-2 text-sm text-slate-900')}
-                          >
-                            <div className="flex items-center gap-2">
-                              <LogOut className="h-4 w-4" /> Keluar
-                            </div>
-                          </Link>
-                        )}
-                      </Menu.Item>
-                    </Menu.Items>
-                  </Transition>
-                </Menu>
+                  <div className="hidden h-6 w-px bg-slate-200 lg:block" />
+
+                  {/* Profile menu */}
+                  <Menu as="div" className="relative">
+                    <Menu.Button className="flex items-center gap-2 rounded-2xl border border-slate-200/70 bg-white/80 p-1.5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300">
+                      <UserAvatar user={user} />
+
+                      <span className="hidden min-w-0 lg:flex lg:items-center">
+                        <span className="ml-1 max-w-[160px] truncate text-sm font-black leading-6 text-slate-800">
+                          {user.nama_lengkap}
+                        </span>
+
+                        <ChevronDown className="ml-1 h-4 w-4 shrink-0 text-slate-400" />
+                      </span>
+                    </Menu.Button>
+
+                    <Transition
+                      as={Fragment}
+                      enter="transition ease-out duration-180"
+                      enterFrom="transform opacity-0 scale-95 translate-y-1"
+                      enterTo="transform opacity-100 scale-100 translate-y-0"
+                      leave="transition ease-in duration-120"
+                      leaveFrom="transform opacity-100 scale-100 translate-y-0"
+                      leaveTo="transform opacity-0 scale-95 translate-y-1"
+                    >
+                      <Menu.Items className="absolute right-0 z-[80] mt-2 w-64 origin-top-right overflow-hidden rounded-3xl border border-white/70 bg-white/95 p-2 shadow-2xl ring-1 ring-slate-900/5 backdrop-blur-xl focus:outline-none">
+                        <div className="border-b border-slate-100 px-3 py-3">
+                          <p className="truncate text-sm font-black text-slate-900">
+                            {user.nama_lengkap}
+                          </p>
+
+                          <p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-slate-400">
+                            <ShieldCheck className="h-3.5 w-3.5" />
+                            {user.level || 'Guru'}
+                          </p>
+                        </div>
+
+                        <div className="mt-2 space-y-1">
+                          <Menu.Item>
+                            {({ active }) => (
+                              <Link
+                                href={safeRoute('guru.profile.show')}
+                                className={classNames(
+                                  'flex items-center gap-2 rounded-2xl px-3 py-2.5 text-sm font-bold transition',
+                                  active
+                                    ? 'bg-indigo-50 text-indigo-700'
+                                    : 'text-slate-700'
+                                )}
+                              >
+                                <UserRound className="h-4 w-4" />
+                                Profil Saya
+                              </Link>
+                            )}
+                          </Menu.Item>
+
+                          <Menu.Item>
+                            {({ active }) => (
+                              <Link
+                                href={safeRoute('logout')}
+                                method="post"
+                                as="button"
+                                className={classNames(
+                                  'flex w-full items-center gap-2 rounded-2xl px-3 py-2.5 text-left text-sm font-bold transition',
+                                  active
+                                    ? 'bg-rose-50 text-rose-700'
+                                    : 'text-slate-700'
+                                )}
+                              >
+                                <LogOut className="h-4 w-4" />
+                                Keluar
+                              </Link>
+                            )}
+                          </Menu.Item>
+                        </div>
+                      </Menu.Items>
+                    </Transition>
+                  </Menu>
+                </div>
               </div>
             </div>
           </header>
 
-          {/* Page content */}
-          <main className="flex-1 p-4 sm:p-6 lg:p-8">
-            <div className="mx-auto max-w-screen-2xl transition-all">
-              <div className="mb-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-sm text-slate-500">
-                      Halaman khusus untuk {user.level?.toLowerCase() || 'guru'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-lg">{children}</div>
-            </div>
+          <main className="min-h-[calc(100vh-4rem)] flex-1">
+            {children}
           </main>
         </div>
       </div>
+
+      <style>{`
+        .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 999px;
+        }
+      `}</style>
     </>
   );
 }

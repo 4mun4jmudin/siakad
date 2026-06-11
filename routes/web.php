@@ -39,6 +39,8 @@ use App\Http\Controllers\Guru\JadwalController;
 use App\Http\Controllers\Guru\AbsensiSiswaMapelController as GuruAbsensiSiswaMapelController;
 use App\Http\Controllers\Guru\RencanaMateriController as GuruRencanaMateriController;
 use App\Http\Controllers\Guru\TugasController as GuruTugasController;
+use App\Http\Controllers\Guru\PenilaianController as GuruPenilaianController;
+use App\Http\Controllers\Guru\WaliKelasController as GuruWaliKelasController;
 
 // Panel Orang Tua
 use App\Http\Controllers\OrangTua\DashboardController;
@@ -46,6 +48,7 @@ use App\Http\Controllers\OrangTua\ProfileController as OrangTuaProfileController
 use App\Http\Controllers\OrangTua\AbsensiController;
 use App\Http\Controllers\OrangTua\NotificationController as OrangTuaNotificationController;
 use App\Http\Controllers\OrangTua\SuratIzinController as OrangTuaSuratIzinController;
+use App\Http\Controllers\OrangTua\NilaiController as OrangTuaNilaiController;
 
 // Notifikasi umum
 use App\Http\Controllers\NotificationController;
@@ -54,9 +57,10 @@ use Illuminate\Http\Request;
 
 // Modul Penilaian (Admin)
 use App\Http\Controllers\Auth\PenilaianLoginController;
-use App\Http\Controllers\Admin\PenilaianController;
 use App\Http\Controllers\Admin\PenilaianDashboardController;
-use App\Http\Controllers\Admin\BobotNilaiMapelController;
+use App\Http\Controllers\Admin\BobotPenilaianController;
+use App\Http\Controllers\Admin\PenilaianRekapController;
+use App\Http\Controllers\Admin\PenilaianKKMController;
 use App\Http\Controllers\Admin\KriteriaKenaikanController;
 use App\Http\Controllers\Admin\KeputusanKenaikanController;
 use App\Http\Controllers\Admin\RaporController;
@@ -179,6 +183,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/profile', [OrangTuaProfileController::class, 'show'])->name('profile.show');
             Route::post('/profile', [OrangTuaProfileController::class, 'update'])->name('profile.update');
             Route::get('/absensi', [AbsensiController::class, 'index'])->name('absensi.index');
+            Route::get('/nilai', [OrangTuaNilaiController::class, 'index'])->name('nilai.index');
             Route::get('/jadwal', [App\Http\Controllers\OrangTua\JadwalController::class, 'index'])->name('jadwal.index');
             Route::get('/pengumuman', [App\Http\Controllers\OrangTua\PengumumanController::class, 'index'])->name('pengumuman.index');
             Route::get('/pengumuman/{pengumuman}', [App\Http\Controllers\OrangTua\PengumumanController::class, 'show'])->name('pengumuman.show');
@@ -217,6 +222,12 @@ Route::middleware('auth')->group(function () {
         // Halaman
         Route::get('/dashboard', [GuruDashboardController::class, 'index'])->name('dashboard');
 
+        // Manajemen Profil & Akun Guru
+        Route::get('/profile', [\App\Http\Controllers\Guru\ProfileController::class, 'show'])->name('profile.show');
+        Route::post('/profile', [\App\Http\Controllers\Guru\ProfileController::class, 'update'])->name('profile.update');
+        Route::put('/profile/account', [\App\Http\Controllers\Guru\ProfileController::class, 'updateAccount'])->name('profile.account');
+        Route::put('/profile/password', [\App\Http\Controllers\Guru\ProfileController::class, 'updatePassword'])->name('profile.password');
+
         Route::get('/absensi-mapel', [AbsensiSiswaMapelController::class, 'index'])->name('absensi-mapel.index');
         Route::get('/absensi-mapel/{id_jadwal}', [AbsensiSiswaMapelController::class, 'show'])->name('absensi-mapel.show');
         Route::post('/absensi-mapel', [AbsensiSiswaMapelController::class, 'store'])->name('absensi-mapel.store');
@@ -249,6 +260,24 @@ Route::middleware('auth')->group(function () {
         Route::post('/tugas/{tugas}/nilai/{siswa}', [GuruTugasController::class, 'nilai'])->name('tugas.nilai');
 
         Route::post('/{id_jadwal}/prefill', [GuruAbsensiSiswaMapelController::class, 'refreshPrefill'])->name('prefill');
+
+        // Modul Penilaian
+        Route::prefix('penilaian')->name('penilaian.')->group(function () {
+            Route::get('/', [GuruPenilaianController::class, 'index'])->name('index');
+            Route::get('/{id_kelas}/{id_mapel}', [GuruPenilaianController::class, 'showKelas'])->name('showKelas');
+            Route::get('/{id_kelas}/{id_mapel}/rekap', [GuruPenilaianController::class, 'rekapKelas'])->name('rekapKelas');
+            Route::get('/{id_kelas}/{id_mapel}/{id_siswa}', [GuruPenilaianController::class, 'showSiswa'])->name('showSiswa');
+            Route::post('/{id_penilaian}/detail', [GuruPenilaianController::class, 'storeDetail'])->name('detail.store');
+            Route::put('/detail/{id_detail}', [GuruPenilaianController::class, 'updateDetail'])->name('detail.update');
+            Route::delete('/detail/{id_detail}', [GuruPenilaianController::class, 'destroyDetail'])->name('detail.destroy');
+        });
+
+        // Modul Kelas Perwalian
+        Route::prefix('walikelas')->name('walikelas.')->group(function () {
+            Route::get('/', [GuruWaliKelasController::class, 'index'])->name('index');
+            Route::get('/{id_kelas}', [GuruWaliKelasController::class, 'show'])->name('show');
+        });
+
         Route::get('/{id_jadwal}/export/meeting', [GuruAbsensiSiswaMapelController::class, 'exportMeeting'])->name('export.meeting');
         Route::get('/{id_jadwal}/export/monthly', [GuruAbsensiSiswaMapelController::class, 'exportMonthly'])->name('export.monthly');
 
@@ -379,6 +408,8 @@ Route::middleware('auth')->group(function () {
         Route::post('kelas/{kela}/add-students', [KelasController::class, 'addStudents'])->name('kelas.add-students');
         Route::post('kelas/{kela}/remove-students', [KelasController::class, 'removeStudents'])->name('kelas.remove-students');
         Route::resource('kelas', KelasController::class);
+
+        Route::post('mata-pelajaran/auto-assign-guru', [MataPelajaranController::class, 'autoAssignGuru'])->name('mata-pelajaran.auto-assign-guru');
         Route::resource('mata-pelajaran', MataPelajaranController::class);
         // --- RESET PASSWORD ORANG TUA (SIMPAN DI ATAS RESOURCE) ---
         Route::get('orang-tua-wali/reset-password', [OrangTuaWaliController::class, 'resetPasswordIndex'])
@@ -441,6 +472,16 @@ Route::middleware('auth')->group(function () {
 
         Route::get('jadwal-pelajaran', [JadwalMengajarController::class, 'jadwalPelajaran'])->name('jadwal-pelajaran.index');
 
+        // Jadwal Interaktif (Drag & Drop & Auto Schedule)
+        Route::get('jadwal-interaktif', [\App\Http\Controllers\Admin\JadwalInteractiveController::class, 'index'])->name('jadwal-interaktif.index');
+        Route::post('jadwal-interaktif/fetch', [\App\Http\Controllers\Admin\JadwalInteractiveController::class, 'fetchClassData'])->name('jadwal-interaktif.fetch');
+        Route::post('jadwal-interaktif/drag-drop', [\App\Http\Controllers\Admin\JadwalInteractiveController::class, 'storeDragDrop'])->name('jadwal-interaktif.drag-drop');
+        Route::post('jadwal-interaktif/update-teacher', [\App\Http\Controllers\Admin\JadwalInteractiveController::class, 'updateTeacher'])->name('jadwal-interaktif.update-teacher');
+        Route::post('jadwal-interaktif/auto-schedule', [\App\Http\Controllers\Admin\JadwalInteractiveController::class, 'autoSchedule'])->name('jadwal-interaktif.auto-schedule');
+        Route::post('jadwal-interaktif/recommendations', [\App\Http\Controllers\Admin\JadwalInteractiveController::class, 'getRecommendations'])->name('jadwal-interaktif.recommendations');
+        Route::delete('jadwal-interaktif/{id}', [\App\Http\Controllers\Admin\JadwalInteractiveController::class, 'deleteSchedule'])->name('jadwal-interaktif.delete');
+
+
         Route::resource('jurnal-mengajar', JurnalMengajarController::class);
         Route::get('jurnal-mengajar/find-pengganti', [JurnalMengajarController::class, 'findGuruPengganti'])->name('jurnal-mengajar.find-pengganti');
         Route::get('jurnal-mengajar/export/excel', [JurnalMengajarController::class, 'exportExcel'])->name('jurnal-mengajar.export.excel');
@@ -469,11 +510,18 @@ Route::middleware('auth')->group(function () {
             Route::get('/dashboard', [PenilaianDashboardController::class, 'index'])->name('dashboard');
 
             Route::get('/nilai', [PenilaianNilaiController::class, 'index'])->name('nilai.index');
+            Route::post('/nilai/generate', [PenilaianNilaiController::class, 'generate'])->name('nilai.generate');
             Route::get('/penilaian', [PenilaianNilaiController::class, 'index'])->name('penilaian.index');
             Route::get('/nilai/{id_penilaian}', [PenilaianNilaiController::class, 'showDetail'])->name('nilai.detail.show');
             Route::post('/nilai/{id_penilaian}/detail', [PenilaianNilaiController::class, 'storeDetail'])->name('nilai.detail.store');
             Route::post('/nilai/{id_penilaian}/toggle-lock', [PenilaianNilaiController::class, 'toggleLock'])->name('nilai.toggle-lock');
             Route::delete('/nilai/detail/{id_detail}', [PenilaianNilaiController::class, 'destroyDetail'])->name('nilai.detail.destroy');
+
+            // Rekapitulasi & Predikat/KKM
+            Route::get('/rekapitulasi', [PenilaianRekapController::class, 'index'])->name('rekapitulasi.index');
+            Route::get('/rekapitulasi/export/excel', [PenilaianRekapController::class, 'exportExcel'])->name('rekapitulasi.export.excel');
+            Route::get('/rekapitulasi/export/pdf', [PenilaianRekapController::class, 'exportPdf'])->name('rekapitulasi.export.pdf');
+            Route::get('/kkm', [PenilaianKKMController::class, 'index'])->name('kkm.index');
 
             // API widget dashboard penilaian
             Route::get('/api/summary', [PenilaianDashboardController::class, 'apiSummary'])->name('api.summary');
@@ -485,12 +533,27 @@ Route::middleware('auth')->group(function () {
             Route::get('/api/remedial-queue', [PenilaianDashboardController::class, 'apiRemedialQueue'])->name('api.remedialQueue');
         });
 
-        // Pengaturan Bobot Nilai
+        // Pengaturan Bobot Nilai (Fleksibel via tbl_bobot_penilaian)
         Route::prefix('penilaian/bobot')->name('penilaian.bobot.')->group(function () {
-            Route::get('/', [BobotNilaiMapelController::class, 'index'])->name('index');
-            Route::post('/', [BobotNilaiMapelController::class, 'store'])->name('store');
-            Route::put('/{id}', [BobotNilaiMapelController::class, 'update'])->name('update');
-            Route::delete('/{id}', [BobotNilaiMapelController::class, 'destroy'])->name('destroy');
+            Route::get('/', [BobotPenilaianController::class, 'index'])->name('index');
+            Route::post('/', [BobotPenilaianController::class, 'store'])->name('store');
+            Route::put('/{id}', [BobotPenilaianController::class, 'update'])->name('update');
+            Route::delete('/', [BobotPenilaianController::class, 'destroy'])->name('destroy');
+
+            // KKM
+            Route::post('/kkm', [BobotPenilaianController::class, 'storeKKM'])->name('kkm.store');
+            Route::delete('/kkm/{id}', [BobotPenilaianController::class, 'destroyKKM'])->name('kkm.destroy');
+
+            // Predikat
+            Route::post('/predikat', [BobotPenilaianController::class, 'storePredikat'])->name('predikat.store');
+
+            // Config global
+            Route::post('/config', [BobotPenilaianController::class, 'storeConfig'])->name('config.store');
+
+            // Komponen
+            Route::post('/komponen', [BobotPenilaianController::class, 'storeKomponen'])->name('komponen.store');
+            Route::put('/komponen/{id}', [BobotPenilaianController::class, 'updateKomponen'])->name('komponen.update');
+            Route::delete('/komponen/{id}', [BobotPenilaianController::class, 'destroyKomponen'])->name('komponen.destroy');
         });
 
         // Analitik Nilai (JSON)
@@ -546,6 +609,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/pengaturan/pengguna', [PengaturanController::class, 'updateUsers'])->name('pengaturan.update-users');
         Route::put('/pengaturan/sistem', [PengaturanController::class, 'updateSystem'])->name('pengaturan.update-system');
         Route::put('/pengaturan/backup', [PengaturanController::class, 'updateBackup'])->name('pengaturan.update-backup');
+        Route::put('/pengaturan/jadwal', [PengaturanController::class, 'updateJadwal'])->name('pengaturan.jadwal.update');
 
         // Maintenance
         Route::prefix('maintenance')->name('maintenance.')->group(function () {

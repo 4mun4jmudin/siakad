@@ -232,6 +232,8 @@ export default function AdminLayout({ user, header, children }) {
             route().current("admin.penilaian.dashboard") ||
             route().current("admin.penilaian.bobot.*") ||
             route().current("admin.penilaian.nilai.*") ||
+            route().current("admin.penilaian.rekapitulasi.*") ||
+            route().current("admin.penilaian.kkm.*") ||
             route().current("admin.rapor.*") ||
             route().current("admin.remedial.*");
 
@@ -402,39 +404,59 @@ export default function AdminLayout({ user, header, children }) {
                         {/* Penilaian & Rapor */}
                         {!isAbsensiMode && (
                             <CollapsibleNavGroup
-                                title="Penilaian & Rapor"
+                                title="Penilaian"
                                 icon={<ChartBarIcon className="w-6 h-6" />}
                                 isCollapsed={!isSidebarOpen && !isMobile}
                                 active={penilaianActive}
                             >
                                 <li>
                                     <NavLink
-                                        href={route("admin.penilaian.dashboard")}
-                                        active={route().current("admin.penilaian.dashboard")}
+                                        href={route("admin.penilaian.bobot.index")}
+                                        active={route().current("admin.penilaian.bobot.*")}
                                         isCollapsed={false}
-                                        label="Dashboard Penilaian"
+                                        label="Pengaturan Penilaian"
+                                    >
+                                        <Cog6ToothIcon className="w-5 h-5" />
+                                    </NavLink>
+                                </li>
+                                <li>
+                                    <NavLink
+                                        href={route("admin.penilaian.dashboard")}
+                                        active={route().current("admin.penilaian.dashboard") || route().current("admin.penilaian.nilai.*")}
+                                        isCollapsed={false}
+                                        label="Penilaian"
                                     >
                                         <ChartPieIcon className="w-5 h-5" />
                                     </NavLink>
                                 </li>
                                 <li>
                                     <NavLink
-                                        href={route("admin.penilaian.bobot.index")}
-                                        active={route().current("admin.penilaian.bobot.*")}
+                                        href={route("admin.penilaian.rekapitulasi.index")}
+                                        active={route().current("admin.penilaian.rekapitulasi.*")}
                                         isCollapsed={false}
-                                        label="Bobot Nilai"
+                                        label="Rekapitulasi Nilai"
                                     >
-                                        <RectangleStackIcon className="w-5 h-5" />
+                                        <ClipboardDocumentListIcon className="w-5 h-5" />
                                     </NavLink>
                                 </li>
                                 <li>
                                     <NavLink
-                                        href={route("admin.penilaian.nilai.index")}
-                                        active={route().current("admin.penilaian.nilai.*")}
+                                        href={route("admin.penilaian.kkm.index")}
+                                        active={route().current("admin.penilaian.kkm.*")}
                                         isCollapsed={false}
-                                        label="Kelola Nilai"
+                                        label="Predikat & KKM"
                                     >
-                                        <ClipboardDocumentListIcon className="w-5 h-5" />
+                                        <SparklesIcon className="w-5 h-5" />
+                                    </NavLink>
+                                </li>
+                                <li>
+                                    <NavLink
+                                        href={route("admin.remedial.index")}
+                                        active={route().current("admin.remedial.*")}
+                                        isCollapsed={false}
+                                        label="Remedial & Pengayaan"
+                                    >
+                                        <RectangleStackIcon className="w-5 h-5" />
                                     </NavLink>
                                 </li>
                                 <li>
@@ -442,7 +464,7 @@ export default function AdminLayout({ user, header, children }) {
                                         href={route("admin.rapor.index")}
                                         active={route().current("admin.rapor.*")}
                                         isCollapsed={false}
-                                        label="Cetak Rapor"
+                                        label="Laporan Nilai"
                                     >
                                         <DocumentTextIcon className="w-5 h-5" />
                                     </NavLink>
@@ -453,135 +475,159 @@ export default function AdminLayout({ user, header, children }) {
                         {/* Jadwal, Jurnal */}
                         <MenuSectionLabel isCollapsed={!isSidebarOpen && !isMobile}>Jadwal & Jurnal</MenuSectionLabel>
                         {!isAbsensiMode && (
-                            <li>
-                                <NavLink
-                                    href={route("admin.jadwal-mengajar.index")}
-                                    active={route().current("admin.jadwal-mengajar.*")}
-                                    isCollapsed={!isSidebarOpen && !isMobile}
-                                    label="Jadwal Mengajar"
-                                >
-                                    <CalendarDaysIcon className="w-6 h-6" />
-                                </NavLink>
-                            </li>
-                        )}
-
-                        {!isAbsensiMode && (
-                            <li>
-                                <NavLink
-                                    href={route("admin.jadwal-pelajaran.index")}
-                                    active={route().current("admin.jadwal-pelajaran.*")}
-                                    isCollapsed={!isSidebarOpen && !isMobile}
-                                    label="Jadwal Pelajaran"
-                                >
-                                    <CalendarDaysIcon className="w-6 h-6" />
-                                </NavLink>
-                            </li>
-                        )}
-
-                        {!isAbsensiMode && (
-                            <li>
-                                <NavLink
-                                    href={route("admin.jurnal-mengajar.index")}
-                                    active={route().current("admin.jurnal-mengajar.*")}
-                                    isCollapsed={!isSidebarOpen && !isMobile}
-                                    label="Jurnal Mengajar"
-                                >
-                                    <DocumentTextIcon className="w-6 h-6" />
-                                </NavLink>
-                            </li>
-                        )}
-
-                        {!isAbsensiMode && (
-                            <li>
-                                <NavLink
-                                    href={route("admin.monitoring.materi")}
-                                    active={route().current("admin.monitoring.materi*")}
-                                    isCollapsed={!isSidebarOpen && !isMobile}
-                                    label="Monitoring Materi"
-                                >
-                                    <ChartPieIcon className="w-6 h-6" />
-                                </NavLink>
-                            </li>
-                        )}
-
-                        {!isAbsensiMode && (
-                            <li>
-                                <NavLink
-                                    href={route("admin.monitoring.tugas")}
-                                    active={route().current("admin.monitoring.tugas*")}
-                                    isCollapsed={!isSidebarOpen && !isMobile}
-                                    label="Monitoring Tugas"
-                                >
-                                    <ClipboardDocumentListIcon className="w-6 h-6" />
-                                </NavLink>
-                            </li>
-                        )}
-
-                        {/* Laporan (Tampil di kedua mode) */}
-                        <MenuSectionLabel isCollapsed={!isSidebarOpen && !isMobile}>Sistem & Laporan</MenuSectionLabel>
-                        <li>
-                            <NavLink
-                                href={route("admin.laporan.index")}
-                                active={route().current("admin.laporan.*")}
+                            <CollapsibleNavGroup
+                                title="Pembelajaran"
+                                icon={<CalendarDaysIcon className="w-6 h-6" />}
                                 isCollapsed={!isSidebarOpen && !isMobile}
-                                label="Laporan"
+                                active={
+                                    route().current("admin.jadwal-mengajar.*") ||
+                                    route().current("admin.jadwal-pelajaran.*") ||
+                                    route().current("admin.jadwal-interaktif.*") ||
+                                    route().current("admin.jurnal-mengajar.*") ||
+                                    route().current("admin.monitoring.materi*") ||
+                                    route().current("admin.monitoring.tugas*")
+                                }
                             >
-                                <ChartBarIcon className="w-6 h-6" />
-                            </NavLink>
-                        </li>
-
-                        {/* Audit Trail (Tampil di mode Full) */}
-                        {!isAbsensiMode && (
-                            <li>
-                                <NavLink
-                                    href={route("admin.log-aktivitas.index")}
-                                    active={route().current("admin.log-aktivitas.*")}
-                                    isCollapsed={!isSidebarOpen && !isMobile}
-                                    label="Log Aktivitas"
-                                >
-                                    <ClipboardDocumentListIcon className="w-6 h-6" />
-                                </NavLink>
-                            </li>
+                                <li>
+                                    <NavLink
+                                        href={route("admin.jadwal-mengajar.index")}
+                                        active={route().current("admin.jadwal-mengajar.*")}
+                                        isCollapsed={false}
+                                        label="Jadwal Mengajar"
+                                    >
+                                        <CalendarDaysIcon className="w-5 h-5" />
+                                    </NavLink>
+                                </li>
+                                <li>
+                                    <NavLink
+                                        href={route("admin.jadwal-pelajaran.index")}
+                                        active={route().current("admin.jadwal-pelajaran.*")}
+                                        isCollapsed={false}
+                                        label="Jadwal Pelajaran"
+                                    >
+                                        <CalendarDaysIcon className="w-5 h-5" />
+                                    </NavLink>
+                                </li>
+                                <li>
+                                    <NavLink
+                                        href={route("admin.jadwal-interaktif.index")}
+                                        active={route().current("admin.jadwal-interaktif.*")}
+                                        isCollapsed={false}
+                                        label="Jadwal Interaktif"
+                                    >
+                                        <SparklesIcon className="w-5 h-5" />
+                                    </NavLink>
+                                </li>
+                                <li>
+                                    <NavLink
+                                        href={route("admin.jurnal-mengajar.index")}
+                                        active={route().current("admin.jurnal-mengajar.*")}
+                                        isCollapsed={false}
+                                        label="Jurnal Mengajar"
+                                    >
+                                        <DocumentTextIcon className="w-5 h-5" />
+                                    </NavLink>
+                                </li>
+                                <li>
+                                    <NavLink
+                                        href={route("admin.monitoring.materi")}
+                                        active={route().current("admin.monitoring.materi*")}
+                                        isCollapsed={false}
+                                        label="Monitoring Materi"
+                                    >
+                                        <ChartPieIcon className="w-5 h-5" />
+                                    </NavLink>
+                                </li>
+                                <li>
+                                    <NavLink
+                                        href={route("admin.monitoring.tugas")}
+                                        active={route().current("admin.monitoring.tugas*")}
+                                        isCollapsed={false}
+                                        label="Monitoring Tugas"
+                                    >
+                                        <ClipboardDocumentListIcon className="w-5 h-5" />
+                                    </NavLink>
+                                </li>
+                            </CollapsibleNavGroup>
                         )}
 
-                        {!isAbsensiMode && (
+                        {/* Laporan & Sistem (Tampil di kedua mode untuk beberapa menu) */}
+                        <MenuSectionLabel isCollapsed={!isSidebarOpen && !isMobile}>Sistem & Laporan</MenuSectionLabel>
+                        <CollapsibleNavGroup
+                            title="Pengaturan Sistem"
+                            icon={<Cog6ToothIcon className="w-6 h-6" />}
+                            isCollapsed={!isSidebarOpen && !isMobile}
+                            active={
+                                route().current("admin.laporan.*") ||
+                                route().current("admin.log-aktivitas.*") ||
+                                route().current("admin.kalender.*") ||
+                                route().current("admin.users.*") ||
+                                route().current("admin.pengaturan.*")
+                            }
+                        >
                             <li>
                                 <NavLink
-                                    href={route("admin.kalender.index")}
-                                    active={route().current("admin.kalender.*")}
-                                    isCollapsed={!isSidebarOpen && !isMobile}
-                                    label="Kalender Akademik"
+                                    href={route("admin.laporan.index")}
+                                    active={route().current("admin.laporan.*")}
+                                    isCollapsed={false}
+                                    label="Laporan"
                                 >
-                                    <CalendarDaysIcon className="w-6 h-6" />
+                                    <ChartBarIcon className="w-5 h-5" />
                                 </NavLink>
                             </li>
-                        )}
 
-                        {!isAbsensiMode && (
-                            <li>
-                                <NavLink
-                                    href={route("admin.users.index")}
-                                    active={route().current("admin.users.*")}
-                                    isCollapsed={!isSidebarOpen && !isMobile}
-                                    label="Manajemen User"
-                                >
-                                    <UsersIcon className="w-6 h-6" />
-                                </NavLink>
-                            </li>
-                        )}
+                            {!isAbsensiMode && (
+                                <li>
+                                    <NavLink
+                                        href={route("admin.log-aktivitas.index")}
+                                        active={route().current("admin.log-aktivitas.*")}
+                                        isCollapsed={false}
+                                        label="Log Aktivitas"
+                                    >
+                                        <ClipboardDocumentListIcon className="w-5 h-5" />
+                                    </NavLink>
+                                </li>
+                            )}
 
-                        {!isAbsensiMode && (
-                            <li>
-                                <NavLink
-                                    href={route("admin.pengaturan.index")}
-                                    active={route().current("admin.pengaturan.*")}
-                                    isCollapsed={!isSidebarOpen && !isMobile}
-                                    label="Pengaturan"
-                                >
-                                    <Cog6ToothIcon className="w-6 h-6" />
-                                </NavLink>
-                            </li>
-                        )}
+                            {!isAbsensiMode && (
+                                <li>
+                                    <NavLink
+                                        href={route("admin.kalender.index")}
+                                        active={route().current("admin.kalender.*")}
+                                        isCollapsed={false}
+                                        label="Kalender Akademik"
+                                    >
+                                        <CalendarDaysIcon className="w-5 h-5" />
+                                    </NavLink>
+                                </li>
+                            )}
+
+                            {!isAbsensiMode && (
+                                <li>
+                                    <NavLink
+                                        href={route("admin.users.index")}
+                                        active={route().current("admin.users.*")}
+                                        isCollapsed={false}
+                                        label="Manajemen User"
+                                    >
+                                        <UsersIcon className="w-5 h-5" />
+                                    </NavLink>
+                                </li>
+                            )}
+
+                            {!isAbsensiMode && (
+                                <li>
+                                    <NavLink
+                                        href={route("admin.pengaturan.index")}
+                                        active={route().current("admin.pengaturan.*")}
+                                        isCollapsed={false}
+                                        label="Pengaturan"
+                                    >
+                                        <Cog6ToothIcon className="w-5 h-5" />
+                                    </NavLink>
+                                </li>
+                            )}
+                        </CollapsibleNavGroup>
                     </ul>
                 </nav>
 

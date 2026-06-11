@@ -1,3 +1,4 @@
+// resources/js/Pages/OrangTua/SuratIzin/Index.jsx
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import OrangTuaLayout from '@/Layouts/OrangTuaLayout';
 import { Head, useForm, usePage, Link } from '@inertiajs/react';
@@ -16,17 +17,21 @@ import {
   Ban,
   Loader2,
   ExternalLink,
+  Sparkles,
+  Send,
+  ClipboardList,
+  Inbox,
+  HeartPulse,
+  FileCheck2,
+  RefreshCw,
+  Paperclip,
+  CheckCircle2,
 } from 'lucide-react';
 
-function classNames(...c) {
-  return c.filter(Boolean).join(' ');
+function classNames(...classes) {
+  return classes.filter(Boolean).join(' ');
 }
 
-/**
- * IMPORTANT:
- * - Jangan lagi pakai try/catch window.route() untuk cek eksistensi route yang butuh param.
- * - Gunakan Ziggy routes map: window.Ziggy.routes
- */
 function routeExists(name) {
   return !!window?.Ziggy?.routes?.[name];
 }
@@ -34,43 +39,94 @@ function routeExists(name) {
 function safeRoute(name, params = {}, fallback = '#') {
   try {
     return window.route(name, params);
-  } catch (e) {
+  } catch {
     return fallback;
   }
 }
 
 function formatBytes(bytes = 0) {
   if (!bytes) return '0 B';
+
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
+
   return `${(bytes / Math.pow(k, i)).toFixed(i === 0 ? 0 : 1)} ${sizes[i]}`;
 }
 
 function isProbablyPdf(url = '') {
-  const u = String(url).toLowerCase();
-  return u.includes('.pdf') || u.includes('application/pdf');
+  const value = String(url).toLowerCase();
+  return value.includes('.pdf') || value.includes('application/pdf');
+}
+
+function formatDate(date) {
+  if (!date) return '-';
+
+  try {
+    return new Date(date).toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  } catch {
+    return date;
+  }
+}
+
+const statusTheme = {
+  Diajukan: {
+    soft: 'bg-amber-50 text-amber-700 border-amber-200',
+    solid: 'bg-gradient-to-br from-amber-500 to-orange-500 text-white',
+    icon: Clock,
+    label: 'Menunggu',
+  },
+  Disetujui: {
+    soft: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    solid: 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white',
+    icon: ShieldCheck,
+    label: 'Disetujui',
+  },
+  Ditolak: {
+    soft: 'bg-rose-50 text-rose-700 border-rose-200',
+    solid: 'bg-gradient-to-br from-rose-500 to-pink-500 text-white',
+    icon: ShieldX,
+    label: 'Ditolak',
+  },
+};
+
+function PremiumCard({ children, className = '', delay = 0 }) {
+  return (
+    <div
+      className={classNames(
+        'animate-soft-rise rounded-3xl border border-white/70 bg-white/85',
+        'shadow-[0_20px_55px_-35px_rgba(15,23,42,0.45)] backdrop-blur-xl',
+        'transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_28px_70px_-35px_rgba(15,23,42,0.55)]',
+        className
+      )}
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      {children}
+    </div>
+  );
 }
 
 function Badge({ status }) {
-  const map = {
-    Diajukan: 'bg-amber-100 text-amber-800 ring-1 ring-amber-200',
-    Disetujui: 'bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200',
-    Ditolak: 'bg-rose-100 text-rose-800 ring-1 ring-rose-200',
+  const current = statusTheme[status] || {
+    soft: 'bg-slate-50 text-slate-700 border-slate-200',
+    icon: AlertTriangle,
   };
-  const iconMap = {
-    Diajukan: <Clock className="h-3.5 w-3.5" />,
-    Disetujui: <ShieldCheck className="h-3.5 w-3.5" />,
-    Ditolak: <ShieldX className="h-3.5 w-3.5" />,
-  };
+
+  const Icon = current.icon;
+
   return (
     <span
       className={classNames(
-        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold',
-        map[status] || 'bg-slate-100 text-slate-700 ring-1 ring-slate-200'
+        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1',
+        'text-[11px] font-black uppercase tracking-wide shadow-sm',
+        current.soft
       )}
     >
-      {iconMap[status] || <AlertTriangle className="h-3.5 w-3.5" />}
+      <Icon className="h-3.5 w-3.5" />
       {status}
     </span>
   );
@@ -82,10 +138,11 @@ function PillLink({ href, active, children }) {
       href={href}
       preserveScroll
       className={classNames(
-        'inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold ring-1 transition',
+        'inline-flex min-h-10 items-center gap-2 rounded-2xl border px-3.5 py-2',
+        'text-xs font-black transition-all duration-300',
         active
-          ? 'bg-slate-900 text-white ring-slate-900'
-          : 'bg-white text-slate-700 ring-slate-200 hover:bg-slate-50'
+          ? 'border-emerald-500 bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-200'
+          : 'border-slate-200 bg-white/80 text-slate-600 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700'
       )}
     >
       {children}
@@ -95,29 +152,52 @@ function PillLink({ href, active, children }) {
 
 function Modal({ open, onClose, title, subtitle, children, footer }) {
   if (!open) return null;
+
   return (
     <div className="fixed inset-0 z-[90]">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="absolute inset-0 flex items-center justify-center p-4">
-        <div className="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
-          <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3">
-            <div className="min-w-0">
-              <div className="text-sm font-semibold text-slate-900 truncate">{title}</div>
-              {subtitle && <div className="text-xs text-slate-500 mt-0.5">{subtitle}</div>}
+      <div
+        className="absolute inset-0 bg-slate-950/55 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      <div className="absolute inset-0 flex items-center justify-center p-3 sm:p-4">
+        <div className="animate-modal-pop w-full max-w-3xl overflow-hidden rounded-3xl border border-white/70 bg-white shadow-2xl">
+          <div className="relative overflow-hidden border-b border-slate-100 bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-700 px-4 py-4 text-white sm:px-5">
+            <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/15 blur-2xl" />
+
+            <div className="relative flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-base font-black leading-tight break-words">
+                  {title}
+                </div>
+
+                {subtitle && (
+                  <div className="mt-1 text-xs font-medium leading-relaxed text-white/75 break-words">
+                    {subtitle}
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-white transition hover:bg-white/20"
+                aria-label="Tutup"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex items-center justify-center rounded-lg p-2 text-slate-600 hover:bg-slate-100"
-              aria-label="Tutup"
-            >
-              <X className="h-5 w-5" />
-            </button>
           </div>
 
-          <div className="max-h-[75vh] overflow-auto p-4">{children}</div>
+          <div className="max-h-[75vh] overflow-auto p-4 custom-scrollbar sm:p-5">
+            {children}
+          </div>
 
-          {footer && <div className="border-t border-slate-100 px-4 py-3">{footer}</div>}
+          {footer && (
+            <div className="border-t border-slate-100 bg-slate-50/70 px-4 py-3 sm:px-5">
+              {footer}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -129,8 +209,11 @@ function AttachmentViewer({ row }) {
 
   if (!url) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-        Tidak ada lampiran.
+      <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
+        <Paperclip className="mx-auto mb-2 h-8 w-8 text-slate-300" />
+        <p className="text-sm font-bold text-slate-500">
+          Tidak ada lampiran.
+        </p>
       </div>
     );
   }
@@ -140,13 +223,17 @@ function AttachmentViewer({ row }) {
       <iframe
         title="Preview PDF"
         src={url}
-        className="h-[70vh] w-full rounded-xl ring-1 ring-slate-200"
+        className="h-[70vh] w-full rounded-3xl border border-slate-200 bg-white shadow-sm"
       />
     );
   }
 
   return (
-    <img src={url} alt="Lampiran" className="w-full rounded-xl ring-1 ring-slate-200" />
+    <img
+      src={url}
+      alt="Lampiran"
+      className="w-full rounded-3xl border border-slate-200 bg-white shadow-sm"
+    />
   );
 }
 
@@ -171,11 +258,14 @@ function Dropzone({
     }
 
     const isImage = file.type?.startsWith('image/');
+
     if (isImage) {
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
+
       return () => URL.revokeObjectURL(url);
     }
+
     setPreviewUrl(null);
   }, [file]);
 
@@ -186,12 +276,16 @@ function Dropzone({
     setPreviewOpen(false);
   };
 
-  const onDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const onDrop = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
     setDragActive(false);
-    const f = e.dataTransfer?.files?.[0];
-    if (f) onChange(f);
+
+    const droppedFile = event.dataTransfer?.files?.[0];
+
+    if (droppedFile) {
+      onChange(droppedFile);
+    }
   };
 
   const canPreview =
@@ -202,22 +296,24 @@ function Dropzone({
     <>
       <div
         onClick={pick}
-        onDragEnter={(e) => {
-          e.preventDefault();
+        onDragEnter={(event) => {
+          event.preventDefault();
           setDragActive(true);
         }}
-        onDragOver={(e) => {
-          e.preventDefault();
+        onDragOver={(event) => {
+          event.preventDefault();
           setDragActive(true);
         }}
-        onDragLeave={(e) => {
-          e.preventDefault();
+        onDragLeave={(event) => {
+          event.preventDefault();
           setDragActive(false);
         }}
         onDrop={onDrop}
         className={classNames(
-          'group relative cursor-pointer rounded-2xl border-2 border-dashed p-4 transition',
-          dragActive ? 'border-sky-400 bg-sky-50' : 'border-slate-200 bg-white hover:bg-slate-50',
+          'group relative cursor-pointer rounded-3xl border-2 border-dashed p-4 transition-all duration-300',
+          dragActive
+            ? 'border-emerald-400 bg-emerald-50'
+            : 'border-slate-200 bg-slate-50/70 hover:border-emerald-200 hover:bg-emerald-50/40',
           error ? 'border-rose-300 bg-rose-50/50' : ''
         )}
       >
@@ -226,83 +322,107 @@ function Dropzone({
           type="file"
           accept={accept}
           className="hidden"
-          onChange={(e) => onChange(e.target.files?.[0] ?? null)}
+          onChange={(event) => onChange(event.target.files?.[0] ?? null)}
         />
 
         {!file ? (
           <div className="flex items-start gap-3">
-            <div className="mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white shadow-sm">
+            <div className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-200">
               <FileUp className="h-5 w-5" />
             </div>
+
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-semibold text-slate-900">Upload lampiran</div>
-              <div className="text-xs text-slate-600 mt-0.5">
-                Drag & drop di sini, atau <span className="font-semibold text-sky-700">klik untuk pilih file</span>.
+              <div className="text-sm font-black text-slate-900">
+                Upload lampiran
               </div>
-              <div className="text-[11px] text-slate-500 mt-2">{hint}</div>
+
+              <div className="mt-0.5 text-xs font-medium leading-relaxed text-slate-600">
+                Drag & drop di sini, atau{' '}
+                <span className="font-black text-emerald-700">
+                  klik untuk pilih file
+                </span>.
+              </div>
+
+              <div className="mt-2 text-[11px] font-semibold text-slate-400">
+                {hint}
+              </div>
             </div>
           </div>
         ) : (
           <div className="flex items-start gap-3">
             <div
               className={classNames(
-                'mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-xl shadow-sm ring-1 ring-black/5',
-                previewUrl ? 'bg-sky-600 text-white' : 'bg-slate-900 text-white'
+                'mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white shadow-lg',
+                previewUrl
+                  ? 'bg-gradient-to-br from-sky-500 to-cyan-500 shadow-sky-200'
+                  : 'bg-gradient-to-br from-slate-700 to-slate-900 shadow-slate-200'
               )}
             >
               {previewUrl ? <ImageIcon className="h-5 w-5" /> : <FileText className="h-5 w-5" />}
             </div>
 
             <div className="min-w-0 flex-1">
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
-                  <div className="text-sm font-semibold text-slate-900 truncate">{file.name}</div>
-                  <div className="text-xs text-slate-600 mt-0.5">
+                  <div className="truncate text-sm font-black text-slate-900">
+                    {file.name}
+                  </div>
+
+                  <div className="mt-0.5 text-xs font-semibold text-slate-500">
                     {file.type || 'file'} • {formatBytes(file.size)}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
                   {canPreview && (
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
+                      onClick={(event) => {
+                        event.stopPropagation();
                         setPreviewOpen(true);
                       }}
-                      className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800"
+                      className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-3 py-2 text-xs font-black text-white transition hover:bg-slate-800"
                       title="Preview"
                     >
-                      <Eye className="h-4 w-4" /> Lihat
+                      <Eye className="h-4 w-4" />
+                      Lihat
                     </button>
                   )}
+
                   <button
                     type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
+                    onClick={(event) => {
+                      event.stopPropagation();
                       clear();
                     }}
-                    className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-white px-3 py-2 text-xs font-black text-rose-600 ring-1 ring-slate-200 transition hover:bg-rose-50"
                     title="Hapus file"
                   >
-                    <X className="h-4 w-4" /> Hapus
+                    <X className="h-4 w-4" />
+                    Hapus
                   </button>
                 </div>
               </div>
 
               {previewUrl && (
-                <div className="mt-3 overflow-hidden rounded-xl ring-1 ring-slate-200 bg-slate-50">
-                  <img src={previewUrl} alt="Preview" className="h-40 w-full object-cover" />
+                <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  <img
+                    src={previewUrl}
+                    alt="Preview"
+                    className="h-40 w-full object-cover"
+                  />
                 </div>
               )}
             </div>
           </div>
         )}
-
-        <div className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset ring-black/5" />
       </div>
 
-      {error && <div className="mt-2 text-xs text-rose-600">{error}</div>}
+      {error && (
+        <div className="mt-2 text-xs font-semibold text-rose-600">
+          {error}
+        </div>
+      )}
 
       <Modal
         open={previewOpen}
@@ -311,15 +431,23 @@ function Dropzone({
         subtitle="Preview lampiran sebelum dikirim"
       >
         {previewUrl ? (
-          <img src={previewUrl} alt="Preview" className="w-full rounded-xl ring-1 ring-slate-200" />
+          <img
+            src={previewUrl}
+            alt="Preview"
+            className="w-full rounded-3xl border border-slate-200"
+          />
         ) : (
           <div className="space-y-3">
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-              File ini bukan gambar. Preview langsung kadang terbatas — tapi aman, file tetap akan ikut terkirim.
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700">
+              File ini bukan gambar. Preview langsung kadang terbatas, tapi file tetap akan ikut terkirim.
             </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <div className="text-sm font-semibold text-slate-900">{file?.name}</div>
-              <div className="text-xs text-slate-600 mt-1">
+
+            <div className="rounded-3xl border border-slate-200 bg-white p-4">
+              <div className="text-sm font-black text-slate-900">
+                {file?.name}
+              </div>
+
+              <div className="mt-1 text-xs font-semibold text-slate-600">
                 {file?.type || 'file'} • {formatBytes(file?.size || 0)}
               </div>
             </div>
@@ -332,13 +460,151 @@ function Dropzone({
 
 function EmptyState() {
   return (
-    <div className="py-12 text-center">
-      <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900 text-white">
-        <CalendarDays className="h-6 w-6" />
+    <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-12 text-center">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-3xl bg-white text-slate-300 shadow-sm">
+        <Inbox className="h-7 w-7" />
       </div>
-      <div className="mt-3 text-sm font-semibold text-slate-900">Belum ada pengajuan</div>
-      <div className="mt-1 text-sm text-slate-600">
-        Buat pengajuan izin/sakit untuk melihat riwayat di sini.
+
+      <div className="mt-4 text-sm font-black text-slate-700">
+        Belum ada pengajuan
+      </div>
+
+      <div className="mt-1 text-sm leading-relaxed text-slate-500">
+        Buat pengajuan izin atau sakit untuk melihat riwayat di sini.
+      </div>
+    </div>
+  );
+}
+
+function StatMiniCard({ label, value, icon: Icon, className }) {
+  return (
+    <div className="rounded-3xl border border-white/15 bg-white/10 p-3 text-center backdrop-blur-md">
+      <Icon className="mx-auto h-5 w-5 text-white/90" />
+
+      <p className="mt-2 text-2xl font-black leading-none text-white">
+        {value}
+      </p>
+
+      <p className="mt-1 text-[10px] font-black uppercase tracking-wide text-white/70">
+        {label}
+      </p>
+    </div>
+  );
+}
+
+function RequestCard({
+  row,
+  onView,
+  onCancel,
+  canCancelRoute,
+  cancelForm,
+  cancelRow,
+}) {
+  const canCancel = row.status_pengajuan === 'Diajukan';
+  const cancelDisabled = !canCancel || !canCancelRoute || cancelForm.processing;
+  const hasAttachment = row.view_url || row.download_url || row.preview_url;
+
+  return (
+    <div className="group rounded-3xl border border-slate-100 bg-white/90 p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-emerald-100 hover:bg-emerald-50/30 hover:shadow-md">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-black uppercase tracking-wide text-slate-600">
+              {row.jenis_izin === 'Sakit' ? (
+                <HeartPulse className="h-3.5 w-3.5 text-rose-500" />
+              ) : (
+                <FileCheck2 className="h-3.5 w-3.5 text-emerald-500" />
+              )}
+              {row.jenis_izin}
+            </span>
+
+            <Badge status={row.status_pengajuan} />
+
+            <span
+              className={classNames(
+                'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-black uppercase tracking-wide',
+                hasAttachment
+                  ? 'border-sky-200 bg-sky-50 text-sky-700'
+                  : 'border-slate-200 bg-slate-50 text-slate-500'
+              )}
+            >
+              <Paperclip className="h-3.5 w-3.5" />
+              {hasAttachment ? 'Lampiran Ada' : 'Tanpa Lampiran'}
+            </span>
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-500">
+            <span className="rounded-full bg-slate-50 px-3 py-1">
+              Mulai: {formatDate(row.tanggal_mulai_izin)}
+            </span>
+
+            <span className="rounded-full bg-slate-50 px-3 py-1">
+              Selesai: {formatDate(row.tanggal_selesai_izin)}
+            </span>
+          </div>
+
+          <div className="mt-2 text-[11px] font-semibold text-slate-400">
+            Diajukan: {formatDate(row.tanggal_pengajuan)}
+            {row.tanggal_persetujuan ? ` • Diputuskan: ${formatDate(row.tanggal_persetujuan)}` : ''}
+          </div>
+
+          {row.keterangan && (
+            <div className="mt-3 rounded-2xl bg-slate-50/80 px-3 py-2 text-sm font-medium leading-relaxed text-slate-700">
+              {row.keterangan}
+            </div>
+          )}
+
+          {row.status_pengajuan === 'Disetujui' && (
+            <div className="mt-3 inline-flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800">
+              <ShieldCheck className="h-4 w-4" />
+              Pengajuan disetujui.
+            </div>
+          )}
+
+          {row.status_pengajuan === 'Ditolak' && (
+            <div className="mt-3 inline-flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-800">
+              <ShieldX className="h-4 w-4" />
+              Pengajuan ditolak.
+            </div>
+          )}
+        </div>
+
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onView(row)}
+            className="inline-flex min-h-10 items-center gap-2 rounded-2xl bg-slate-900 px-3 py-2 text-xs font-black text-white transition hover:bg-slate-800"
+          >
+            <Eye className="h-4 w-4" />
+            View Surat
+          </button>
+
+          <button
+            type="button"
+            disabled={cancelDisabled}
+            onClick={() => onCancel(row)}
+            className={classNames(
+              'inline-flex min-h-10 items-center gap-2 rounded-2xl px-3 py-2 text-xs font-black ring-1 transition',
+              cancelDisabled
+                ? 'cursor-not-allowed bg-slate-100 text-slate-400 ring-slate-200'
+                : 'bg-white text-rose-700 ring-rose-200 hover:bg-rose-50'
+            )}
+            title={
+              !canCancel
+                ? 'Hanya bisa dibatalkan saat status Diajukan'
+                : !canCancelRoute
+                  ? 'Route orangtua.surat-izin.cancel belum tersedia'
+                  : 'Batalkan pengajuan'
+            }
+          >
+            {cancelForm.processing && cancelRow?.id_surat === row.id_surat ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Ban className="h-4 w-4" />
+            )}
+            Batalkan
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -356,6 +622,7 @@ export default function Index() {
   });
 
   const cancelForm = useForm({});
+
   const [viewRow, setViewRow] = useState(null);
   const [cancelRow, setCancelRow] = useState(null);
 
@@ -363,11 +630,13 @@ export default function Index() {
     const ket = (form.data.keterangan || '').trim();
     const start = form.data.tanggal_mulai_izin;
     const end = form.data.tanggal_selesai_izin;
+
     return !!start && !!end && ket.length >= 5;
   }, [form.data]);
 
-  const submit = (e) => {
-    e.preventDefault();
+  const submit = (event) => {
+    event.preventDefault();
+
     form.post(safeRoute('orangtua.surat-izin.store'), {
       forceFormData: true,
       preserveScroll: true,
@@ -377,7 +646,6 @@ export default function Index() {
 
   const canCancelRoute = routeExists('orangtua.surat-izin.cancel');
 
-  // FIX UTAMA: route cancel pakai {surat} => kirim params object { surat: id_surat }
   const doCancel = () => {
     if (!cancelRow) return;
 
@@ -390,14 +658,35 @@ export default function Index() {
   const currentStatus = filters?.status || 'Semua';
   const currentJenis = filters?.jenis || 'Semua';
 
+  const rows = izin?.data || [];
+  const totalRows = izin?.total ?? rows.length;
+  const totalDiajukan = rows.filter((item) => item.status_pengajuan === 'Diajukan').length;
+  const totalDisetujui = rows.filter((item) => item.status_pengajuan === 'Disetujui').length;
+  const totalDitolak = rows.filter((item) => item.status_pengajuan === 'Ditolak').length;
+
   if (!siswa) {
     return (
       <OrangTuaLayout header="Pengajuan Surat Izin">
         <Head title="Pengajuan Surat Izin" />
-        <div className="rounded-2xl border border-slate-200 bg-white p-6">
-          <div className="text-lg font-semibold text-slate-900">Siswa belum terhubung</div>
-          <div className="text-sm text-slate-600 mt-1">
-            Akun orang tua ini belum terhubung dengan data siswa.
+
+        <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-emerald-50/35 to-sky-50/60 py-12">
+          <div className="pointer-events-none absolute -left-24 top-10 h-72 w-72 rounded-full bg-emerald-200/30 blur-3xl" />
+          <div className="pointer-events-none absolute right-0 top-40 h-80 w-80 translate-x-24 rounded-full bg-sky-200/40 blur-3xl" />
+
+          <div className="relative mx-auto max-w-4xl px-4">
+            <PremiumCard className="p-8 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-3xl bg-amber-50 text-amber-600">
+                <AlertTriangle className="h-7 w-7" />
+              </div>
+
+              <h2 className="mt-4 text-lg font-black text-slate-900">
+                Siswa belum terhubung
+              </h2>
+
+              <p className="mt-2 text-sm leading-relaxed text-slate-500">
+                Akun orang tua ini belum terhubung dengan data siswa.
+              </p>
+            </PremiumCard>
           </div>
         </div>
       </OrangTuaLayout>
@@ -408,355 +697,374 @@ export default function Index() {
     <OrangTuaLayout header="Pengajuan Surat Izin">
       <Head title="Pengajuan Surat Izin" />
 
-      <div className="mx-auto max-w-screen-2xl space-y-6">
-        {/* HERO */}
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <div className="text-lg font-semibold text-slate-900">Pengajuan Izin / Sakit</div>
-              <div className="text-sm text-slate-600">
-                Untuk ananda: <span className="font-semibold">{siswa?.nama_lengkap}</span>
-              </div>
+      <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-emerald-50/35 to-sky-50/60 py-5 sm:py-6">
+        <div className="pointer-events-none absolute -left-24 top-10 h-72 w-72 rounded-full bg-emerald-200/30 blur-3xl" />
+        <div className="pointer-events-none absolute right-0 top-40 h-80 w-80 translate-x-24 rounded-full bg-sky-200/40 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-10 left-1/3 h-72 w-72 rounded-full bg-indigo-200/20 blur-3xl" />
 
-              {(flash?.success || flash?.error) && (
-                <div className="mt-3">
-                  {flash?.success && (
-                    <div className="inline-flex items-center gap-2 rounded-2xl bg-emerald-50 px-3 py-2 text-sm text-emerald-800 ring-1 ring-emerald-200">
-                      <ShieldCheck className="h-4 w-4" />
-                      <span className="font-semibold">Berhasil:</span> {flash.success}
-                    </div>
-                  )}
-                  {flash?.error && (
-                    <div className="inline-flex items-center gap-2 rounded-2xl bg-rose-50 px-3 py-2 text-sm text-rose-800 ring-1 ring-rose-200">
-                      <AlertTriangle className="h-4 w-4" />
-                      <span className="font-semibold">Gagal:</span> {flash.error}
+        <div className="relative mx-auto max-w-7xl space-y-5 px-3 pb-12 sm:space-y-6 sm:px-6 lg:px-8">
+          {/* HERO */}
+          <PremiumCard className="relative overflow-hidden p-0" delay={0}>
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-700" />
+            <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/15 blur-2xl" />
+            <div className="absolute bottom-0 left-1/3 h-32 w-32 translate-y-10 rounded-full bg-emerald-200/20 blur-2xl" />
+
+            <div className="relative p-4 text-white sm:p-6 lg:p-7">
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-black uppercase tracking-wide text-emerald-50 backdrop-blur-md">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Pengajuan Izin / Sakit
+                  </div>
+
+                  <h1 className="mt-3 text-xl font-black leading-tight tracking-tight sm:text-2xl lg:text-3xl">
+                    Surat Izin Ananda
+                  </h1>
+
+                  <p className="mt-2 max-w-3xl text-sm font-medium leading-relaxed text-white/80">
+                    Buat pengajuan izin atau sakit untuk{' '}
+                    <span className="font-black text-emerald-100">
+                      {siswa?.nama_lengkap}
+                    </span>
+                    . Pantau status persetujuan langsung dari halaman ini.
+                  </p>
+
+                  {(flash?.success || flash?.error) && (
+                    <div className="mt-4">
+                      {flash?.success && (
+                        <div className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-3 py-2 text-sm font-semibold text-white backdrop-blur-md">
+                          <ShieldCheck className="h-4 w-4" />
+                          <span className="font-black">Berhasil:</span> {flash.success}
+                        </div>
+                      )}
+
+                      {flash?.error && (
+                        <div className="inline-flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">
+                          <AlertTriangle className="h-4 w-4" />
+                          <span className="font-black">Gagal:</span> {flash.error}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
-              )}
+
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[480px]">
+                  <StatMiniCard label="Total" value={totalRows} icon={ClipboardList} />
+                  <StatMiniCard label="Diajukan" value={totalDiajukan} icon={Clock} />
+                  <StatMiniCard label="Disetujui" value={totalDisetujui} icon={ShieldCheck} />
+                  <StatMiniCard label="Ditolak" value={totalDitolak} icon={ShieldX} />
+                </div>
+              </div>
             </div>
+          </PremiumCard>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="inline-flex items-center gap-2 rounded-2xl bg-slate-50 px-3 py-2 text-xs text-slate-700 ring-1 ring-slate-200">
-                <Filter className="h-4 w-4" />
-                Filter cepat:
+          {/* FILTER */}
+          <PremiumCard className="p-3 sm:p-4" delay={80}>
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-center gap-2 text-sm font-black text-slate-900">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+                  <Filter className="h-5 w-5" />
+                </div>
+                Filter cepat
               </div>
 
-              <PillLink
-                href={safeRoute('orangtua.surat-izin.index', { status: 'Semua', jenis: 'Semua' })}
-                active={currentStatus === 'Semua' && currentJenis === 'Semua'}
-              >
-                Semua
-              </PillLink>
-
-              <PillLink
-                href={safeRoute('orangtua.surat-izin.index', { status: 'Diajukan', jenis: currentJenis })}
-                active={currentStatus === 'Diajukan'}
-              >
-                <Clock className="h-4 w-4" /> Diajukan
-              </PillLink>
-
-              <PillLink
-                href={safeRoute('orangtua.surat-izin.index', { status: 'Disetujui', jenis: currentJenis })}
-                active={currentStatus === 'Disetujui'}
-              >
-                <ShieldCheck className="h-4 w-4" /> Disetujui
-              </PillLink>
-
-              <PillLink
-                href={safeRoute('orangtua.surat-izin.index', { status: 'Ditolak', jenis: currentJenis })}
-                active={currentStatus === 'Ditolak'}
-              >
-                <ShieldX className="h-4 w-4" /> Ditolak
-              </PillLink>
-
-              <Link
-                href={safeRoute('orangtua.surat-izin.index', { status: 'Semua', jenis: 'Semua' })}
-                preserveScroll
-                className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
-              >
-                Reset
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-          {/* FORM */}
-          <div className="lg:col-span-2">
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6">
-              <div className="flex items-center justify-between">
-                <div className="text-base font-semibold text-slate-900">Buat Pengajuan</div>
-                <span className="text-xs text-slate-500 inline-flex items-center gap-2">
-                  <FileUp className="h-4 w-4" /> Lampiran opsional
-                </span>
-              </div>
-
-              <div className="mt-3 rounded-2xl bg-slate-50 p-3 text-xs text-slate-700 ring-1 ring-slate-200">
-                Isi tanggal, alasan singkat, dan (opsional) bukti. Status keputusan tampil di riwayat.
-              </div>
-
-              <form onSubmit={submit} className="mt-4 space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-slate-700">Jenis</label>
-                  <div className="mt-2 grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => form.setData('jenis_izin', 'Izin')}
-                      className={classNames(
-                        'rounded-2xl px-4 py-2.5 text-sm font-semibold ring-1 transition',
-                        form.data.jenis_izin === 'Izin'
-                          ? 'bg-slate-900 text-white ring-slate-900'
-                          : 'bg-white text-slate-700 ring-slate-200 hover:bg-slate-50'
-                      )}
-                    >
-                      Izin
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => form.setData('jenis_izin', 'Sakit')}
-                      className={classNames(
-                        'rounded-2xl px-4 py-2.5 text-sm font-semibold ring-1 transition',
-                        form.data.jenis_izin === 'Sakit'
-                          ? 'bg-rose-600 text-white ring-rose-600'
-                          : 'bg-white text-slate-700 ring-slate-200 hover:bg-slate-50'
-                      )}
-                    >
-                      Sakit
-                    </button>
-                  </div>
-                  {form.errors.jenis_izin && <div className="mt-2 text-xs text-rose-600">{form.errors.jenis_izin}</div>}
-                </div>
-
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div>
-                    <label className="text-sm font-medium text-slate-700">Mulai</label>
-                    <input
-                      type="date"
-                      className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
-                      value={form.data.tanggal_mulai_izin}
-                      onChange={(e) => form.setData('tanggal_mulai_izin', e.target.value)}
-                    />
-                    {form.errors.tanggal_mulai_izin && (
-                      <div className="mt-2 text-xs text-rose-600">{form.errors.tanggal_mulai_izin}</div>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-slate-700">Selesai</label>
-                    <input
-                      type="date"
-                      className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
-                      value={form.data.tanggal_selesai_izin}
-                      onChange={(e) => form.setData('tanggal_selesai_izin', e.target.value)}
-                      min={form.data.tanggal_mulai_izin || undefined}
-                    />
-                    {form.errors.tanggal_selesai_izin && (
-                      <div className="mt-2 text-xs text-rose-600">{form.errors.tanggal_selesai_izin}</div>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-slate-700">Keterangan</label>
-                  <textarea
-                    rows={4}
-                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
-                    value={form.data.keterangan}
-                    onChange={(e) => form.setData('keterangan', e.target.value)}
-                    placeholder="Contoh: demam, kontrol dokter, urusan keluarga, dll..."
-                  />
-                  <div className="mt-2 flex items-center justify-between text-xs">
-                    <div
-                      className={classNames(
-                        'inline-flex items-center gap-2',
-                        (form.data.keterangan || '').trim().length < 5 ? 'text-slate-500' : 'text-emerald-700'
-                      )}
-                    >
-                      {(form.data.keterangan || '').trim().length < 5 ? (
-                        <>
-                          <AlertTriangle className="h-4 w-4" /> Minimal 5 karakter
-                        </>
-                      ) : (
-                        <>
-                          <ShieldCheck className="h-4 w-4" /> Oke
-                        </>
-                      )}
-                    </div>
-                    <div className="text-slate-500">{(form.data.keterangan || '').length}/500</div>
-                  </div>
-                  {form.errors.keterangan && <div className="mt-2 text-xs text-rose-600">{form.errors.keterangan}</div>}
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-slate-700">Lampiran (opsional)</label>
-                  <div className="mt-2">
-                    <Dropzone
-                      value={form.data.file_lampiran}
-                      onChange={(f) => form.setData('file_lampiran', f)}
-                      error={form.errors.file_lampiran}
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={!canSubmit || form.processing}
-                  className={classNames(
-                    'w-full inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition',
-                    !canSubmit || form.processing
-                      ? 'bg-slate-200 text-slate-500 cursor-not-allowed'
-                      : 'bg-sky-600 text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-400'
-                  )}
+              <div className="flex flex-wrap items-center gap-2">
+                <PillLink
+                  href={safeRoute('orangtua.surat-izin.index', { status: 'Semua', jenis: 'Semua' })}
+                  active={currentStatus === 'Semua' && currentJenis === 'Semua'}
                 >
-                  {form.processing && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {form.processing ? 'Mengirim...' : 'Kirim Pengajuan'}
-                </button>
+                  Semua
+                </PillLink>
 
-                <div className="text-[11px] text-slate-500">
-                  Setelah dikirim, tunggu persetujuan. Kalau masih <b>Diajukan</b>, bisa dibatalkan.
-                </div>
-              </form>
-            </div>
-          </div>
+                <PillLink
+                  href={safeRoute('orangtua.surat-izin.index', { status: 'Diajukan', jenis: currentJenis })}
+                  active={currentStatus === 'Diajukan'}
+                >
+                  <Clock className="h-4 w-4" />
+                  Diajukan
+                </PillLink>
 
-          {/* LIST */}
-          <div className="lg:col-span-3">
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <div className="text-base font-semibold text-slate-900">Riwayat Pengajuan</div>
-                  <div className="text-sm text-slate-600">
-                    Total: <span className="font-semibold">{izin?.total ?? (izin?.data?.length ?? 0)}</span>
-                  </div>
-                </div>
+                <PillLink
+                  href={safeRoute('orangtua.surat-izin.index', { status: 'Disetujui', jenis: currentJenis })}
+                  active={currentStatus === 'Disetujui'}
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  Disetujui
+                </PillLink>
+
+                <PillLink
+                  href={safeRoute('orangtua.surat-izin.index', { status: 'Ditolak', jenis: currentJenis })}
+                  active={currentStatus === 'Ditolak'}
+                >
+                  <ShieldX className="h-4 w-4" />
+                  Ditolak
+                </PillLink>
 
                 <Link
                   href={safeRoute('orangtua.surat-izin.index', { status: 'Semua', jenis: 'Semua' })}
                   preserveScroll
-                  className="inline-flex items-center gap-2 rounded-full bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
+                  className="inline-flex min-h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white/80 px-3.5 py-2 text-xs font-black text-slate-600 transition hover:bg-slate-50"
                 >
-                  <Filter className="h-4 w-4" /> Reset filter
+                  <RefreshCw className="h-4 w-4" />
+                  Reset
                 </Link>
               </div>
+            </div>
+          </PremiumCard>
 
-              <div className="mt-4 space-y-3">
-                {(izin?.data || []).map((row) => {
-                  const canCancel = row.status_pengajuan === 'Diajukan';
-                  const cancelDisabled = !canCancel || !canCancelRoute || cancelForm.processing;
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
+            {/* FORM */}
+            <div className="lg:col-span-2">
+              <PremiumCard className="p-4 sm:p-5" delay={120}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-black uppercase tracking-wide text-emerald-700">
+                      <Send className="h-3.5 w-3.5" />
+                      Buat Pengajuan
+                    </div>
 
-                  return (
-                    <div
-                      key={row.id_surat}
-                      className="rounded-2xl border border-slate-200 p-4 hover:bg-slate-50/60 transition"
-                    >
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <div className="text-sm font-semibold text-slate-900">
-                              {row.jenis_izin} • {row.tanggal_mulai_izin} → {row.tanggal_selesai_izin}
-                            </div>
-                            <Badge status={row.status_pengajuan} />
-                            <span
-                              className={classNames(
-                                'inline-flex items-center rounded-full px-2 py-1 text-[11px] font-semibold ring-1',
-                                row.view_url || row.download_url || row.preview_url
-                                  ? 'bg-sky-50 text-sky-700 ring-sky-200'
-                                  : 'bg-slate-50 text-slate-600 ring-slate-200'
-                              )}
-                            >
-                              {row.view_url || row.download_url || row.preview_url ? 'Lampiran: Ada' : 'Lampiran: -'}
-                            </span>
-                          </div>
+                    <h2 className="mt-2 text-lg font-black text-slate-900">
+                      Izin / Sakit
+                    </h2>
 
-                          <div className="mt-1 text-xs text-slate-500">
-                            Diajukan: {row.tanggal_pengajuan}
-                            {row.tanggal_persetujuan ? ` • Diputuskan: ${row.tanggal_persetujuan}` : ''}
-                          </div>
+                    <p className="mt-1 text-xs font-medium leading-relaxed text-slate-500">
+                      Isi tanggal, alasan singkat, dan lampiran bila diperlukan.
+                    </p>
+                  </div>
 
-                          {row.keterangan && (
-                            <div className="mt-3 text-sm text-slate-700 leading-relaxed">
-                              {row.keterangan}
-                            </div>
-                          )}
-                        </div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-slate-500">
+                    <FileUp className="h-3.5 w-3.5" />
+                    Opsional
+                  </span>
+                </div>
 
-                        <div className="flex flex-wrap items-center gap-2">
-                          {/* VIEW SURAT */}
-                          <button
-                            type="button"
-                            onClick={() => setViewRow(row)}
-                            className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800"
-                          >
-                            <Eye className="h-4 w-4" /> View Surat
-                          </button>
+                <form onSubmit={submit} className="mt-5 space-y-4">
+                  <div>
+                    <label className="mb-2 block text-xs font-black uppercase tracking-wide text-slate-500">
+                      Jenis Pengajuan
+                    </label>
 
-                          {/* CANCEL */}
-                          <button
-                            type="button"
-                            disabled={cancelDisabled}
-                            onClick={() => setCancelRow(row)}
-                            className={classNames(
-                              'inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold ring-1 transition',
-                              cancelDisabled
-                                ? 'bg-slate-100 text-slate-400 ring-slate-200 cursor-not-allowed'
-                                : 'bg-white text-rose-700 ring-rose-200 hover:bg-rose-50'
-                            )}
-                            title={
-                              !canCancel
-                                ? 'Hanya bisa dibatalkan saat status Diajukan'
-                                : !canCancelRoute
-                                ? 'Route orangtua.surat-izin.cancel belum tersedia'
-                                : 'Batalkan pengajuan'
-                            }
-                          >
-                            {cancelForm.processing && cancelRow?.id_surat === row.id_surat ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Ban className="h-4 w-4" />
-                            )}
-                            Batalkan
-                          </button>
-                        </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => form.setData('jenis_izin', 'Izin')}
+                        className={classNames(
+                          'rounded-2xl px-4 py-3 text-sm font-black ring-1 transition-all duration-300',
+                          form.data.jenis_izin === 'Izin'
+                            ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-200 ring-emerald-500'
+                            : 'bg-white text-slate-700 ring-slate-200 hover:bg-emerald-50'
+                        )}
+                      >
+                        Izin
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => form.setData('jenis_izin', 'Sakit')}
+                        className={classNames(
+                          'rounded-2xl px-4 py-3 text-sm font-black ring-1 transition-all duration-300',
+                          form.data.jenis_izin === 'Sakit'
+                            ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white shadow-lg shadow-rose-200 ring-rose-500'
+                            : 'bg-white text-slate-700 ring-slate-200 hover:bg-rose-50'
+                        )}
+                      >
+                        Sakit
+                      </button>
+                    </div>
+
+                    {form.errors.jenis_izin && (
+                      <div className="mt-2 text-xs font-semibold text-rose-600">
+                        {form.errors.jenis_izin}
                       </div>
+                    )}
+                  </div>
 
-                      {row.status_pengajuan === 'Disetujui' && (
-                        <div className="mt-3 inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-800 ring-1 ring-emerald-200">
-                          <ShieldCheck className="h-4 w-4" />
-                          Pengajuan disetujui.
-                        </div>
-                      )}
-                      {row.status_pengajuan === 'Ditolak' && (
-                        <div className="mt-3 inline-flex items-center gap-2 rounded-xl bg-rose-50 px-3 py-2 text-xs text-rose-800 ring-1 ring-rose-200">
-                          <ShieldX className="h-4 w-4" />
-                          Pengajuan ditolak.
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-xs font-black uppercase tracking-wide text-slate-500">
+                        Mulai
+                      </label>
+
+                      <input
+                        type="date"
+                        className="min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200"
+                        value={form.data.tanggal_mulai_izin}
+                        onChange={(event) => form.setData('tanggal_mulai_izin', event.target.value)}
+                      />
+
+                      {form.errors.tanggal_mulai_izin && (
+                        <div className="mt-2 text-xs font-semibold text-rose-600">
+                          {form.errors.tanggal_mulai_izin}
                         </div>
                       )}
                     </div>
-                  );
-                })}
 
-                {(!izin?.data || izin.data.length === 0) && <EmptyState />}
-              </div>
+                    <div>
+                      <label className="mb-2 block text-xs font-black uppercase tracking-wide text-slate-500">
+                        Selesai
+                      </label>
 
-              {/* pagination */}
-              {izin?.links && izin.links.length > 0 && (
-                <div className="mt-5 flex flex-wrap gap-2">
-                  {izin.links.map((l, idx) => (
-                    <Link
-                      key={idx}
-                      href={l.url || '#'}
-                      preserveScroll
-                      className={classNames(
-                        'px-3 py-1.5 rounded-xl text-xs font-semibold ring-1 ring-slate-200 transition',
-                        l.active ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white text-slate-700 hover:bg-slate-50',
-                        !l.url && 'opacity-40 pointer-events-none'
+                      <input
+                        type="date"
+                        className="min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200"
+                        value={form.data.tanggal_selesai_izin}
+                        onChange={(event) => form.setData('tanggal_selesai_izin', event.target.value)}
+                        min={form.data.tanggal_mulai_izin || undefined}
+                      />
+
+                      {form.errors.tanggal_selesai_izin && (
+                        <div className="mt-2 text-xs font-semibold text-rose-600">
+                          {form.errors.tanggal_selesai_izin}
+                        </div>
                       )}
-                      dangerouslySetInnerHTML={{ __html: l.label }}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-xs font-black uppercase tracking-wide text-slate-500">
+                      Keterangan
+                    </label>
+
+                    <textarea
+                      rows={4}
+                      className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200"
+                      value={form.data.keterangan}
+                      onChange={(event) => form.setData('keterangan', event.target.value)}
+                      placeholder="Contoh: demam, kontrol dokter, urusan keluarga, dll..."
+                    />
+
+                    <div className="mt-2 flex items-center justify-between gap-3 text-xs">
+                      <div
+                        className={classNames(
+                          'inline-flex items-center gap-2 font-bold',
+                          (form.data.keterangan || '').trim().length < 5
+                            ? 'text-slate-400'
+                            : 'text-emerald-700'
+                        )}
+                      >
+                        {(form.data.keterangan || '').trim().length < 5 ? (
+                          <>
+                            <AlertTriangle className="h-4 w-4" />
+                            Minimal 5 karakter
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="h-4 w-4" />
+                            Oke
+                          </>
+                        )}
+                      </div>
+
+                      <div className="font-bold text-slate-400">
+                        {(form.data.keterangan || '').length}/500
+                      </div>
+                    </div>
+
+                    {form.errors.keterangan && (
+                      <div className="mt-2 text-xs font-semibold text-rose-600">
+                        {form.errors.keterangan}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-xs font-black uppercase tracking-wide text-slate-500">
+                      Lampiran
+                    </label>
+
+                    <Dropzone
+                      value={form.data.file_lampiran}
+                      onChange={(file) => form.setData('file_lampiran', file)}
+                      error={form.errors.file_lampiran}
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={!canSubmit || form.processing}
+                    className={classNames(
+                      'inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-black transition-all duration-300',
+                      !canSubmit || form.processing
+                        ? 'cursor-not-allowed bg-slate-200 text-slate-500'
+                        : 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-200 hover:-translate-y-0.5 hover:brightness-105'
+                    )}
+                  >
+                    {form.processing && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {form.processing ? 'Mengirim...' : 'Kirim Pengajuan'}
+                  </button>
+
+                  <div className="rounded-2xl bg-slate-50 px-3 py-2 text-[11px] font-semibold leading-relaxed text-slate-500">
+                    Setelah dikirim, tunggu persetujuan. Jika status masih <b>Diajukan</b>, pengajuan masih bisa dibatalkan.
+                  </div>
+                </form>
+              </PremiumCard>
+            </div>
+
+            {/* LIST */}
+            <div className="lg:col-span-3">
+              <PremiumCard className="p-4 sm:p-5" delay={160}>
+                <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="inline-flex items-center gap-2 rounded-full bg-sky-50 px-3 py-1 text-[11px] font-black uppercase tracking-wide text-sky-700">
+                      <ClipboardList className="h-3.5 w-3.5" />
+                      Riwayat Pengajuan
+                    </div>
+
+                    <h2 className="mt-2 text-lg font-black text-slate-900">
+                      Daftar Surat Izin
+                    </h2>
+
+                    <p className="mt-1 text-xs font-medium text-slate-500">
+                      Total: <span className="font-black">{totalRows}</span> pengajuan
+                    </p>
+                  </div>
+
+                  <Link
+                    href={safeRoute('orangtua.surat-izin.index', { status: 'Semua', jenis: 'Semua' })}
+                    preserveScroll
+                    className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-black text-slate-600 transition hover:bg-slate-100"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Reset filter
+                  </Link>
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  {rows.map((row) => (
+                    <RequestCard
+                      key={row.id_surat}
+                      row={row}
+                      onView={setViewRow}
+                      onCancel={setCancelRow}
+                      canCancelRoute={canCancelRoute}
+                      cancelForm={cancelForm}
+                      cancelRow={cancelRow}
                     />
                   ))}
+
+                  {rows.length === 0 && <EmptyState />}
                 </div>
-              )}
+
+                {izin?.links && izin.links.length > 0 && (
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    {izin.links.map((link, idx) => (
+                      <Link
+                        key={idx}
+                        href={link.url || '#'}
+                        preserveScroll
+                        className={classNames(
+                          'rounded-2xl px-3 py-1.5 text-xs font-black ring-1 ring-slate-200 transition',
+                          link.active
+                            ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white ring-emerald-500'
+                            : 'bg-white text-slate-700 hover:bg-slate-50',
+                          !link.url && 'pointer-events-none opacity-40'
+                        )}
+                        dangerouslySetInnerHTML={{ __html: link.label }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </PremiumCard>
             </div>
           </div>
         </div>
@@ -767,10 +1075,14 @@ export default function Index() {
         open={!!viewRow}
         onClose={() => setViewRow(null)}
         title={viewRow ? `Surat Izin #${viewRow.id_surat}` : 'Surat Izin'}
-        subtitle={viewRow ? `${viewRow.jenis_izin} • ${viewRow.tanggal_mulai_izin} → ${viewRow.tanggal_selesai_izin}` : ''}
+        subtitle={
+          viewRow
+            ? `${viewRow.jenis_izin} • ${formatDate(viewRow.tanggal_mulai_izin)} → ${formatDate(viewRow.tanggal_selesai_izin)}`
+            : ''
+        }
         footer={
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-xs text-slate-500">
+            <div className="text-xs font-semibold text-slate-500">
               {viewRow?.status_pengajuan === 'Diajukan' && 'Status masih Diajukan — masih bisa dibatalkan.'}
               {viewRow?.status_pengajuan === 'Disetujui' && 'Status Disetujui.'}
               {viewRow?.status_pengajuan === 'Ditolak' && 'Status Ditolak.'}
@@ -781,7 +1093,7 @@ export default function Index() {
                 href={viewRow.view_url || viewRow.download_url}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-3 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
               >
                 <ExternalLink className="h-4 w-4" />
                 Buka di tab baru
@@ -794,25 +1106,33 @@ export default function Index() {
           <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-2">
               <Badge status={viewRow.status_pengajuan} />
-              <span className="text-xs text-slate-500">
-                Diajukan: <span className="font-semibold text-slate-700">{viewRow.tanggal_pengajuan}</span>
+
+              <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-bold text-slate-500">
+                Diajukan: {formatDate(viewRow.tanggal_pengajuan)}
               </span>
+
               {viewRow.tanggal_persetujuan && (
-                <span className="text-xs text-slate-500">
-                  Diputuskan: <span className="font-semibold text-slate-700">{viewRow.tanggal_persetujuan}</span>
+                <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-bold text-slate-500">
+                  Diputuskan: {formatDate(viewRow.tanggal_persetujuan)}
                 </span>
               )}
             </div>
 
-            <div className="rounded-2xl border border-slate-200 p-4">
-              <div className="text-sm font-semibold text-slate-900">Keterangan</div>
-              <div className="mt-2 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+            <div className="rounded-3xl border border-slate-100 bg-slate-50/70 p-4">
+              <div className="text-sm font-black text-slate-900">
+                Keterangan
+              </div>
+
+              <div className="mt-2 whitespace-pre-wrap text-sm font-medium leading-relaxed text-slate-700">
                 {viewRow.keterangan || '-'}
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 p-4">
-              <div className="text-sm font-semibold text-slate-900">Lampiran</div>
+            <div className="rounded-3xl border border-slate-100 bg-white p-4">
+              <div className="text-sm font-black text-slate-900">
+                Lampiran
+              </div>
+
               <div className="mt-3">
                 <AttachmentViewer row={viewRow} />
               </div>
@@ -828,7 +1148,7 @@ export default function Index() {
         title="Batalkan pengajuan?"
         subtitle={
           cancelRow
-            ? `#${cancelRow.id_surat} • ${cancelRow.jenis_izin} • ${cancelRow.tanggal_mulai_izin} → ${cancelRow.tanggal_selesai_izin}`
+            ? `#${cancelRow.id_surat} • ${cancelRow.jenis_izin} • ${formatDate(cancelRow.tanggal_mulai_izin)} → ${formatDate(cancelRow.tanggal_selesai_izin)}`
             : ''
         }
         footer={
@@ -838,9 +1158,9 @@ export default function Index() {
               disabled={cancelForm.processing}
               onClick={() => setCancelRow(null)}
               className={classNames(
-                'inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold ring-1 transition',
+                'inline-flex min-h-10 items-center justify-center rounded-2xl px-4 py-2 text-sm font-black ring-1 transition',
                 cancelForm.processing
-                  ? 'bg-slate-100 text-slate-400 ring-slate-200 cursor-not-allowed'
+                  ? 'cursor-not-allowed bg-slate-100 text-slate-400 ring-slate-200'
                   : 'bg-white text-slate-700 ring-slate-200 hover:bg-slate-50'
               )}
             >
@@ -852,29 +1172,84 @@ export default function Index() {
               disabled={cancelForm.processing || !canCancelRoute}
               onClick={doCancel}
               className={classNames(
-                'inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition',
+                'inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl px-4 py-2 text-sm font-black transition',
                 cancelForm.processing || !canCancelRoute
-                  ? 'bg-rose-100 text-rose-300 cursor-not-allowed'
-                  : 'bg-rose-600 text-white hover:bg-rose-700'
+                  ? 'cursor-not-allowed bg-rose-100 text-rose-300'
+                  : 'bg-gradient-to-r from-rose-500 to-pink-500 text-white shadow-lg shadow-rose-200 hover:brightness-105'
               )}
               title={!canCancelRoute ? 'Route orangtua.surat-izin.cancel belum ada' : 'Konfirmasi pembatalan'}
             >
-              {cancelForm.processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ban className="h-4 w-4" />}
+              {cancelForm.processing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Ban className="h-4 w-4" />
+              )}
               Ya, Batalkan
             </button>
           </div>
         }
       >
-        <div className="rounded-2xl bg-rose-50 p-4 text-sm text-rose-800 ring-1 ring-rose-200">
-          Pengajuan yang dibatalkan tidak akan diproses oleh admin. Kalau perlu, kamu bisa buat pengajuan baru.
+        <div className="rounded-3xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold leading-relaxed text-rose-800">
+          Pengajuan yang dibatalkan tidak akan diproses oleh admin. Kalau perlu, orang tua bisa membuat pengajuan baru.
         </div>
 
         {!canCancelRoute && (
-          <div className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm text-slate-700 ring-1 ring-slate-200">
+          <div className="mt-3 rounded-3xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700">
             Tombol batal butuh route <b>orangtua.surat-izin.cancel</b>. Saat ini belum terdeteksi oleh Ziggy.
           </div>
         )}
       </Modal>
+
+      <style>{`
+        .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(148, 163, 184, 0.55) transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(148, 163, 184, 0.45);
+          border-radius: 999px;
+        }
+
+        @keyframes softRise {
+          from {
+            opacity: 0;
+            transform: translateY(14px) scale(0.985);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        @keyframes modalPop {
+          from {
+            opacity: 0;
+            transform: translateY(18px) scale(0.96);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        .animate-soft-rise {
+          animation: softRise 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        .animate-modal-pop {
+          animation: modalPop 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+      `}</style>
     </OrangTuaLayout>
   );
 }

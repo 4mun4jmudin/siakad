@@ -25,7 +25,7 @@ export default function GeneralSettingsForm({ className = '', pengaturan = {}, t
     const submit = (e) => {
         e.preventDefault();
         post(route('admin.pengaturan.update-general'), {
-            _method: 'put', 
+            _method: 'put',
             preserveScroll: true,
             onSuccess: () => toast.success('Pengaturan berhasil disimpan!'),
             onError: () => {

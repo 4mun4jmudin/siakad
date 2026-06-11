@@ -31,6 +31,9 @@ class GuruController extends Controller
             'sidikJari' => Guru::whereNotNull('sidik_jari_template')->count(),
         ];
 
+        $perPage = $request->input('per_page', 10);
+        $perPage = $perPage === 'all' ? ($stats['total'] > 0 ? $stats['total'] : 10) : (int) $perPage;
+
         $gurus = Guru::with(['pengguna', 'kelasWali'])
             ->when($request->input('search'), function ($query, $search) {
                 $query->where('nama_lengkap', 'like', "%{$search}%")
@@ -38,19 +41,19 @@ class GuruController extends Controller
                     ->orWhere('id_guru', 'like', "%{$search}%");
             })
             ->latest()
-            ->paginate(10)
+            ->paginate($perPage)
             ->withQueryString();
 
         // Tambahkan URL foto helper (opsional, jika frontend butuh path lengkap)
         $gurus->through(function ($guru) {
-            $guru->foto_url = $guru->foto_profil ? asset('storage/' . $guru->foto_profil) : null;
+            $guru->foto_url = $guru->foto_profil ? url('/storage-public/' . ltrim($guru->foto_profil, '/')) : null;
             return $guru;
         });
 
         return Inertia::render('admin/Guru/Index', [
             'gurus' => $gurus,
             'stats' => $stats,
-            'filters' => $request->only(['search']),
+            'filters' => $request->only(['search', 'per_page']),
         ]);
     }
 
@@ -111,6 +114,11 @@ class GuruController extends Controller
             'nip' => 'nullable|string|max:30|unique:tbl_guru',
             'jenis_kelamin' => 'required|in:Laki-laki,Perempuan',
             'status' => 'required|in:Aktif,Tidak Aktif,Pensiun',
+            'tempat_lahir' => 'nullable|string|max:100',
+            'tanggal_lahir' => 'nullable|date',
+            'agama' => 'nullable|string|max:50',
+            'no_telepon' => 'nullable|string|max:20',
+            'alamat' => 'nullable|string',
             'foto_profil' => 'nullable|image|max:2048',
             'barcode_id' => 'nullable|string|max:100|unique:tbl_guru',
             'sidik_jari_template' => 'nullable|string',
@@ -172,6 +180,11 @@ class GuruController extends Controller
             'nip' => ['nullable', 'string', 'max:30', Rule::unique('tbl_guru')->ignore($guru->id_guru, 'id_guru')],
             'jenis_kelamin' => 'required|in:Laki-laki,Perempuan',
             'status' => 'required|in:Aktif,Tidak Aktif,Pensiun',
+            'tempat_lahir' => 'nullable|string|max:100',
+            'tanggal_lahir' => 'nullable|date',
+            'agama' => 'nullable|string|max:50',
+            'no_telepon' => 'nullable|string|max:20',
+            'alamat' => 'nullable|string',
             'barcode_id' => ['nullable', 'string', 'max:100', Rule::unique('tbl_guru')->ignore($guru->id_guru, 'id_guru')],
             'sidik_jari_template' => 'nullable|string',
         ]);

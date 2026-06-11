@@ -231,6 +231,43 @@ class PengaturanController extends Controller
         return redirect()->back()->with('status', 'Pengaturan Backup berhasil diperbarui.');
     }
 
+    /**
+     * Memperbarui pengaturan tab Jadwal.
+     */
+    public function updateJadwal(Request $request)
+    {
+        $request->validate([
+            'jadwal_hari' => 'nullable|array',
+            'jadwal_waktu' => 'nullable|array',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $pengaturan = Pengaturan::firstOrCreate(['id' => 1]);
+            
+            // Encode arrays to JSON for storing in JSON columns
+            $dataToUpdate = [
+                'jadwal_hari' => $request->jadwal_hari,
+                'jadwal_waktu' => $request->jadwal_waktu
+            ];
+
+            $pengaturan->update($dataToUpdate);
+
+            LogAktivitas::create([
+                'id_pengguna' => Auth::user()->id_pengguna,
+                'aksi' => 'Memperbarui Pengaturan Jadwal',
+                'keterangan' => 'Memperbarui hari efektif dan blok waktu pelajaran',
+            ]);
+            
+            DB::commit();
+            return redirect()->back()->with('status', 'Pengaturan Jadwal berhasil diperbarui.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Gagal memperbarui pengaturan jadwal: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal memperbarui pengaturan jadwal. Silakan coba lagi.');
+        }
+    }
+
     public function listBackups()
     {
         try {

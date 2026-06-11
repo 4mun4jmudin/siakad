@@ -53,7 +53,7 @@ export default function Index(props) {
     login_manual_enabled = true,
     filter: serverFilter = 'week',
     filter_date: serverFilterDate,
-    pengaturan,
+    pengaturanAbsensi: pengaturan,
     yesterday_unfinished = false,
     flash,
   } = props;

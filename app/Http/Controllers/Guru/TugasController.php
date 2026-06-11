@@ -32,9 +32,14 @@ class TugasController extends Controller
             ->paginate(10)
             ->withQueryString();
 
+        $jadwalOptions = JadwalMengajar::where('id_guru', $guru->id_guru)
+            ->with(['kelas', 'mataPelajaran'])
+            ->get();
+
         return Inertia::render('Guru/Tugas/Index', [
             'tugas' => $tugas,
-            'filters' => $request->only(['search'])
+            'filters' => $request->only(['search']),
+            'jadwalOptions' => $jadwalOptions,
         ]);
     }
 

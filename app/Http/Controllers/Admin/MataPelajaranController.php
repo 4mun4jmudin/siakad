@@ -30,6 +30,9 @@ class MataPelajaranController extends Controller
             'totalSiswa' => Siswa::where('status', 'Aktif')->count(),
         ];
 
+        $perPage = $request->input('per_page', 10);
+        $paginationLimit = $perPage === 'all' ? 9999 : (int) $perPage;
+
         // 2. Mengambil data untuk tabel utama
         $mataPelajaran = MataPelajaran::query()
             ->with([
@@ -48,7 +51,7 @@ class MataPelajaranController extends Controller
                     ->orWhere('id_mapel', 'like', "%{$search}%");
             })
             ->latest()
-            ->paginate(10)
+            ->paginate($paginationLimit)
             ->withQueryString()
             ->through(function ($mapel) {
                 $guruPengampu = $mapel->jadwalMengajar->pluck('guru')->filter()->unique('id_guru')->values();
@@ -78,7 +81,7 @@ class MataPelajaranController extends Controller
             'stats' => $stats,
             'mataPelajaran' => $mataPelajaran,
             'guruPengampuList' => $guruPengampuList,
-            'filters' => $request->only(['search']),
+            'filters' => $request->only(['search', 'per_page']),
         ]);
     }
 
@@ -348,6 +351,47 @@ class MataPelajaranController extends Controller
                 ]);
             }
         }
+    }
+
+    /**
+     * Mengisi kolom id_guru_default secara otomatis untuk mapel yang masih kosong.
+     * Dibagikan secara merata ke seluruh guru yang aktif.
+     */
+    public function autoAssignGuru()
+    {
+        // 1. Ambil semua mapel yang guru default-nya kosong
+        $unassignedMapels = MataPelajaran::whereNull('id_guru_default')->get();
+
+        if ($unassignedMapels->isEmpty()) {
+            return back()->with('success', 'Semua mata pelajaran sudah memiliki Guru Pengampu Default.');
+        }
+
+        // 2. Ambil semua guru aktif
+        $activeGurus = Guru::where('status', 'Aktif')->get();
+
+        if ($activeGurus->isEmpty()) {
+            return back()->with('error', 'Gagal auto-assign: Tidak ada satupun guru yang berstatus Aktif.');
+        }
+
+        // 3. Shuffle (acak) guru agar pembagian pertama kali tidak selalu urut abjad
+        $guruList = $activeGurus->shuffle()->values();
+        $guruCount = $guruList->count();
+        $assignedCount = 0;
+
+        DB::transaction(function () use ($unassignedMapels, $guruList, $guruCount, &$assignedCount) {
+            foreach ($unassignedMapels as $index => $mapel) {
+                // Memilih guru secara bergiliran menggunakan modulo
+                $guru = $guruList[$index % $guruCount];
+                
+                $mapel->update([
+                    'id_guru_default' => $guru->id_guru
+                ]);
+                
+                $assignedCount++;
+            }
+        });
+
+        return back()->with('success', "Auto-Assign berhasil! {$assignedCount} mata pelajaran telah dibagikan secara merata kepada guru pengampu.");
     }
 
     /**

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import SiswaLayout from '@/Layouts/SiswaLayout';
 import { Head, router } from '@inertiajs/react';
-import { Award, BookOpen, CheckCircle2, XCircle, ChevronDown, ChevronUp, FileSpreadsheet, Calendar, BookOpenCheck, Bookmark } from 'lucide-react';
+import { Award, BookOpen, CheckCircle2, XCircle, ChevronDown, ChevronUp, FileSpreadsheet, Calendar, BookOpenCheck, Bookmark, AlertTriangle } from 'lucide-react';
 
 const cn = (...classes) => classes.filter(Boolean).join(' ');
 
@@ -189,6 +189,7 @@ export default function NilaiIndex({ auth, siswa, penilaian = [], tahunAjarans =
               const mapelName = row.mapel?.nama_mapel || 'Mata Pelajaran';
               const mapelKategori = row.mapel?.kategori || 'Umum';
               const kkmVal = Number(row.mapel?.kkm) || 75;
+              const hasRemedial = row.remedials && row.remedials.length > 0;
 
               return (
                 <div 
@@ -221,6 +222,11 @@ export default function NilaiIndex({ auth, siswa, penilaian = [], tahunAjarans =
                             {mapelKategori}
                           </span>
                           <span className="text-[10px] text-slate-400 font-bold">KKM: {kkmVal}</span>
+                          {hasRemedial && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200/40 flex items-center gap-1">
+                              <AlertTriangle className="w-3 h-3" /> Remedial
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -306,7 +312,6 @@ export default function NilaiIndex({ auth, siswa, penilaian = [], tahunAjarans =
                             <table className="w-full text-xs text-left text-slate-600">
                               <thead className="text-[10px] text-slate-400 uppercase bg-slate-50 font-bold border-b border-slate-100 tracking-wider">
                                 <tr>
-                                  <th className="px-5 py-3">Komponen</th>
                                   <th className="px-5 py-3">Tanggal Penilaian</th>
                                   <th className="px-5 py-3">Deskripsi Kegiatan</th>
                                   <th className="px-5 py-3 text-right">Bobot (%)</th>
@@ -315,22 +320,40 @@ export default function NilaiIndex({ auth, siswa, penilaian = [], tahunAjarans =
                               </thead>
                               <tbody className="divide-y divide-slate-50 font-medium">
                                 {row.details && row.details.length > 0 ? (
-                                  row.details.map((detail) => (
-                                    <tr key={detail.id_detail} className="hover:bg-slate-50/40">
-                                      <td className="px-5 py-3"><GradeComponentBadge type={detail.komponen_penilaian?.nama || detail.komponen} /></td>
-                                      <td className="px-5 py-3 font-semibold text-slate-500">
-                                        {detail.tanggal 
-                                          ? new Date(detail.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) 
-                                          : '—'}
-                                      </td>
-                                      <td className="px-5 py-3 text-slate-700 font-bold">{detail.deskripsi || '—'}</td>
-                                      <td className="px-5 py-3 text-right text-slate-500 font-bold">{detail.bobot ? `${Math.round(detail.bobot)}%` : '—'}</td>
-                                      <td className="px-5 py-3 text-right font-black text-slate-800">{detail.nilai}</td>
-                                    </tr>
+                                  Object.entries((row.details || []).reduce((acc, detail) => {
+                                    const compName = detail.komponen_penilaian?.nama || detail.komponen || 'Lainnya';
+                                    if (!acc[compName]) acc[compName] = { items: [], total: 0, count: 0 };
+                                    acc[compName].items.push(detail);
+                                    acc[compName].total += Number(detail.nilai) || 0;
+                                    acc[compName].count += 1;
+                                    return acc;
+                                  }, {})).map(([compName, group]) => (
+                                    <React.Fragment key={compName}>
+                                      <tr className="bg-slate-100/80 border-y border-slate-200">
+                                        <td colSpan="3" className="px-5 py-2.5 font-bold text-slate-700">
+                                          <GradeComponentBadge type={compName} />
+                                        </td>
+                                        <td className="px-5 py-2.5 text-right font-extrabold text-indigo-700 bg-indigo-50/50">
+                                          Rata-rata: {Number((group.total / group.count).toFixed(2))}
+                                        </td>
+                                      </tr>
+                                      {group.items.map((detail) => (
+                                        <tr key={detail.id_detail} className="hover:bg-slate-50/40 border-b border-slate-50 last:border-0">
+                                          <td className="px-5 py-3 font-semibold text-slate-500">
+                                            {detail.tanggal 
+                                              ? new Date(detail.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) 
+                                              : '—'}
+                                          </td>
+                                          <td className="px-5 py-3 text-slate-700 font-bold">{detail.deskripsi || '—'}</td>
+                                          <td className="px-5 py-3 text-right text-slate-500 font-bold">{detail.bobot ? `${Math.round(detail.bobot)}%` : '—'}</td>
+                                          <td className="px-5 py-3 text-right font-black text-slate-800">{detail.nilai}</td>
+                                        </tr>
+                                      ))}
+                                    </React.Fragment>
                                   ))
                                 ) : (
                                   <tr>
-                                    <td colSpan="5" className="px-5 py-8 text-center text-slate-400 font-semibold">
+                                    <td colSpan="4" className="px-5 py-8 text-center text-slate-400 font-semibold">
                                       Belum ada komponen penilaian rincian yang dimasukkan oleh guru untuk mata pelajaran ini.
                                     </td>
                                   </tr>
@@ -340,6 +363,39 @@ export default function NilaiIndex({ auth, siswa, penilaian = [], tahunAjarans =
                           </div>
                         </div>
                       </div>
+
+                      {/* Remedial Info */}
+                      {hasRemedial && (
+                        <div className="p-4 bg-amber-50/50 border border-amber-100/60 rounded-2xl space-y-2">
+                          <p className="text-xs font-bold text-amber-700 flex items-center gap-2">
+                            <AlertTriangle className="w-4 h-4" /> Informasi Remedial
+                          </p>
+                          <div className="overflow-hidden border border-amber-100 rounded-xl bg-white">
+                            <table className="w-full text-xs">
+                              <thead className="bg-amber-50 border-b border-amber-100">
+                                <tr>
+                                  <th className="px-4 py-2 text-left text-amber-600 font-bold">Jenis</th>
+                                  <th className="px-4 py-2 text-left text-amber-600 font-bold">Tanggal</th>
+                                  <th className="px-4 py-2 text-right text-amber-600 font-bold">Nilai Sebelum</th>
+                                  <th className="px-4 py-2 text-right text-amber-600 font-bold">Nilai Remedial</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-amber-50">
+                                {row.remedials.map((rem, idx) => (
+                                  <tr key={idx}>
+                                    <td className="px-4 py-2 font-semibold text-slate-700">{rem.jenis || 'Remedial'}</td>
+                                    <td className="px-4 py-2 text-slate-500">
+                                      {rem.tanggal ? new Date(rem.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}
+                                    </td>
+                                    <td className="px-4 py-2 text-right text-slate-500 font-bold">{rem.nilai_sebelum ?? '—'}</td>
+                                    <td className="px-4 py-2 text-right font-black text-emerald-700">{rem.nilai_remedial ?? '—'}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
 
                     </div>
                   )}

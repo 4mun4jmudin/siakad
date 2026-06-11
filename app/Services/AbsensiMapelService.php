@@ -60,9 +60,8 @@ class AbsensiMapelService
                 $id_absensi_mapel = 'AM-' . Carbon::parse($tanggal)->format('ymd') . '-' . $jadwal->id_jadwal . '-' . $id_siswa;
 
                 if ($current) {
-                    // sync HANYA jika belum di-override
                     if (!$current->is_overridden) {
-                        $current->update([
+                        AbsensiSiswaMapel::where('id_absensi_mapel', $current->id_absensi_mapel)->update([
                             'status_kehadiran' => $defaultStatus,
                             'jam_mulai'        => $jadwal->jam_mulai,
                             'jam_selesai'      => $jadwal->jam_selesai,

@@ -35,18 +35,75 @@ class PenilaianDashboardController extends Controller
         $mapelOptions = MataPelajaran::orderBy('nama_mapel')
             ->get(['id_mapel as value', 'nama_mapel as label']);
 
+        $guruOptions = \App\Models\Guru::orderBy('nama_lengkap')
+            ->get(['id_guru as value', 'nama_lengkap as label']);
+
+        // Smart Default logic for id_tahun_ajaran & semester
+        $idTahunAjaran = $r->query('id_tahun_ajaran');
+        $semester = $r->query('semester');
+
+        if (empty($idTahunAjaran) || empty($semester)) {
+            $pengaturan = DB::table('tbl_pengaturan')->first();
+            $activeTa = null;
+            if ($pengaturan) {
+                $activeTa = TahunAjaran::where('tahun_ajaran', $pengaturan->tahun_ajaran_aktif)
+                    ->where('semester', $pengaturan->semester_aktif)
+                    ->first();
+            }
+            if (!$activeTa) {
+                $activeTa = TahunAjaran::where('status', 'Aktif')->first();
+            }
+
+            $hasActiveData = false;
+            if ($activeTa) {
+                $hasActiveData = DB::table('tbl_penilaian_mapel')
+                    ->where('id_tahun_ajaran', $activeTa->id_tahun_ajaran)
+                    ->where('semester', $activeTa->semester)
+                    ->exists();
+            }
+
+            if ($hasActiveData && $activeTa) {
+                $idTahunAjaran = $activeTa->id_tahun_ajaran;
+                $semester = $activeTa->semester;
+            } else {
+                // Fallback to year/semester with the most data in tbl_penilaian_mapel
+                $mostData = DB::table('tbl_penilaian_mapel')
+                    ->select('id_tahun_ajaran', 'semester', DB::raw('count(*) as count'))
+                    ->groupBy('id_tahun_ajaran', 'semester')
+                    ->orderByDesc('count')
+                    ->first();
+
+                if ($mostData) {
+                    $idTahunAjaran = $mostData->id_tahun_ajaran;
+                    $semester = $mostData->semester;
+                } else if ($activeTa) {
+                    $idTahunAjaran = $activeTa->id_tahun_ajaran;
+                    $semester = $activeTa->semester;
+                } else {
+                    $firstTa = TahunAjaran::first();
+                    if ($firstTa) {
+                        $idTahunAjaran = $firstTa->id_tahun_ajaran;
+                        $semester = $firstTa->semester;
+                    }
+                }
+            }
+        }
+
         return Inertia::render('admin/Penilaian/Dashboard', [
             'options' => [
                 'tahunAjaran' => $taOptions,
                 'semester'    => $semesterOptions,
                 'kelas'       => $kelasOptions,
                 'mapel'       => $mapelOptions,
+                'guru'        => $guruOptions,
             ],
             'filters' => [
-                'id_tahun_ajaran' => $r->query('id_tahun_ajaran'),
-                'semester'        => $r->query('semester'),
+                'id_tahun_ajaran' => $idTahunAjaran,
+                'semester'        => $semester,
                 'id_kelas'        => $r->query('id_kelas'),
                 'id_mapel'        => $r->query('id_mapel'),
+                'guru'            => $r->query('guru'),
+                'status'          => $r->query('status'),
             ],
             'routes' => [
                 'summary'          => route('admin.penilaian.api.summary'),
@@ -131,6 +188,8 @@ class PenilaianDashboardController extends Controller
             'semester'        => ['required','in:Ganjil,Genap'],
             'id_kelas'        => ['nullable','string'],
             'id_mapel'        => ['nullable','string'],
+            'guru'            => ['nullable','string'],
+            'status'          => ['nullable','string'],
         ]);
         return $data;
     }

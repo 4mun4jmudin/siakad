@@ -11,7 +11,7 @@ class PenilaianDetail extends Model
     public $incrementing = true;
 
     protected $fillable = [
-        'id_penilaian','id_komponen','komponen','deskripsi','tanggal','nilai','bobot',
+        'id_penilaian','id_komponen','deskripsi','tanggal','nilai','bobot',
     ];
 
     protected $casts = [

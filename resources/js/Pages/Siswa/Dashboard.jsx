@@ -279,7 +279,7 @@ export default function SiswaDashboard({
   absensiHariIni = null,
   riwayatAbsensi = [],
   batasWaktuAbsen = null,
-  pengaturan = null,
+  pengaturanAbsensi: pengaturan = null,
 }) {
   const { flash } = usePage().props;
 
@@ -533,8 +533,10 @@ export default function SiswaDashboard({
                         <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white">{siswa?.nama_lengkap}</h2>
                         <div className="text-slate-400 text-sm font-medium flex items-center justify-center md:justify-start gap-2 mt-1">
                             <span className="bg-slate-800/50 px-2 py-0.5 rounded-md border border-slate-700/50">{siswa?.kelas ? `${siswa.kelas.tingkat} ${siswa.kelas.jurusan}` : 'Siswa'}</span>
-                            <span>•</span>
+                            <span className="hidden sm:inline">•</span>
                             <span className="opacity-80">NIS: {siswa?.nis || '-'}</span>
+                            <span className="hidden sm:inline">•</span>
+                            <span className="opacity-80">Wali Kelas: <strong className="text-white font-semibold">{siswa?.kelas?.wali_kelas?.nama_lengkap || 'Belum diatur'}</strong></span>
                         </div>
                     </div>
                 </div>

@@ -82,11 +82,10 @@ class AbsensiController extends Controller
         ];
 
         return Inertia::render('Siswa/Dashboard', [
-            'siswa'             => $siswa->load('kelas'),
+            'siswa'             => $siswa->load('kelas.waliKelas'),
             'absensiHariIni'    => $absensiHariIni,
             'riwayatAbsensi'    => $riwayatAbsensi,
-            'batasWaktuAbsen'   => $batasWaktuAbsen,
-            'pengaturan'        => $pengaturanForFrontend,
+            'pengaturanAbsensi' => $pengaturanForFrontend,
             'activeFilter'      => $filter,
         ]);
     }

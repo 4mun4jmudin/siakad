@@ -131,7 +131,6 @@ class PenilaianNilaiController extends Controller
         $detail = PenilaianDetail::create([
             'id_penilaian' => $id_penilaian,
             'id_komponen'  => $data['id_komponen'],
-            'komponen'     => $komponen->nama, // Kept as fallback for old layout compatibility
             'deskripsi'    => $data['deskripsi'] ?? null,
             'tanggal'      => $data['tanggal'] ?? null,
             'nilai'        => $data['nilai'],
@@ -171,7 +170,7 @@ class PenilaianNilaiController extends Controller
             return back()->with('error', 'Seluruh pengisian nilai dan jurnal telah dikunci secara sistem.');
         }
 
-        $komponenNama = $detail->komponenPenilaian?->nama ?? $detail->komponen;
+        $komponenNama = $detail->komponenPenilaian?->nama ?? 'Unknown';
         $nilaiDihapus = $detail->nilai;
 
         $detail->delete();
@@ -208,5 +207,75 @@ class PenilaianNilaiController extends Controller
         ]);
 
         return back()->with('success', 'Status kuncian nilai berhasil diperbarui.');
+    }
+
+    /** GENERATE HEADER PENILAIAN MASAL */
+    public function generate(Request $r)
+    {
+        $id_tahun_ajaran = $r->input('id_tahun_ajaran');
+        $semester        = $r->input('semester');
+        $id_kelas        = $r->input('id_kelas');
+        $id_mapel        = $r->input('id_mapel');
+
+        if (!$id_tahun_ajaran || !$semester || !$id_kelas || !$id_mapel) {
+            return back()->with('error', 'Semua filter (Tahun Ajaran, Semester, Kelas, Mapel) wajib dipilih untuk melakukan generate.');
+        }
+
+        $pengaturan = Pengaturan::first();
+        if ($pengaturan && $pengaturan->is_kunci_jurnal) {
+            return back()->with('error', 'Seluruh pengisian nilai dan jurnal telah dikunci secara sistem.');
+        }
+
+        // Cari semua siswa aktif di kelas tersebut
+        $siswas = DB::table('tbl_siswa')
+            ->where('id_kelas', $id_kelas)
+            ->where(function($q) {
+                $q->whereNull('status')
+                  ->orWhere('status', 'aktif')
+                  ->orWhere('status', 'Aktif');
+            })
+            ->pluck('id_siswa');
+
+        if ($siswas->isEmpty()) {
+            return back()->with('error', 'Tidak ada data siswa ditemukan untuk kelas ini.');
+        }
+
+        $createdCount = 0;
+
+        foreach ($siswas as $id_siswa) {
+            $exists = DB::table('tbl_penilaian_mapel')->where([
+                'id_siswa'        => $id_siswa,
+                'id_kelas'        => $id_kelas,
+                'id_mapel'        => $id_mapel,
+                'id_tahun_ajaran' => $id_tahun_ajaran,
+                'semester'        => $semester,
+            ])->exists();
+
+            if (!$exists) {
+                PenilaianMapel::create([
+                    'id_siswa'        => $id_siswa,
+                    'id_kelas'        => $id_kelas,
+                    'id_mapel'        => $id_mapel,
+                    'id_tahun_ajaran' => $id_tahun_ajaran,
+                    'semester'        => $semester,
+                    'nilai_akhir'     => 0,
+                    'tuntas'          => 0,
+                    'status_kunci'    => 0,
+                ]);
+                $createdCount++;
+            }
+        }
+
+        if ($createdCount > 0) {
+            // Audit Log Entry
+            LogAktivitas::create([
+                'id_pengguna' => Auth::id(),
+                'aksi'        => 'Generate Penilaian',
+                'keterangan'  => 'Generate ' . $createdCount . ' header penilaian untuk Kelas ' . $id_kelas . ' Mapel ' . $id_mapel . ' (' . $semester . ' ' . $id_tahun_ajaran . ')'
+            ]);
+            return back()->with('success', 'Berhasil melakukan generate ' . $createdCount . ' data siswa baru.');
+        }
+
+        return back()->with('info', 'Tidak ada data baru yang digenerate. Seluruh siswa sudah memiliki header penilaian.');
     }
 }

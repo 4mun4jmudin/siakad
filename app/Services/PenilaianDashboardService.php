@@ -10,7 +10,7 @@ class PenilaianDashboardService
     /**
      * Filter helper → array [id_tahun_ajaran, semester, id_kelas?, id_mapel?]
      */
-    private function baseWhere(array $f)
+    private function baseWhere(array $f, $q = null)
     {
         $w = [
             ['pm.id_tahun_ajaran', '=', $f['id_tahun_ajaran']],
@@ -22,6 +22,24 @@ class PenilaianDashboardService
         if (!empty($f['id_mapel'])) {
             $w[] = ['pm.id_mapel', '=', $f['id_mapel']];
         }
+        if (!empty($f['status'])) {
+            if ($f['status'] === 'published') {
+                $w[] = ['pm.status_kunci', '=', 1];
+            } else if ($f['status'] === 'pending' || $f['status'] === 'draft') {
+                $w[] = ['pm.status_kunci', '=', 0];
+            }
+        }
+        
+        if ($q && !empty($f['guru'])) {
+            $q->whereExists(function ($sub) use ($f) {
+                $sub->select(DB::raw(1))
+                    ->from('tbl_jadwal_mengajar as jm')
+                    ->whereColumn('jm.id_kelas', 'pm.id_kelas')
+                    ->whereColumn('jm.id_mapel', 'pm.id_mapel')
+                    ->whereColumn('jm.id_tahun_ajaran', 'pm.id_tahun_ajaran')
+                    ->where('jm.id_guru', $f['guru']);
+            });
+        }
         return $w;
     }
 
@@ -30,8 +48,8 @@ class PenilaianDashboardService
         $cacheKey = 'penilaian_summary_' . md5(json_encode($f));
         
         return Cache::remember($cacheKey, 1800, function () use ($f) {
-            // total siswa (distinct)
-            $qBase = DB::table('tbl_penilaian_mapel as pm')->where($this->baseWhere($f));
+            $qBase = DB::table('tbl_penilaian_mapel as pm');
+            $qBase->where($this->baseWhere($f, $qBase));
             $totalHeaders = (clone $qBase)->count(); // header penilaian (baris)
             $totalSiswa   = (clone $qBase)->distinct('pm.id_siswa')->count('pm.id_siswa');
 
@@ -45,14 +63,14 @@ class PenilaianDashboardService
             $avg = $agg->avg_nilai ? round($agg->avg_nilai, 2) : null;
             $passRate = ($agg->jml_baris ?? 0) > 0 ? round(($agg->jml_tuntas / $agg->jml_baris) * 100, 2) : 0;
 
-            // median (via subquery sederhana)
+            // median
             $median = $this->median($f);
 
-            // stddev (MySQL: STDDEV_SAMP)
+            // stddev
             $stddev = (clone $qBase)->selectRaw('STDDEV_SAMP(pm.nilai_akhir) as sd')->value('sd');
             $stddev = $stddev !== null ? round($stddev, 2) : null;
 
-            // progress completion: berapa header yang sudah punya detail?
+            // progress completion
             $withDetail = (clone $qBase)
                 ->join('tbl_penilaian_detail as pd', 'pd.id_penilaian', '=', 'pm.id_penilaian')
                 ->distinct('pm.id_penilaian')
@@ -73,8 +91,8 @@ class PenilaianDashboardService
 
     private function median(array $f): ?float
     {
-        $q = DB::table('tbl_penilaian_mapel as pm')
-            ->where($this->baseWhere($f))
+        $q = DB::table('tbl_penilaian_mapel as pm');
+        $q->where($this->baseWhere($f, $q))
             ->whereNotNull('pm.nilai_akhir')
             ->orderBy('pm.nilai_akhir');
 
@@ -93,8 +111,8 @@ class PenilaianDashboardService
         $cacheKey = 'penilaian_distribution_' . md5(json_encode($f) . json_encode($bins));
         
         return Cache::remember($cacheKey, 1800, function () use ($f, $bins) {
-            // bikin bucket [0–59],[60–69],[70–79],[80–89],[90–100]
-            $q = DB::table('tbl_penilaian_mapel as pm')->where($this->baseWhere($f));
+            $q = DB::table('tbl_penilaian_mapel as pm');
+            $q->where($this->baseWhere($f, $q));
 
             $counts = [];
             for ($i=0; $i < count($bins)-1; $i++) {
@@ -112,8 +130,8 @@ class PenilaianDashboardService
         $cacheKey = 'penilaian_trend_' . md5(json_encode($f));
         
         return Cache::remember($cacheKey, 1800, function () use ($f) {
-            // Tren bulanan berdasarkan updated_at header (fallback kalau tidak ada tanggal detail)
-            $q = DB::table('tbl_penilaian_mapel as pm')->where($this->baseWhere($f))
+            $q = DB::table('tbl_penilaian_mapel as pm');
+            $q->where($this->baseWhere($f, $q))
                 ->whereNotNull('pm.updated_at')
                 ->selectRaw("DATE_FORMAT(pm.updated_at, '%Y-%m') as ym")
                 ->selectRaw('AVG(pm.nilai_akhir) as avg_nilai')
@@ -139,8 +157,8 @@ class PenilaianDashboardService
         
         return Cache::remember($cacheKey, 1800, function () use ($f, $limit) {
             $q = DB::table('tbl_penilaian_mapel as pm')
-                ->join('tbl_mata_pelajaran as m', 'm.id_mapel','=','pm.id_mapel')
-                ->where($this->baseWhere($f))
+                ->join('tbl_mata_pelajaran as m', 'm.id_mapel','=','pm.id_mapel');
+            $q->where($this->baseWhere($f, $q))
                 ->select('pm.id_mapel','m.nama_mapel')
                 ->selectRaw('AVG(pm.nilai_akhir) as avg_nilai')
                 ->selectRaw('SUM(CASE WHEN pm.tuntas=1 THEN 1 ELSE 0 END)/COUNT(*)*100 as pass_rate_pct')
@@ -163,8 +181,8 @@ class PenilaianDashboardService
         
         return Cache::remember($cacheKey, 1800, function () use ($f, $limit) {
             $q = DB::table('tbl_penilaian_mapel as pm')
-                ->join('tbl_kelas as k', 'k.id_kelas','=','pm.id_kelas')
-                ->where($this->baseWhere($f))
+                ->join('tbl_kelas as k', 'k.id_kelas','=','pm.id_kelas');
+            $q->where($this->baseWhere($f, $q))
                 ->select('pm.id_kelas','k.id_kelas as nama_kelas')
                 ->selectRaw('AVG(pm.nilai_akhir) as avg_nilai')
                 ->selectRaw('SUM(CASE WHEN pm.tuntas=1 THEN 1 ELSE 0 END)/COUNT(*)*100 as pass_rate_pct')
@@ -183,13 +201,15 @@ class PenilaianDashboardService
 
     public function tuntasBreakdown(array $f): array
     {
-        $q = DB::table('tbl_penilaian_mapel as pm')->where($this->baseWhere($f))
+        $q = DB::table('tbl_penilaian_mapel as pm');
+        $q->where($this->baseWhere($f, $q))
             ->selectRaw('pm.predikat, COUNT(*) as jumlah')
             ->groupBy('pm.predikat');
 
         $byPredikat = $q->pluck('jumlah','predikat')->toArray();
 
-        $tuntas = DB::table('tbl_penilaian_mapel as pm')->where($this->baseWhere($f))
+        $tuntas = DB::table('tbl_penilaian_mapel as pm');
+        $tuntas->where($this->baseWhere($f, $tuntas))
             ->selectRaw('SUM(CASE WHEN pm.tuntas=1 THEN 1 ELSE 0 END) as tuntas')
             ->selectRaw('SUM(CASE WHEN pm.tuntas=0 THEN 1 ELSE 0 END) as tidak')
             ->first();
@@ -205,25 +225,44 @@ class PenilaianDashboardService
 
     public function remedialQueue(array $f, int $limit = 15): array
     {
-        // Ambil siswa dengan nilai akhir terendah (belum tuntas) + info KKM
         $q = DB::table('tbl_penilaian_mapel as pm')
-            ->join('tbl_siswa as s','s.id_siswa','=','pm.id_siswa')
-            ->join('tbl_mata_pelajaran as m','m.id_mapel','=','pm.id_mapel')
-            ->where($this->baseWhere($f))
-            ->where('pm.tuntas','=',0)
-            ->select('pm.id_penilaian','pm.id_siswa','s.nama_lengkap','pm.id_mapel','m.nama_mapel','pm.nilai_akhir','m.kkm')
-            ->orderBy('pm.nilai_akhir','asc')
-            ->limit($limit);
+            ->join('tbl_kelas as k', 'k.id_kelas', '=', 'pm.id_kelas')
+            ->join('tbl_mata_pelajaran as m', 'm.id_mapel', '=', 'pm.id_mapel')
+            ->leftJoin('tbl_jadwal_mengajar as jm', function ($join) {
+                $join->on('jm.id_kelas', '=', 'pm.id_kelas')
+                     ->on('jm.id_mapel', '=', 'pm.id_mapel')
+                     ->on('jm.id_tahun_ajaran', '=', 'pm.id_tahun_ajaran');
+            })
+            ->leftJoin('tbl_guru as g', 'g.id_guru', '=', 'jm.id_guru');
 
-        return $q->get()->map(fn($r)=>[
-            'id_penilaian' => $r->id_penilaian,
-            'id_siswa'     => $r->id_siswa,
-            'nama_siswa'   => $r->nama_lengkap,
-            'id_mapel'     => $r->id_mapel,
-            'nama_mapel'   => $r->nama_mapel,
-            'nilai_akhir'  => $r->nilai_akhir ? round($r->nilai_akhir,2) : null,
-            'kkm'          => $r->kkm,
-            'gap'          => ($r->kkm !== null && $r->nilai_akhir !== null) ? round($r->kkm - $r->nilai_akhir, 2) : null,
-        ])->toArray();
+        $q->where($this->baseWhere($f, $q));
+
+        $q->select(
+            'pm.id_kelas',
+            'pm.id_mapel',
+            'pm.id_tahun_ajaran',
+            'pm.semester',
+            'k.id_kelas as nama_kelas',
+            'm.nama_mapel',
+            DB::raw('COALESCE(g.nama_lengkap, "Belum Ditentukan") as nama_guru'),
+            DB::raw('MAX(pm.updated_at) as tanggal'),
+            DB::raw('MAX(pm.status_kunci) as status_kunci')
+        )
+        ->groupBy('pm.id_kelas', 'pm.id_mapel', 'pm.id_tahun_ajaran', 'pm.semester', 'k.id_kelas', 'm.nama_mapel', 'g.nama_lengkap');
+
+        return $q->orderByDesc('tanggal')->limit($limit)->get()->map(function ($r) {
+            return [
+                'id_kelas' => $r->id_kelas,
+                'id_mapel' => $r->id_mapel,
+                'komponen' => 'Penilaian Akhir',
+                'nama_mapel' => $r->nama_mapel,
+                'nama_kelas' => $r->nama_kelas,
+                'nama_guru' => $r->nama_guru,
+                'tahun_ajaran' => $r->id_tahun_ajaran,
+                'semester' => $r->semester,
+                'tanggal' => $r->tanggal ? date('d-m-Y H:i', strtotime($r->tanggal)) : '—',
+                'status' => $r->status_kunci ? 'Dipublish' : 'Belum Dipublish',
+            ];
+        })->toArray();
     }
 }

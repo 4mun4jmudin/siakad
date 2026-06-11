@@ -20,6 +20,11 @@ export default function Create({ auth }) {
         nip: '',
         jenis_kelamin: 'Laki-laki',
         status: 'Aktif',
+        tempat_lahir: '',
+        tanggal_lahir: '',
+        agama: '',
+        no_telepon: '',
+        alamat: '',
         foto_profil: null,
         barcode_id: '',
         sidik_jari_template: '',
@@ -305,6 +310,84 @@ export default function Create({ auth }) {
                                         </select>
                                         <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                                     </div>
+                                </div>
+                                
+                                {/* Tempat Lahir */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                        Tempat Lahir <span className="text-gray-400 font-normal">(Opsional)</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={data.tempat_lahir}
+                                        onChange={(e) => setData('tempat_lahir', e.target.value)}
+                                        className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all bg-gray-50/50"
+                                        placeholder="Tempat Lahir"
+                                    />
+                                </div>
+
+                                {/* Tanggal Lahir */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                        Tanggal Lahir <span className="text-gray-400 font-normal">(Opsional)</span>
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={data.tanggal_lahir}
+                                        onChange={(e) => setData('tanggal_lahir', e.target.value)}
+                                        className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all bg-gray-50/50"
+                                    />
+                                </div>
+
+                                {/* Agama */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                        Agama <span className="text-gray-400 font-normal">(Opsional)</span>
+                                    </label>
+                                    <div className="relative">
+                                        <select
+                                            value={data.agama}
+                                            onChange={(e) => setData('agama', e.target.value)}
+                                            className="w-full pl-4 pr-10 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all bg-gray-50/50 appearance-none cursor-pointer"
+                                        >
+                                            <option value="">Pilih Agama</option>
+                                            <option value="Islam">Islam</option>
+                                            <option value="Kristen">Kristen</option>
+                                            <option value="Katolik">Katolik</option>
+                                            <option value="Hindu">Hindu</option>
+                                            <option value="Buddha">Buddha</option>
+                                            <option value="Konghucu">Konghucu</option>
+                                        </select>
+                                        <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                                    </div>
+                                </div>
+
+                                {/* No Telepon */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                        No. Telepon <span className="text-gray-400 font-normal">(Opsional)</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={data.no_telepon}
+                                        onChange={(e) => setData('no_telepon', e.target.value)}
+                                        className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all bg-gray-50/50"
+                                        placeholder="08xxxxxxxxxx"
+                                    />
+                                </div>
+
+                                {/* Alamat */}
+                                <div className="sm:col-span-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                        Alamat <span className="text-gray-400 font-normal">(Opsional)</span>
+                                    </label>
+                                    <textarea
+                                        value={data.alamat}
+                                        onChange={(e) => setData('alamat', e.target.value)}
+                                        className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all bg-gray-50/50"
+                                        placeholder="Alamat lengkap"
+                                        rows={3}
+                                    />
                                 </div>
                             </div>
 

@@ -12,6 +12,10 @@ class KomponenPenilaian extends Model
 
     protected $fillable = [
         'nama',
+        'kode',
+        'tipe',
+        'bobot_default',
+        'aktif',
     ];
 
     public function bobots()

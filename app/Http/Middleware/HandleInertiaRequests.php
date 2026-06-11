@@ -35,7 +35,22 @@ class HandleInertiaRequests extends Middleware
     {
         return array_merge(parent::share($request), [
             'auth' => [
-                'user' => $request->user(),
+                'user' => function () use ($request) {
+                    $user = $request->user();
+                    if ($user) {
+                        if ($user->level === 'Siswa') {
+                            $user->load('siswa:id_pengguna,foto_profil');
+                            $user->foto_profil = $user->siswa?->foto_profil;
+                        } elseif ($user->level === 'Guru') {
+                            $user->load('guru:id_pengguna,foto_profil');
+                            $user->foto_profil = $user->guru?->foto_profil;
+                        } elseif ($user->level === 'Orang Tua') {
+                            $user->load('orangTuaWali:id_pengguna,foto_profil');
+                            $user->foto_profil = $user->orangTuaWali?->foto_profil;
+                        }
+                    }
+                    return $user;
+                },
             ],
             'ziggy' => function () use ($request) {
                 return array_merge((new Ziggy)->toArray(), [

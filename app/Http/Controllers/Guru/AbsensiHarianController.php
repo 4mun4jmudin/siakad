@@ -186,7 +186,7 @@ class AbsensiHarianController extends Controller
             'login_manual_enabled' => $pengaturan ? (bool) $pengaturan->login_manual_enabled : true,
             'filter'       => $filter,
             'filter_date'  => $baseDate->toDateString(),
-            'pengaturan'   => $pengaturan ? [
+            'pengaturanAbsensi' => $pengaturan ? [
                 'absensi_manual_guru_enabled' => (bool) $pengaturan->absensi_manual_guru_enabled,
             ] : ['absensi_manual_guru_enabled' => true],
             'yesterday_unfinished' => $kemarinBelumPulang,
