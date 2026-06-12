@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Head, router } from '@inertiajs/react';
+import toast from 'react-hot-toast';
 import AdminLayout from '@/Layouts/AdminLayout';
 import {
   ShieldCheck,
@@ -53,6 +54,34 @@ function formatDateTime(dateString) {
 export default function Index({ auth, pengajuan }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [rejectModal, setRejectModal] = useState({ open: false, id: null, catatan: '' });
+  const prevDataRef = useRef(pengajuan?.data || []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      router.reload({
+        only: ['pengajuan'],
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: (page) => {
+          const newData = page.props.pengajuan?.data || [];
+          const oldData = prevDataRef.current;
+          
+          // Detect new incoming requests
+          const newItems = newData.filter(n => !oldData.some(o => o.id === n.id));
+          if (newItems.length > 0) {
+            toast.success(`Terdapat ${newItems.length} pengajuan akses edit baru!`, {
+              icon: '🔔',
+              style: { borderRadius: '1rem', background: '#334155', color: '#fff' }
+            });
+          }
+          
+          prevDataRef.current = newData;
+        }
+      });
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleApprove = (id) => {
     if (confirm('Setujui pengajuan ini? Guru akan mendapatkan akses edit absensi selama 24 jam.')) {
@@ -91,7 +120,7 @@ export default function Index({ auth, pengajuan }) {
           </div>
 
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-            {pengajuan.data.length === 0 ? (
+            {(!pengajuan?.data || pengajuan.data.length === 0) ? (
               <div className="flex flex-col items-center justify-center p-12 text-center">
                 <ShieldCheck className="h-16 w-16 text-slate-200" />
                 <h3 className="mt-4 text-base font-black text-slate-900">Belum ada pengajuan</h3>

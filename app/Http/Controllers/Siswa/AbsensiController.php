@@ -93,12 +93,16 @@ class AbsensiController extends Controller
     /**
      * Menyimpan data absensi (Masuk & Pulang).
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, \App\Services\AntiVpnService $antiVpnService): RedirectResponse
     {
         $request->validate([
-            'latitude'  => ['required', 'string'],
-            'longitude' => ['required', 'string'],
-            'mode'      => ['nullable', 'in:masuk,pulang'],
+            'latitude'           => ['required', 'string'],
+            'longitude'          => ['required', 'string'],
+            'mode'               => ['nullable', 'in:masuk,pulang'],
+            'accuracy'           => ['nullable', 'string'],
+            'distance_to_school' => ['nullable', 'string'], // Hanya untuk info, hitungan tetap di backend
+            'network_meta'       => ['nullable', 'string'],
+            'location_meta'      => ['nullable', 'string'],
         ], [
             'latitude.required'  => 'Lokasi tidak terdeteksi. Izinkan akses GPS.',
             'longitude.required' => 'Lokasi tidak terdeteksi. Izinkan akses GPS.',
@@ -116,7 +120,8 @@ class AbsensiController extends Controller
         $now   = Carbon::now($tz);
 
         $mode = $request->input('mode', 'masuk');
-
+        $clientIp = $request->ip();
+        
         // --- 1. AMBIL PENGATURAN & KONVERSI WAKTU ---
         $pengaturan = Pengaturan::first();
         
@@ -126,19 +131,82 @@ class AbsensiController extends Controller
         $jamMasukConfig  = Carbon::createFromTimeString($jamMasukStr, $tz);
         $jamPulangConfig = Carbon::createFromTimeString($jamPulangStr, $tz);
 
-        // --- 2. CEK GEOFENCE (LOKASI) ---
+        // --- 2. VALIDASI KEAMANAN LOKASI (BACKEND) ---
         $schoolLat = $pengaturan?->lokasi_sekolah_latitude;
         $schoolLng = $pengaturan?->lokasi_sekolah_longitude;
-        $radius    = (int) ($pengaturan?->radius_absen_meters ?? 200);
+        $allowedRadius = (int) ($pengaturan?->radius_absen_meters ?? 200);
+        $maxAccuracy = (int) env('ABSENSI_MAX_GPS_ACCURACY', 80);
+        
+        $isWithinRadius = null;
+        $backendDistance = null;
+        $accuracy = (float) $request->accuracy;
 
-        if ($schoolLat && $schoolLng) {
-            $jarak = $this->calculateDistance($schoolLat, $schoolLng, $request->latitude, $request->longitude);
+        $isValid = true;
+        $riskReason = null;
+
+        // Cek Akurasi
+        if ($accuracy > $maxAccuracy) {
+            $isValid = false;
+            $riskReason = "Akurasi GPS terlalu rendah ({$accuracy}m). Maksimal yang diizinkan adalah {$maxAccuracy}m.";
+        }
+
+        // Cek Radius
+        if ($isValid && $schoolLat && $schoolLng) {
+            $backendDistance = $this->calculateDistance(
+                $schoolLat, $schoolLng, 
+                $request->latitude, $request->longitude
+            );
             
-            if ($jarak > $radius) {
-                return back()->with('error', "Anda berada di luar jangkauan sekolah. Jarak: {$jarak}m (Max: {$radius}m).");
+            $isWithinRadius = $backendDistance <= $allowedRadius;
+            
+            if (!$isWithinRadius) {
+                $isValid = false;
+                $riskReason = "Anda berada di luar radius sekolah. Jarak Anda: {$backendDistance}m (Maksimal: {$allowedRadius}m).";
             }
         }
 
+        // Cek Anti-VPN / Proxy
+        $vpnCheck = [];
+        if ($isValid) {
+            $vpnCheck = $antiVpnService->checkIp($clientIp);
+            if ($vpnCheck['is_blocked']) {
+                $isValid = false;
+                $riskReason = "Koneksi Anda mencurigakan (" . ($vpnCheck['reason'] ?? 'VPN/Proxy Terdeteksi') . "). Harap matikan VPN/Proxy.";
+            }
+        }
+
+        // --- 3. SIMPAN LOG METADATA KE DATABASE ---
+        \Illuminate\Support\Facades\DB::table('tbl_absensi_siswa_log_lokasi')->insert([
+            'id_siswa'              => $siswa->id_siswa,
+            'ip_address'            => $clientIp,
+            'latitude'              => $request->latitude,
+            'longitude'             => $request->longitude,
+            'accuracy'              => $request->accuracy,
+            'distance_meters'       => $backendDistance,
+            'mode_absen'            => $mode,
+            'allowed_radius_meters' => $allowedRadius,
+            'is_within_radius'      => $isWithinRadius,
+            'client_user_agent'     => $request->userAgent(),
+            'provider_name'         => $vpnCheck['provider_name'] ?? null,
+            'risk_score'            => $vpnCheck['risk_score'] ?? null,
+            'vpn_detected'          => $vpnCheck['vpn_detected'] ?? false,
+            'proxy_detected'        => $vpnCheck['proxy_detected'] ?? false,
+            'tor_detected'          => $vpnCheck['tor_detected'] ?? false,
+            'hosting_detected'      => $vpnCheck['hosting_detected'] ?? false,
+            'network_meta'          => $request->network_meta,
+            'location_meta'         => $request->location_meta,
+            'risk_reason'           => $riskReason,
+            'is_valid'              => $isValid,
+            'created_at'            => $now,
+            'updated_at'            => $now,
+        ]);
+
+        // Jika terindikasi kecurangan / di luar batas, hentikan proses absensi
+        if (!$isValid) {
+            return back()->with('error', $riskReason);
+        }
+
+        // --- 4. LANJUT SIMPAN ABSENSI JIKA VALID ---
         $absensiExisting = AbsensiSiswa::where('id_siswa', $siswa->id_siswa)
             ->whereDate('tanggal', $today->toDateString())
             ->first();
@@ -196,11 +264,6 @@ class AbsensiController extends Controller
             if ($absensiExisting->jam_pulang) {
                 return back()->with('error', 'Anda sudah melakukan absen pulang hari ini.');
             }
-
-            // Opsional: Validasi jika ingin siswa hanya boleh pulang setelah jam pulang sekolah
-            // if ($now->lessThan($jamPulangConfig)) {
-            //     return back()->with('error', 'Belum waktunya pulang sekolah.');
-            // }
 
             $absensiExisting->update([
                 'jam_pulang' => $now->format('H:i:s'),

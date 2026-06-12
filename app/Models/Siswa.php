@@ -58,6 +58,27 @@ class Siswa extends Model
         'sidik_jari_template',
         'barcode_id',
         'id_pengguna',
+
+        // Data Alamat Tambahan
+        'rt', 'rw', 'dusun', 'kelurahan', 'kecamatan', 'kode_pos', 
+        'jenis_tinggal', 'alat_transportasi', 'jarak_rumah_ke_sekolah', 'lintang', 'bujur',
+
+        // Kontak Siswa
+        'telepon_siswa', 'hp_siswa', 'email_siswa',
+
+        // Dokumen Ujian dan SKHUN
+        'skhun', 'no_peserta_ujian_nasional', 'no_seri_ijazah', 'no_registrasi_akta_lahir',
+
+        // Kesejahteraan dan Bantuan
+        'penerima_kps', 'no_kps', 'penerima_kip', 'nomor_kip', 'nama_di_kip', 
+        'nomor_kks', 'layak_pip', 'alasan_layak_pip', 'bank', 'nomor_rekening_bank', 'rekening_atas_nama',
+
+        // Data Fisik dan Khusus
+        'kebutuhan_khusus', 'berat_badan', 'tinggi_badan', 'lingkar_kepala',
+
+        // Data Keluarga Tambahan
+        'tahun_lahir_ayah', 'tahun_lahir_ibu', 'tahun_lahir_wali', 
+        'pendidikan_wali', 'pekerjaan_wali', 'penghasilan_wali', 'nik_wali',
     ];
 
     /**

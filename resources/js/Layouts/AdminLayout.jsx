@@ -174,10 +174,12 @@ export default function AdminLayout({ user, header, children }) {
     const toggleIconPath = pengaturan?.toggle_icon_url || "/images/sidebar-toggle-blue.png";
 
     // --- Actions Notifikasi ---
-    // Karena kita menggunakan SuratIzin sebagai notifikasi, "Mark as Read" artinya menuju detail surat
-    const handleNotificationClick = (id) => {
-        // Redirect ke halaman index surat izin dengan filter ID tersebut
-        router.get(route('admin.surat-izin.index', { status: 'Diajukan', q: id }));
+    const handleNotificationClick = (notif) => {
+        if (notif.type === 'akses_edit') {
+            router.get(route('admin.akses-edit-absensi.index', { status: 'Diajukan' }));
+        } else {
+            router.get(route('admin.surat-izin.index', { status: 'Diajukan', q: notif.real_id || notif.id }));
+        }
     };
 
     const markAllRead = () => {
@@ -887,12 +889,16 @@ export default function AdminLayout({ user, header, children }) {
                                                         <div key={notif.id} className="relative group border-b border-gray-50 last:border-0 hover:bg-gray-50/80 transition-colors">
                                                             <div
                                                                 className="flex p-4 gap-3 cursor-pointer"
-                                                                onClick={() => handleNotificationClick(notif.id)}
+                                                                onClick={() => handleNotificationClick(notif)}
                                                             >
                                                                 {/* Icon Status */}
                                                                 <div className="flex-shrink-0 mt-1">
-                                                                    <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-600">
-                                                                        <DocumentTextIcon className="h-4 w-4" />
+                                                                    <span className={`inline-flex items-center justify-center h-8 w-8 rounded-full ${notif.type === 'akses_edit' ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600'}`}>
+                                                                        {notif.type === 'akses_edit' ? (
+                                                                            <SparklesIcon className="h-4 w-4" />
+                                                                        ) : (
+                                                                            <DocumentTextIcon className="h-4 w-4" />
+                                                                        )}
                                                                     </span>
                                                                 </div>
 
@@ -915,7 +921,7 @@ export default function AdminLayout({ user, header, children }) {
                                                                     <button
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
-                                                                            handleNotificationClick(notif.id);
+                                                                            handleNotificationClick(notif);
                                                                         }}
                                                                         className="p-1.5 rounded-full text-gray-300 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
                                                                         title="Lihat Detail"

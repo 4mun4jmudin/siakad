@@ -135,8 +135,19 @@ class ImportSiswaJob implements ShouldQueue
                 $idSiswaBaru = Str::random(20);
 
                 DB::transaction(function () use ($idSiswaBaru, $nis, $getVal, $nama, $idKelas, $jk, $tglLahir) {
+                    $user = User::where('username', $nis)->first();
+                    if (!$user) {
+                        $user = User::create([
+                            'nama_lengkap' => $nama,
+                            'username' => $nis,
+                            'password' => Hash::make($nis),
+                            'level' => 'Siswa',
+                        ]);
+                    }
+
                     Siswa::create([
                         'id_siswa' => $idSiswaBaru, 
+                        'id_pengguna' => $user->id_pengguna,
                         'nis' => $nis,
                         'nisn' => $getVal('nisn') ?? '-',
                         'nama_lengkap' => $nama,
@@ -165,17 +176,50 @@ class ImportSiswaJob implements ShouldQueue
                         'nama_wali' => $getVal('nama_wali'),
                         'no_hp_wali' => $getVal('no_hp_wali'),
                         'alamat_wali' => $getVal('alamat_wali'),
-                        'status' => 'Aktif'
+                        'status' => 'Aktif',
+                        
+                        // Kolom Baru
+                        'rt' => $getVal('rt'),
+                        'rw' => $getVal('rw'),
+                        'dusun' => $getVal('dusun'),
+                        'kelurahan' => $getVal('kelurahan'),
+                        'kecamatan' => $getVal('kecamatan'),
+                        'kode_pos' => $getVal('kode_pos'),
+                        'jenis_tinggal' => $getVal('jenis_tinggal'),
+                        'alat_transportasi' => $getVal('alat_transportasi'),
+                        'jarak_rumah_ke_sekolah' => $getVal('jarak_rumah_ke_sekolah'),
+                        'lintang' => $getVal('lintang'),
+                        'bujur' => $getVal('bujur'),
+                        'telepon_siswa' => $getVal('telepon_siswa'),
+                        'hp_siswa' => $getVal('hp_siswa'),
+                        'email_siswa' => $getVal('email_siswa'),
+                        'skhun' => $getVal('skhun'),
+                        'no_peserta_ujian_nasional' => $getVal('no_peserta_ujian_nasional'),
+                        'no_seri_ijazah' => $getVal('no_seri_ijazah'),
+                        'no_registrasi_akta_lahir' => $getVal('no_registrasi_akta_lahir'),
+                        'penerima_kps' => $getVal('penerima_kps'),
+                        'no_kps' => $getVal('no_kps'),
+                        'penerima_kip' => $getVal('penerima_kip'),
+                        'nomor_kip' => $getVal('nomor_kip'),
+                        'nama_di_kip' => $getVal('nama_di_kip'),
+                        'nomor_kks' => $getVal('nomor_kks'),
+                        'layak_pip' => $getVal('layak_pip'),
+                        'alasan_layak_pip' => $getVal('alasan_layak_pip'),
+                        'bank' => $getVal('bank'),
+                        'nomor_rekening_bank' => $getVal('nomor_rekening_bank'),
+                        'rekening_atas_nama' => $getVal('rekening_atas_nama'),
+                        'kebutuhan_khusus' => $getVal('kebutuhan_khusus'),
+                        'berat_badan' => (int) $getVal('berat_badan') ?: null,
+                        'tinggi_badan' => (int) $getVal('tinggi_badan') ?: null,
+                        'lingkar_kepala' => (int) $getVal('lingkar_kepala') ?: null,
+                        'tahun_lahir_ayah' => $getVal('tahun_lahir_ayah'),
+                        'tahun_lahir_ibu' => $getVal('tahun_lahir_ibu'),
+                        'tahun_lahir_wali' => $getVal('tahun_lahir_wali'),
+                        'pendidikan_wali' => $getVal('pendidikan_wali'),
+                        'pekerjaan_wali' => $getVal('pekerjaan_wali'),
+                        'penghasilan_wali' => $getVal('penghasilan_wali'),
+                        'nik_wali' => $getVal('nik_wali')
                     ]);
-
-                    if (!User::where('username', $nis)->exists()) {
-                        User::create([
-                            'nama_lengkap' => $nama,
-                            'username' => $nis,
-                            'password' => Hash::make($nis),
-                            'level' => 'Siswa',
-                        ]);
-                    }
                 });
 
                 $success++;

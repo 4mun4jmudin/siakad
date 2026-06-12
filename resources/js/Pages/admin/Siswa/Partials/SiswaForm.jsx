@@ -1,5 +1,20 @@
 import React, { useEffect, useMemo, useState } from "react";
 
+const InputField = ({ label, name, type = "text", data, setData, errors, placeholder = "", maxLength }) => (
+  <div>
+    <label className="block font-medium text-sm text-gray-700">{label}</label>
+    <input
+      type={type}
+      value={data[name] || ""}
+      onChange={(e) => setData(name, e.target.value)}
+      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+      placeholder={placeholder}
+      maxLength={maxLength}
+    />
+    {errors[name] && <p className="text-red-500 text-xs mt-1">{errors[name]}</p>}
+  </div>
+);
+
 export default function SiswaForm({ data, setData, errors = {}, kelasOptions = [], siswa = null }) {
   // Preview prioritas:
   // 1) file baru yg dipilih
@@ -283,6 +298,35 @@ export default function SiswaForm({ data, setData, errors = {}, kelasOptions = [
             {errors.alamat_lengkap && <p className="text-red-500 text-xs mt-1">{errors.alamat_lengkap}</p>}
           </div>
 
+          <InputField label="RT" name="rt" data={data} setData={setData} errors={errors} maxLength={10} />
+          <InputField label="RW" name="rw" data={data} setData={setData} errors={errors} maxLength={10} />
+          <InputField label="Dusun" name="dusun" data={data} setData={setData} errors={errors} />
+          <InputField label="Kelurahan" name="kelurahan" data={data} setData={setData} errors={errors} />
+          <InputField label="Kecamatan" name="kecamatan" data={data} setData={setData} errors={errors} />
+          <InputField label="Kode Pos" name="kode_pos" data={data} setData={setData} errors={errors} maxLength={10} />
+          <InputField label="Jenis Tinggal" name="jenis_tinggal" data={data} setData={setData} errors={errors} />
+          <InputField label="Alat Transportasi" name="alat_transportasi" data={data} setData={setData} errors={errors} />
+          <InputField label="Jarak Rumah ke Sekolah" name="jarak_rumah_ke_sekolah" data={data} setData={setData} errors={errors} />
+          <InputField label="Lintang" name="lintang" data={data} setData={setData} errors={errors} />
+          <InputField label="Bujur" name="bujur" data={data} setData={setData} errors={errors} />
+
+          {/* Kontak Pribadi Siswa */}
+          <div className="sm:col-span-2 mt-4">
+            <h3 className="text-lg font-medium text-gray-900">Kontak Siswa</h3>
+          </div>
+          <InputField label="Telepon" name="telepon_siswa" data={data} setData={setData} errors={errors} />
+          <InputField label="HP" name="hp_siswa" data={data} setData={setData} errors={errors} />
+          <InputField label="Email" name="email_siswa" type="email" data={data} setData={setData} errors={errors} />
+
+          {/* Data Fisik & Khusus */}
+          <div className="sm:col-span-2 mt-4">
+            <h3 className="text-lg font-medium text-gray-900">Data Fisik & Khusus</h3>
+          </div>
+          <InputField label="Kebutuhan Khusus" name="kebutuhan_khusus" data={data} setData={setData} errors={errors} />
+          <InputField label="Berat Badan (kg)" name="berat_badan" type="number" data={data} setData={setData} errors={errors} />
+          <InputField label="Tinggi Badan (cm)" name="tinggi_badan" type="number" data={data} setData={setData} errors={errors} />
+          <InputField label="Lingkar Kepala (cm)" name="lingkar_kepala" type="number" data={data} setData={setData} errors={errors} />
+
           <div>
             <label className="block font-medium text-sm text-gray-700">Anak Ke</label>
             <input
@@ -339,6 +383,31 @@ export default function SiswaForm({ data, setData, errors = {}, kelasOptions = [
             {errors.tahun_lulus && <p className="text-red-500 text-xs mt-1">{errors.tahun_lulus}</p>}
           </div>
 
+          {/* Dokumen & Ujian */}
+          <div className="sm:col-span-2 mt-4">
+            <h3 className="text-lg font-medium text-gray-900">Dokumen & Ujian</h3>
+          </div>
+          <InputField label="SKHUN" name="skhun" data={data} setData={setData} errors={errors} />
+          <InputField label="No. Peserta Ujian Nasional" name="no_peserta_ujian_nasional" data={data} setData={setData} errors={errors} />
+          <InputField label="No. Seri Ijazah" name="no_seri_ijazah" data={data} setData={setData} errors={errors} />
+          <InputField label="No. Registrasi Akta Lahir" name="no_registrasi_akta_lahir" data={data} setData={setData} errors={errors} />
+
+          {/* Kesejahteraan & Bantuan */}
+          <div className="sm:col-span-2 mt-4">
+            <h3 className="text-lg font-medium text-gray-900">Kesejahteraan & Bantuan</h3>
+          </div>
+          <InputField label="Penerima KPS" name="penerima_kps" data={data} setData={setData} errors={errors} />
+          <InputField label="No. KPS" name="no_kps" data={data} setData={setData} errors={errors} />
+          <InputField label="Penerima KIP" name="penerima_kip" data={data} setData={setData} errors={errors} />
+          <InputField label="Nomor KIP" name="nomor_kip" data={data} setData={setData} errors={errors} />
+          <InputField label="Nama di KIP" name="nama_di_kip" data={data} setData={setData} errors={errors} />
+          <InputField label="Nomor KKS" name="nomor_kks" data={data} setData={setData} errors={errors} />
+          <InputField label="Layak PIP" name="layak_pip" data={data} setData={setData} errors={errors} />
+          <InputField label="Alasan Layak PIP" name="alasan_layak_pip" data={data} setData={setData} errors={errors} />
+          <InputField label="Bank" name="bank" data={data} setData={setData} errors={errors} />
+          <InputField label="Nomor Rekening Bank" name="nomor_rekening_bank" data={data} setData={setData} errors={errors} />
+          <InputField label="Rekening Atas Nama" name="rekening_atas_nama" data={data} setData={setData} errors={errors} />
+
           {/* Data Keluarga - Ayah */}
           <div className="sm:col-span-2 mt-4">
             <h3 className="text-lg font-medium text-gray-900">Informasi Ayah</h3>
@@ -366,6 +435,8 @@ export default function SiswaForm({ data, setData, errors = {}, kelasOptions = [
             />
             {errors.nik_ayah && <p className="text-red-500 text-xs mt-1">{errors.nik_ayah}</p>}
           </div>
+
+          <InputField label="Tahun Lahir Ayah" name="tahun_lahir_ayah" data={data} setData={setData} errors={errors} maxLength={4} />
 
           <div>
             <label className="block font-medium text-sm text-gray-700">Pendidikan Ayah</label>
@@ -436,6 +507,8 @@ export default function SiswaForm({ data, setData, errors = {}, kelasOptions = [
             {errors.nik_ibu && <p className="text-red-500 text-xs mt-1">{errors.nik_ibu}</p>}
           </div>
 
+          <InputField label="Tahun Lahir Ibu" name="tahun_lahir_ibu" data={data} setData={setData} errors={errors} maxLength={4} />
+
           <div>
             <label className="block font-medium text-sm text-gray-700">Pendidikan Ibu</label>
             <select
@@ -503,6 +576,41 @@ export default function SiswaForm({ data, setData, errors = {}, kelasOptions = [
               placeholder="Contoh: 081234567890"
             />
             {errors.no_hp_wali && <p className="text-red-500 text-xs mt-1">{errors.no_hp_wali}</p>}
+          </div>
+
+          <InputField label="NIK Wali" name="nik_wali" data={data} setData={setData} errors={errors} maxLength={16} />
+          <InputField label="Tahun Lahir Wali" name="tahun_lahir_wali" data={data} setData={setData} errors={errors} maxLength={4} />
+          
+          <div>
+            <label className="block font-medium text-sm text-gray-700">Pendidikan Wali</label>
+            <select
+              value={data.pendidikan_wali || ""}
+              onChange={(e) => setData("pendidikan_wali", e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+            >
+              <option value="">-- Pilih --</option>
+              {pendidikanOptions.map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+            {errors.pendidikan_wali && <p className="text-red-500 text-xs mt-1">{errors.pendidikan_wali}</p>}
+          </div>
+
+          <InputField label="Pekerjaan Wali" name="pekerjaan_wali" data={data} setData={setData} errors={errors} />
+          
+          <div>
+            <label className="block font-medium text-sm text-gray-700">Penghasilan Wali</label>
+            <select
+              value={data.penghasilan_wali || ""}
+              onChange={(e) => setData("penghasilan_wali", e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+            >
+              <option value="">-- Pilih --</option>
+              {penghasilanOptions.map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+            {errors.penghasilan_wali && <p className="text-red-500 text-xs mt-1">{errors.penghasilan_wali}</p>}
           </div>
 
           <div className="sm:col-span-2">

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Head, useForm, Link } from '@inertiajs/react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Head, useForm, Link, router } from '@inertiajs/react';
+import toast from 'react-hot-toast';
 import GuruLayout from '@/Layouts/GuruLayout';
 import {
   ShieldCheck,
@@ -50,6 +51,43 @@ function formatDateTime(dateString) {
 
 export default function AksesEdit({ pengajuan, jadwalOptions }) {
   const [modalOpen, setModalOpen] = useState(false);
+  const prevDataRef = useRef(pengajuan || []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      router.reload({
+        only: ['pengajuan'],
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: (page) => {
+          const newData = page.props.pengajuan || [];
+          const oldData = prevDataRef.current;
+          
+          // Detect changes in status
+          newData.forEach(newItem => {
+            const oldItem = oldData.find(o => o.id === newItem.id);
+            if (oldItem && oldItem.status !== newItem.status) {
+              if (newItem.status === 'Disetujui') {
+                toast.success('Pengajuan edit absensi Anda disetujui!', {
+                  icon: '✅',
+                  style: { borderRadius: '1rem', background: '#334155', color: '#fff' }
+                });
+              } else if (newItem.status === 'Ditolak') {
+                toast.error('Pengajuan edit absensi Anda ditolak!', {
+                  icon: '❌',
+                  style: { borderRadius: '1rem', background: '#334155', color: '#fff' }
+                });
+              }
+            }
+          });
+          
+          prevDataRef.current = newData;
+        }
+      });
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
     id_jadwal: '',

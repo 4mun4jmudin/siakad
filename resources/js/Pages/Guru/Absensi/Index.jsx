@@ -31,11 +31,16 @@ import {
   Info,
   UserCheck,
   TimerReset,
+  MoreHorizontal,
+  Activity,
+  FileText,
+  Eye,
 } from 'lucide-react';
 import { Menu, Transition } from '@headlessui/react';
 import { useDebounce } from 'use-debounce';
 
 const EXCEPTIONS = ['Alfa_Mapel', 'Izin_Mapel', 'Sakit_Mapel', 'Tugas_Mapel'];
+const PRIMARY_STATUS = ['Hadir', 'Sakit', 'Izin', 'Alfa'];
 
 const cn = (...classes) => classes.filter(Boolean).join(' ');
 
@@ -129,6 +134,22 @@ function statusTone(status, active = false) {
   return map[status] || 'border-slate-200 bg-slate-50 text-slate-700';
 }
 
+function statusDot(status) {
+  const map = {
+    Hadir: 'bg-emerald-500',
+    Izin: 'bg-sky-500',
+    Izin_Mapel: 'bg-sky-500',
+    Sakit: 'bg-amber-500',
+    Sakit_Mapel: 'bg-amber-500',
+    Alfa: 'bg-rose-500',
+    Alfa_Mapel: 'bg-rose-500',
+    Tugas_Mapel: 'bg-indigo-500',
+    'Belum Absen': 'bg-slate-500',
+  };
+
+  return map[status] || 'bg-slate-400';
+}
+
 function PremiumCard({ children, className = '', delay = 0 }) {
   return (
     <div
@@ -149,11 +170,7 @@ function StatMiniCard({ label, value, icon: Icon }) {
   return (
     <div className="rounded-3xl border border-white/15 bg-white/10 p-3 text-center backdrop-blur-md">
       <Icon className="mx-auto h-5 w-5 text-white/90" />
-
-      <p className="mt-2 text-2xl font-black leading-none text-white">
-        {value}
-      </p>
-
+      <p className="mt-2 text-2xl font-black leading-none text-white">{value}</p>
       <p className="mt-1 text-[10px] font-black uppercase tracking-wide text-white/70">
         {label}
       </p>
@@ -180,7 +197,7 @@ function StatusBadge({ status, prefix = '' }) {
         statusTone(status)
       )}
     >
-      <ShieldCheck className="h-3.5 w-3.5" />
+      <span className={cn('h-2 w-2 rounded-full', statusDot(status))} />
       {prefix}
       {statusLabel(status)}
     </span>
@@ -189,7 +206,7 @@ function StatusBadge({ status, prefix = '' }) {
 
 function StudentAvatar({ name }) {
   return (
-    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-3xl bg-gradient-to-br from-indigo-600 to-violet-600 text-base font-black uppercase text-white shadow-lg shadow-indigo-200">
+    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 text-sm font-black uppercase text-white shadow-lg shadow-indigo-200">
       {(name || '?').slice(0, 1)}
     </div>
   );
@@ -213,6 +230,214 @@ function EmptyState() {
   );
 }
 
+function PrimaryStatusButton({ option, active, disabled, onClick }) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={cn(
+        'inline-flex min-h-10 items-center justify-center gap-1.5 rounded-2xl border px-3 py-2 text-xs font-black transition-all duration-200',
+        active ? `${statusTone(option, true)} shadow-lg` : statusTone(option),
+        disabled && 'cursor-not-allowed opacity-50'
+      )}
+      aria-pressed={active}
+    >
+      <span className={cn('h-2 w-2 rounded-full', active ? 'bg-white' : statusDot(option))} />
+      {statusLabel(option)}
+    </button>
+  );
+}
+
+function ExceptionMenu({ options, activeStatus, disabled, onSelect }) {
+  const available = options.filter((option) => EXCEPTIONS.includes(option));
+  const activeException = EXCEPTIONS.includes(activeStatus);
+
+  if (available.length === 0) return null;
+
+  return (
+    <Menu as="div" className="relative inline-block text-left">
+      <Menu.Button
+        disabled={disabled}
+        className={cn(
+          'inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border px-3 py-2 text-xs font-black transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50',
+          activeException
+            ? `${statusTone(activeStatus, true)} shadow-lg`
+            : 'border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50'
+        )}
+      >
+        <MoreHorizontal className="h-4 w-4" />
+        {activeException ? statusLabel(activeStatus) : 'Pengecualian'}
+        <ChevronDown className="h-3.5 w-3.5" />
+      </Menu.Button>
+
+      <Transition
+        as={Fragment}
+        enter="transition ease-out duration-100"
+        enterFrom="transform opacity-0 scale-95"
+        enterTo="transform opacity-100 scale-100"
+        leave="transition ease-in duration-75"
+        leaveFrom="transform opacity-100 scale-100"
+        leaveTo="transform opacity-0 scale-95"
+      >
+        <Menu.Items className="absolute left-0 z-[90] mt-2 w-56 overflow-hidden rounded-3xl border border-white/70 bg-white/95 p-2 shadow-2xl backdrop-blur-xl focus:outline-none">
+          {available.map((option) => (
+            <Menu.Item key={option}>
+              {({ active }) => (
+                <button
+                  type="button"
+                  onClick={() => onSelect(option)}
+                  className={cn(
+                    'flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-bold transition',
+                    active ? statusTone(option) : 'text-slate-700'
+                  )}
+                >
+                  <span className={cn('h-2.5 w-2.5 rounded-full', statusDot(option))} />
+                  {statusLabel(option)}
+                </button>
+              )}
+            </Menu.Item>
+          ))}
+        </Menu.Items>
+      </Transition>
+    </Menu>
+  );
+}
+
+function StudentRow({
+  siswa,
+  index,
+  rowIndex,
+  entry,
+  daily,
+  options,
+  editable,
+  lockedDaily,
+  isOverride,
+  autoBadge,
+  onStatusChange,
+  onKeteranganChange,
+}) {
+  const rowDisabled = !editable || lockedDaily;
+  const primaryOptions = PRIMARY_STATUS.filter((option) => options.includes(option));
+  const showNoteInput = entry.status_kehadiran && entry.status_kehadiran !== 'Hadir';
+
+  return (
+    <div
+      className={cn(
+        'grid grid-cols-12 items-start gap-4 p-4 transition hover:bg-indigo-50/25',
+        rowIndex % 2 === 1 && 'bg-slate-50/35'
+      )}
+    >
+      <div className="col-span-12 xl:col-span-4">
+        <div className="flex items-start gap-3">
+          <StudentAvatar name={siswa.nama_panggilan || siswa.nama_lengkap} />
+
+          <div className="min-w-0 flex-1">
+            <p className="font-black leading-snug text-slate-900" style={clampStyle(2)}>
+              {siswa.nama_lengkap}
+            </p>
+
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-400">
+              <span>NIS: {siswa.nis || '-'}</span>
+              <span className="hidden sm:inline">•</span>
+              <span>ID: {siswa.id_siswa}</span>
+            </div>
+
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {daily ? (
+                <StatusBadge status={daily} prefix="Harian: " />
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-slate-500">
+                  <Info className="h-3.5 w-3.5" />
+                  Harian Belum Ada
+                </span>
+              )}
+
+              {autoBadge && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-slate-500">
+                  <Brain className="h-3.5 w-3.5" />
+                  Auto
+                </span>
+              )}
+
+              {isOverride && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-indigo-700">
+                  <Pencil className="h-3.5 w-3.5" />
+                  Override
+                </span>
+              )}
+
+              {lockedDaily && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-rose-700">
+                  <Lock className="h-3.5 w-3.5" />
+                  Terkunci
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="col-span-12 xl:col-span-5">
+        <div className="rounded-3xl border border-slate-100 bg-white/80 p-2">
+          <div className="flex flex-wrap gap-2">
+            {primaryOptions.map((option) => (
+              <PrimaryStatusButton
+                key={`${siswa.id_siswa}-${option}`}
+                option={option}
+                active={entry.status_kehadiran === option}
+                disabled={rowDisabled}
+                onClick={() => onStatusChange(index, option)}
+              />
+            ))}
+
+            <ExceptionMenu
+              options={options}
+              activeStatus={entry.status_kehadiran}
+              disabled={rowDisabled}
+              onSelect={(option) => onStatusChange(index, option)}
+            />
+
+            {options.includes('Belum Absen') && (
+              <PrimaryStatusButton
+                option="Belum Absen"
+                active={entry.status_kehadiran === 'Belum Absen'}
+                disabled={rowDisabled}
+                onClick={() => onStatusChange(index, 'Belum Absen')}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="col-span-12 xl:col-span-3">
+        {showNoteInput ? (
+          <div>
+            <input
+              value={entry.keterangan || ''}
+              onChange={(event) => onKeteranganChange(index, event.target.value)}
+              placeholder="Keterangan opsional..."
+              className="min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm outline-none disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200"
+              aria-label={`Keterangan untuk ${siswa.nama_lengkap}`}
+              disabled={rowDisabled}
+            />
+
+            <p className="mt-1.5 text-[11px] font-semibold text-slate-400">
+              Muncul hanya saat status bukan Hadir.
+            </p>
+          </div>
+        ) : (
+          <div className="flex min-h-11 items-center justify-between gap-2 rounded-2xl border border-slate-100 bg-slate-50 px-3 text-sm font-semibold text-slate-400">
+            <span>Tidak perlu keterangan</span>
+            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Index({
   jadwal,
   siswaList = [],
@@ -223,7 +448,7 @@ export default function Index({
   onlyToday = true,
   aksesEditAktif = null,
 }) {
-  const isLocked = onlyToday;
+  const isLocked = Boolean(onlyToday) && !aksesEditAktif;
   const editable = !isLocked;
 
   const [searchTerm, setSearchTerm] = useState(filters.search || '');
@@ -243,11 +468,6 @@ export default function Index({
     tanggal,
     entries: [],
   });
-
-  const TODAY = useMemo(
-    () => today || new Date().toISOString().slice(0, 10),
-    [today]
-  );
 
   useEffect(() => {
     const entries = (siswaList || []).map((siswa) => {
@@ -427,6 +647,12 @@ export default function Index({
     return out;
   }, [data.entries, siswaList]);
 
+  const totalException =
+    summary.Alfa_Mapel +
+    summary.Izin_Mapel +
+    summary.Sakit_Mapel +
+    summary.Tugas_Mapel;
+
   const handleSubmit = () => {
     clearErrors();
     setConfirmOpen(true);
@@ -487,7 +713,6 @@ export default function Index({
         <div className="pointer-events-none absolute bottom-10 left-1/3 h-72 w-72 rounded-full bg-violet-200/25 blur-3xl" />
 
         <div className="relative mx-auto max-w-7xl space-y-5 px-3 pb-12 sm:space-y-6 sm:px-6 lg:px-8">
-          {/* Hero */}
           <PremiumCard className="relative overflow-hidden p-0" delay={0}>
             <div className="absolute inset-0 bg-gradient-to-r from-indigo-700 via-violet-700 to-sky-700" />
             <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/15 blur-2xl" />
@@ -514,7 +739,7 @@ export default function Index({
                     <span className="font-black text-sky-100">
                       {jadwal?.jam_mulai?.slice(0, 5) || '-'} - {jadwal?.jam_selesai?.slice(0, 5) || '-'}
                     </span>
-                    . Absensi mapel mengikuti status harian siswa dan bisa diberi pengecualian mapel.
+                    . Status utama dibuat ringkas, pengecualian mapel tersedia lewat tombol khusus.
                   </p>
 
                   <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-white/90">
@@ -535,7 +760,7 @@ export default function Index({
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[520px]">
                   <StatMiniCard label="Siswa" value={summary.total} icon={Users} />
                   <StatMiniCard label="Hadir" value={summary.Hadir} icon={CheckCircle2} />
-                  <StatMiniCard label="Pengecualian" value={summary.Alfa_Mapel + summary.Izin_Mapel + summary.Sakit_Mapel + summary.Tugas_Mapel} icon={Pencil} />
+                  <StatMiniCard label="Pengecualian" value={totalException} icon={Pencil} />
                   <StatMiniCard label="Alfa Mapel" value={summary.Alfa_Mapel} icon={XCircle} />
                 </div>
               </div>
@@ -551,7 +776,7 @@ export default function Index({
 
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-black text-amber-800">
-                    Peringatan Tanggal
+                    Peringatan
                   </p>
 
                   <p className="mt-1 text-xs font-semibold leading-relaxed text-amber-700">
@@ -570,7 +795,6 @@ export default function Index({
             </PremiumCard>
           )}
 
-          {/* Action Bar */}
           <PremiumCard className="p-3 sm:p-4" delay={70}>
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <Link
@@ -607,7 +831,7 @@ export default function Index({
                 {!editable && (
                   <Link
                     href={safeRoute('guru.akses-edit-absensi.index')}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700 hover:bg-indigo-100 transition"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700 transition hover:bg-indigo-100"
                   >
                     <ShieldCheck className="h-4 w-4" />
                     Ajukan Edit
@@ -617,7 +841,6 @@ export default function Index({
             </div>
           </PremiumCard>
 
-          {/* Summary */}
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
             <SummaryPill label="Hadir" value={summary.Hadir} status="Hadir" />
             <SummaryPill label="Izin" value={summary.Izin} status="Izin" />
@@ -629,7 +852,6 @@ export default function Index({
             <SummaryPill label="Tugas Mapel" value={summary.Tugas_Mapel} status="Tugas_Mapel" />
           </div>
 
-          {/* Toolbar */}
           <PremiumCard className="p-4 sm:p-5" delay={90}>
             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex items-start gap-3">
@@ -772,7 +994,6 @@ export default function Index({
                       setTanggal(value);
                       setData('tanggal', value);
                     }}
-                    title="Pilih tanggal"
                     className="min-h-11 w-full rounded-2xl border border-slate-200 bg-white/90 py-2 pl-10 pr-3 text-sm font-semibold text-slate-700 shadow-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200"
                   />
                 </div>
@@ -812,7 +1033,7 @@ export default function Index({
                       : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                   )}
                 >
-                  <Pencil className="h-4 w-4" />
+                  <Eye className="h-4 w-4" />
                   {showExceptionsOnly ? 'Pengecualian Aktif' : 'Hanya Pengecualian'}
                 </button>
               </div>
@@ -825,13 +1046,15 @@ export default function Index({
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-emerald-600 shadow-sm">
                   <UserCheck className="h-5 w-5" />
                 </div>
+
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-black text-emerald-800">
                     Akses Edit Khusus Aktif
                   </p>
+
                   <p className="mt-1 text-xs font-semibold leading-relaxed text-emerald-700">
                     Anda sedang menggunakan akses edit absensi yang telah disetujui admin.
-                    Akses berlaku hingga {formatDate(aksesEditAktif.expired_at)}.
+                    Akses berlaku hingga {aksesEditAktif.expired_at ? formatDate(aksesEditAktif.expired_at) : '-'}.
                   </p>
                 </div>
               </div>
@@ -847,11 +1070,12 @@ export default function Index({
 
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold leading-relaxed text-slate-700">
-                    Perubahan absensi terkunci karena waktu edit (24 jam) sudah habis. Export tetap bisa dilakukan.
+                    Perubahan absensi terkunci karena waktu edit sudah habis. Export tetap bisa dilakukan.
                   </p>
+
                   <Link
                     href={safeRoute('guru.akses-edit-absensi.index')}
-                    className="mt-2 inline-flex items-center gap-1.5 rounded-xl bg-white border border-slate-200 px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-50 transition"
+                    className="mt-2 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 transition hover:bg-slate-50"
                   >
                     Ajukan Akses Edit Absensi
                   </Link>
@@ -860,9 +1084,8 @@ export default function Index({
             </PremiumCard>
           )}
 
-          {/* List */}
           <form onSubmit={doSubmit} className="space-y-4" aria-label="Form absensi">
-            <PremiumCard className="overflow-hidden p-0" delay={120}>
+            <PremiumCard className="overflow-visible p-0" delay={120}>
               <div className="border-b border-slate-100 p-4 sm:p-5">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-start gap-3">
@@ -893,9 +1116,9 @@ export default function Index({
                 <div className="divide-y divide-slate-100">
                   {[...Array(10)].map((_, index) => (
                     <div key={index} className="grid grid-cols-12 items-center gap-4 p-4">
-                      <div className="col-span-12 md:col-span-4">
+                      <div className="col-span-12 xl:col-span-4">
                         <div className="flex items-center gap-3">
-                          <Skeleton className="h-12 w-12 rounded-3xl" />
+                          <Skeleton className="h-11 w-11 rounded-2xl" />
                           <div className="flex-1 space-y-2">
                             <Skeleton className="h-4 w-40" />
                             <Skeleton className="h-3 w-24" />
@@ -904,14 +1127,14 @@ export default function Index({
                         </div>
                       </div>
 
-                      <div className="col-span-12 flex flex-wrap gap-2 md:col-span-5">
-                        <Skeleton className="h-8 w-20 rounded-full" />
-                        <Skeleton className="h-8 w-20 rounded-full" />
-                        <Skeleton className="h-8 w-20 rounded-full" />
-                        <Skeleton className="h-8 w-24 rounded-full" />
+                      <div className="col-span-12 flex flex-wrap gap-2 xl:col-span-5">
+                        <Skeleton className="h-10 w-20 rounded-2xl" />
+                        <Skeleton className="h-10 w-20 rounded-2xl" />
+                        <Skeleton className="h-10 w-20 rounded-2xl" />
+                        <Skeleton className="h-10 w-32 rounded-2xl" />
                       </div>
 
-                      <div className="col-span-12 md:col-span-3">
+                      <div className="col-span-12 xl:col-span-3">
                         <Skeleton className="h-11 w-full rounded-2xl" />
                       </div>
                     </div>
@@ -940,120 +1163,36 @@ export default function Index({
 
                     const autoBadge = !isOverride && !!daily;
                     const lockedDaily = daily && daily !== 'Hadir';
-                    const rowDisabled = !editable || lockedDaily;
 
                     return (
-                      <div
+                      <StudentRow
                         key={siswa.id_siswa}
-                        className={cn(
-                          'grid grid-cols-12 items-start gap-4 p-4 transition hover:bg-indigo-50/30',
-                          rowIndex % 2 === 1 && 'bg-slate-50/35'
-                        )}
-                      >
-                        <div className="col-span-12 md:col-span-4">
-                          <div className="flex items-start gap-3">
-                            <StudentAvatar name={siswa.nama_panggilan || siswa.nama_lengkap} />
-
-                            <div className="min-w-0">
-                              <p className="font-black leading-snug text-slate-900" style={clampStyle(2)}>
-                                {siswa.nama_lengkap}
-                              </p>
-
-                              <p className="mt-1 text-xs font-semibold text-slate-400">
-                                NIS: {siswa.nis || '-'}
-                              </p>
-
-                              <div className="mt-2 flex flex-wrap items-center gap-2">
-                                {daily ? (
-                                  <StatusBadge status={daily} prefix="Harian: " />
-                                ) : (
-                                  <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-slate-500">
-                                    <Info className="h-3.5 w-3.5" />
-                                    Harian Belum Ada
-                                  </span>
-                                )}
-
-                                {autoBadge && (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-slate-500">
-                                    <Brain className="h-3.5 w-3.5" />
-                                    Auto
-                                  </span>
-                                )}
-
-                                {isOverride && (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-indigo-700">
-                                    <Pencil className="h-3.5 w-3.5" />
-                                    Override
-                                  </span>
-                                )}
-
-                                {lockedDaily && (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-rose-700">
-                                    <Lock className="h-3.5 w-3.5" />
-                                    Terkunci
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="col-span-12 flex flex-wrap gap-2 md:col-span-5">
-                          {options.map((option) => {
-                            const active = entry.status_kehadiran === option;
-
-                            return (
-                              <button
-                                key={`${siswa.id_siswa}-${option}`}
-                                type="button"
-                                disabled={rowDisabled}
-                                onClick={() => handleEntryChange(index, 'status_kehadiran', option)}
-                                className={cn(
-                                  'rounded-full border px-3 py-2 text-xs font-black transition-all duration-200',
-                                  active
-                                    ? `${statusTone(option, true)} shadow-lg`
-                                    : statusTone(option),
-                                  rowDisabled && 'cursor-not-allowed opacity-50'
-                                )}
-                                aria-pressed={active}
-                                aria-label={`Set ${siswa.nama_lengkap} = ${option}`}
-                              >
-                                {statusLabel(option)}
-                              </button>
-                            );
-                          })}
-                        </div>
-
-                        <div className="col-span-12 md:col-span-3">
-                          {entry.status_kehadiran && entry.status_kehadiran !== 'Hadir' ? (
-                            <input
-                              value={entry.keterangan || ''}
-                              onChange={(event) => handleEntryChange(index, 'keterangan', event.target.value)}
-                              placeholder="Keterangan opsional..."
-                              className="min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm outline-none disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200"
-                              aria-label={`Keterangan untuk ${siswa.nama_lengkap}`}
-                              disabled={rowDisabled}
-                            />
-                          ) : (
-                            <div className="flex min-h-11 items-center rounded-2xl border border-slate-100 bg-slate-50 px-3 text-sm font-semibold text-slate-400">
-                              —
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                        siswa={siswa}
+                        index={index}
+                        rowIndex={rowIndex}
+                        entry={entry}
+                        daily={daily}
+                        options={options}
+                        editable={editable}
+                        lockedDaily={lockedDaily}
+                        isOverride={isOverride}
+                        autoBadge={autoBadge}
+                        onStatusChange={(entryIndex, option) => handleEntryChange(entryIndex, 'status_kehadiran', option)}
+                        onKeteranganChange={(entryIndex, value) => handleEntryChange(entryIndex, 'keterangan', value)}
+                      />
                     );
                   })}
                 </div>
               )}
             </PremiumCard>
 
-            <div className="flex justify-end">
+            <div className="sticky bottom-3 z-[40] flex justify-end">
               <button
                 type="button"
                 disabled={processing || processingSave || !editable}
                 onClick={handleSubmit}
-                title={!editable ? 'Terkunci, bukan hari ini' : 'Simpan perubahan'}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-indigo-200 transition-all duration-300 hover:-translate-y-0.5 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+                title={!editable ? 'Terkunci' : 'Simpan perubahan'}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-black text-white shadow-2xl shadow-indigo-300/50 transition-all duration-300 hover:-translate-y-0.5 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {processingSave ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -1067,7 +1206,6 @@ export default function Index({
         </div>
       </div>
 
-      {/* Confirm Modal */}
       {confirmOpen && (
         <div
           role="dialog"

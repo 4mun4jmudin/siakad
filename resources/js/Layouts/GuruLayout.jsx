@@ -378,7 +378,7 @@ export default function GuruLayout({ children, header = 'Panel Guru' }) {
   const SIDEBAR_EXPANDED = 272;
   const SIDEBAR_COLLAPSED = 88;
 
-  const SidebarContent = ({ isMobile = false }) => {
+  const renderSidebarContent = (isMobile = false) => {
     const isCollapsed = !isMobile && collapsed;
 
     return (
@@ -485,7 +485,7 @@ export default function GuruLayout({ children, header = 'Panel Guru' }) {
     );
   };
 
-  const DesktopSidebarToggle = () => (
+  const renderDesktopSidebarToggle = () => (
     <button
       type="button"
       onClick={() => setCollapsed((value) => !value)}
@@ -526,11 +526,11 @@ export default function GuruLayout({ children, header = 'Panel Guru' }) {
           <div className="pointer-events-none absolute left-1/3 top-1/3 h-52 w-52 rounded-full bg-violet-300/10 blur-3xl" />
 
           <div className="relative flex min-h-0 flex-1 flex-col">
-            <SidebarContent />
+            {renderSidebarContent(false)}
           </div>
         </aside>
 
-        <DesktopSidebarToggle />
+        {renderDesktopSidebarToggle()}
 
         {/* Mobile Sidebar */}
         <Transition.Root show={sidebarOpen} as={Fragment}>
@@ -571,7 +571,7 @@ export default function GuruLayout({ children, header = 'Panel Guru' }) {
                   </button>
 
                   <div className="relative flex min-h-0 flex-1 flex-col">
-                    <SidebarContent isMobile />
+                    {renderSidebarContent(true)}
                   </div>
                 </Dialog.Panel>
               </Transition.Child>
