@@ -25,8 +25,7 @@ class AksesEditAbsensiController extends Controller
         if ($status !== 'Semua') {
             $query->where('status', $status);
         }
-
-        $pengajuan = $query->orderBy('created_at', 'desc')->get();
+        $pengajuan = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
 
         return Inertia::render('admin/AksesEditAbsensi/Index', [
             'pengajuan' => $pengajuan,
