@@ -28,7 +28,7 @@ class AksesEditAbsensiController extends Controller
 
         $pengajuan = $query->orderBy('created_at', 'desc')->get();
 
-        return Inertia::render('Admin/AksesEditAbsensi/Index', [
+        return Inertia::render('admin/AksesEditAbsensi/Index', [
             'pengajuan' => $pengajuan,
             'filters' => ['status' => $status],
         ]);
