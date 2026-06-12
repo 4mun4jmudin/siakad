@@ -41,6 +41,7 @@ use App\Http\Controllers\Guru\RencanaMateriController as GuruRencanaMateriContro
 use App\Http\Controllers\Guru\TugasController as GuruTugasController;
 use App\Http\Controllers\Guru\PenilaianController as GuruPenilaianController;
 use App\Http\Controllers\Guru\WaliKelasController as GuruWaliKelasController;
+use App\Http\Controllers\Guru\AksesEditAbsensiController as GuruAksesEditAbsensiController;
 
 // Panel Orang Tua
 use App\Http\Controllers\OrangTua\DashboardController;
@@ -53,6 +54,7 @@ use App\Http\Controllers\OrangTua\NilaiController as OrangTuaNilaiController;
 // Notifikasi umum
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Admin\AbsensiSiswaMapelController as AdminAbsensiSiswaMapelController;
+use App\Http\Controllers\Admin\AksesEditAbsensiController as AdminAksesEditAbsensiController;
 use Illuminate\Http\Request;
 
 // Modul Penilaian (Admin)
@@ -281,6 +283,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/{id_jadwal}/export/meeting', [GuruAbsensiSiswaMapelController::class, 'exportMeeting'])->name('export.meeting');
         Route::get('/{id_jadwal}/export/monthly', [GuruAbsensiSiswaMapelController::class, 'exportMonthly'])->name('export.monthly');
 
+        // Pengajuan Akses Edit Absensi Mapel
+        Route::get('/akses-edit-absensi', [GuruAksesEditAbsensiController::class, 'index'])->name('akses-edit-absensi.index');
+        Route::post('/akses-edit-absensi', [GuruAksesEditAbsensiController::class, 'store'])->name('akses-edit-absensi.store');
 
         /*
         |----------------------------------------------------------------------
@@ -346,6 +351,13 @@ Route::middleware('auth')->group(function () {
 
         // Audit Trail (Log Aktivitas)
         Route::get('/log-aktivitas', [LogAktivitasController::class, 'index'])->name('log-aktivitas.index');
+
+        // Pengajuan Akses Edit Absensi Mapel
+        Route::prefix('akses-edit-absensi')->name('akses-edit-absensi.')->group(function () {
+            Route::get('/', [AdminAksesEditAbsensiController::class, 'index'])->name('index');
+            Route::post('/{id}/approve', [AdminAksesEditAbsensiController::class, 'approve'])->name('approve');
+            Route::post('/{id}/reject', [AdminAksesEditAbsensiController::class, 'reject'])->name('reject');
+        });
 
         // Profil Admin
         Route::get('/profile', [App\Http\Controllers\Admin\ProfileController::class, 'edit'])->name('profile.edit');

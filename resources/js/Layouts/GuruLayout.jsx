@@ -92,6 +92,7 @@ const navigationStructure = [
     icon: ClipboardCheck,
     items: [
       { name: 'Absensi Siswa', href: 'guru.absensi-mapel.index', icon: Users },
+      { name: 'Akses Edit Absensi', href: 'guru.akses-edit-absensi.index', icon: ShieldCheck },
       { name: 'Absensi Harian', href: 'guru.absensi-harian.index', icon: ClipboardCheck },
       { name: 'Kelas Perwalian', href: 'guru.walikelas.index', icon: Users },
       { name: 'Daftar Siswa', href: 'guru.siswa.index', icon: Users },

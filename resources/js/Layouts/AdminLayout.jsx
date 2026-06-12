@@ -226,6 +226,7 @@ export default function AdminLayout({ user, header, children }) {
             route().current("admin.absensi-siswa.*") ||
             route().current("admin.absensi-siswa-mapel.*") ||
             route().current("admin.absensi-siswa.bulanan.*") ||
+            route().current("admin.akses-edit-absensi.*") ||
             route().current("admin.surat-izin.*");
 
         const penilaianActive =
@@ -369,6 +370,16 @@ export default function AdminLayout({ user, header, children }) {
                                     label="Absensi Siswa per Mapel"
                                 >
                                     <BookOpenIcon className="w-5 h-5" />
+                                </NavLink>
+                            </li>
+                            <li>
+                                <NavLink
+                                    href={route("admin.akses-edit-absensi.index")}
+                                    active={route().current("admin.akses-edit-absensi.*")}
+                                    isCollapsed={false}
+                                    label="Akses Edit Absensi"
+                                >
+                                    <SparklesIcon className="w-5 h-5" />
                                 </NavLink>
                             </li>
 

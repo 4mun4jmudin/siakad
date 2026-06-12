@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Guru;
 use App\Http\Controllers\Controller;
 use App\Models\AbsensiSiswa;
 use App\Models\AbsensiSiswaMapel;
+use App\Models\AksesEditAbsensi;
 use App\Models\JadwalMengajar;
 use App\Models\Siswa;
 use Carbon\Carbon;
@@ -17,14 +18,30 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class AbsensiSiswaMapelController extends Controller
 {
     /**
-     * Izinkan edit hanya untuk tanggal hari ini (berbasis timezone app).
+     * Izinkan edit sampai 24 jam setelah jam_selesai jadwal.
+     * Contoh: Jadwal Senin 10:00–12:00 → bisa edit sampai Selasa 12:00.
      */
-    private function isEditableDate(string $tanggal): bool
+    private function isEditableDate(string $tanggal, ?JadwalMengajar $jadwal = null): bool
     {
-        $tz = config('app.timezone', 'Asia/Jakarta');
-        $today = Carbon::now($tz)->toDateString();
-        $theDay = Carbon::parse($tanggal, $tz)->toDateString();
-        return $theDay === $today;
+        $tz  = config('app.timezone', 'Asia/Jakarta');
+        $now = Carbon::now($tz);
+
+        // Bangun batas waktu: tanggal jadwal + jam_selesai + 24 jam
+        $jamSelesai = $jadwal?->jam_selesai ?? '23:59:59';
+        $deadline   = Carbon::parse($tanggal . ' ' . $jamSelesai, $tz)->addHours(24);
+
+        return $now->lte($deadline);
+    }
+
+    /**
+     * Cek apakah ada akses edit aktif (disetujui & belum expired)
+     * untuk guru + jadwal + tanggal tertentu.
+     */
+    private function getActiveAksesEdit(string $idGuru, string $idJadwal, string $tanggal): ?AksesEditAbsensi
+    {
+        return AksesEditAbsensi::forContext($idGuru, $idJadwal, $tanggal)
+            ->aktif()
+            ->first();
     }
 
     /**
@@ -53,7 +70,7 @@ class AbsensiSiswaMapelController extends Controller
     /**
      * Tampilkan halaman absensi per mapel.
      * Prefill dari harian (non-override akan di-sync).
-     * HANYA untuk tanggal hari ini.
+     * Editable sampai jam_selesai + 24 jam, atau via AksesEditAbsensi.
      */
     public function show(Request $request, $id_jadwal)
     {
@@ -71,15 +88,37 @@ class AbsensiSiswaMapelController extends Controller
         $todayStr   = Carbon::now($tz)->toDateString();
         $tanggal    = Carbon::parse($tanggalReq ?: $todayStr, $tz)->toDateString();
 
-        // Redirect paksa ke hari ini jika bukan today (lock 1x24 jam)
-        if (!$this->isEditableDate($tanggal)) {
-            return redirect()
-                ->route('guru.absensi-mapel.show', ['id_jadwal' => $id_jadwal, 'tanggal' => $todayStr])
-                ->with('warning', 'Absensi per mapel hanya dapat dilakukan untuk tanggal hari ini (1×24 jam).');
+        // Cek apakah masih dalam window normal (jam_selesai + 24 jam)
+        $normalEditable = $this->isEditableDate($tanggal, $jadwal);
+
+        // Cek apakah ada akses edit aktif dari admin
+        $aksesEdit = null;
+        if (!$normalEditable) {
+            $aksesEdit = $this->getActiveAksesEdit($guru->id_guru, $jadwal->id_jadwal, $tanggal);
         }
 
-        // Prefill dari harian (aman karena hanya untuk hari ini)
-        $dailyStatusMap = $this->prefillFromDaily($jadwal, $tanggal);
+        $editable = $normalEditable || ($aksesEdit !== null);
+
+        // Jika tidak bisa edit, tetap tampilkan tapi read-only
+        // (tidak redirect paksa lagi, biarkan guru lihat data)
+
+        // Prefill dari harian
+        if ($editable) {
+            $dailyStatusMap = $this->prefillFromDaily($jadwal, $tanggal);
+        } else {
+            // Hanya ambil map harian tanpa prefill (read-only)
+            $siswaIds = Siswa::where('id_kelas', $jadwal->id_kelas)->where('status', 'Aktif')->pluck('id_siswa');
+            $dailyStatusMap = AbsensiSiswa::whereIn('id_siswa', $siswaIds)
+                ->whereDate('tanggal', $tanggal)
+                ->get()
+                ->mapWithKeys(fn ($r) => [$r->id_siswa => $r->status_kehadiran])
+                ->toArray();
+        }
+
+        // Tandai used_at jika akses edit pertama kali digunakan
+        if ($aksesEdit && !$aksesEdit->used_at) {
+            $aksesEdit->update(['used_at' => now()]);
+        }
 
         // Filter siswa
         $query = Siswa::where('id_kelas', $jadwal->id_kelas)->where('status', 'Aktif');
@@ -99,13 +138,18 @@ class AbsensiSiswaMapelController extends Controller
             ->keyBy('id_siswa');
 
         return Inertia::render('Guru/Absensi/Index', [
-            'jadwal'         => $jadwal,
-            'siswaList'      => $siswaList,
-            'absensiHariIni' => $absensiHariIni,
-            'dailyStatusMap' => $dailyStatusMap,
-            'today'          => $tanggal,
-            'filters'        => $request->only(['search', 'tanggal']),
-            'onlyToday'      => true, // flag untuk kunci UI di frontend
+            'jadwal'          => $jadwal,
+            'siswaList'       => $siswaList,
+            'absensiHariIni'  => $absensiHariIni,
+            'dailyStatusMap'  => $dailyStatusMap,
+            'today'           => $tanggal,
+            'filters'         => $request->only(['search', 'tanggal']),
+            'onlyToday'       => !$editable, // true = terkunci, false = bisa edit
+            'aksesEditAktif'  => $aksesEdit ? [
+                'id'         => $aksesEdit->id,
+                'expired_at' => $aksesEdit->expired_at?->toIso8601String(),
+                'alasan'     => $aksesEdit->alasan,
+            ] : null,
         ]);
     }
 
@@ -127,8 +171,11 @@ class AbsensiSiswaMapelController extends Controller
         $tz = config('app.timezone', 'Asia/Jakarta');
         $tanggal = Carbon::parse($request->input('tanggal', Carbon::now($tz)->toDateString()), $tz)->toDateString();
 
-        if (!$this->isEditableDate($tanggal)) {
-            return back()->with('error', 'Prefill hanya bisa untuk tanggal hari ini (1×24 jam).');
+        $normalEditable = $this->isEditableDate($tanggal, $jadwal);
+        $aksesEdit = !$normalEditable ? $this->getActiveAksesEdit($guru->id_guru, $jadwal->id_jadwal, $tanggal) : null;
+
+        if (!$normalEditable && !$aksesEdit) {
+            return back()->with('error', 'Prefill tidak bisa dilakukan. Waktu edit (jam_selesai + 24 jam) sudah lewat.');
         }
 
         $this->prefillFromDaily($jadwal, $tanggal);
@@ -159,9 +206,12 @@ class AbsensiSiswaMapelController extends Controller
         $id_jadwal = $data['id_jadwal'];
         $tanggal   = Carbon::parse($data['tanggal'], $tz)->toDateString();
 
-        // Hanya boleh simpan untuk hari ini
-        if (!$this->isEditableDate($tanggal)) {
-            return back()->with('error', 'Anda hanya dapat menyimpan absensi untuk tanggal hari ini (1×24 jam).');
+        $jadwalForCheck = JadwalMengajar::find($id_jadwal);
+        $normalEditable = $this->isEditableDate($tanggal, $jadwalForCheck);
+        $aksesEdit = !$normalEditable ? $this->getActiveAksesEdit($guru->id_guru, $id_jadwal, $tanggal) : null;
+
+        if (!$normalEditable && !$aksesEdit) {
+            return back()->with('error', 'Waktu edit absensi sudah lewat (jam_selesai + 24 jam). Ajukan akses edit ke admin.');
         }
 
         $entries = $data['entries'];
@@ -238,6 +288,11 @@ class AbsensiSiswaMapelController extends Controller
                         'id_penginput_manual' => $user->id_pengguna,
                     ]
                 );
+            }
+
+            // Update last_edited_at jika melalui akses edit
+            if ($aksesEdit) {
+                $aksesEdit->update(['last_edited_at' => now()]);
             }
 
             DB::commit();
