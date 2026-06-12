@@ -24,7 +24,8 @@ import {
     SparklesIcon,
     ComputerDesktopIcon,
     CheckIcon,
-    EnvelopeOpenIcon
+    EnvelopeOpenIcon,
+    MapPinIcon
 } from "@heroicons/react/24/outline";
 
 /* ---------- Small Nav Components ---------- */
@@ -382,6 +383,16 @@ export default function AdminLayout({ user, header, children }) {
                                     label="Akses Edit Absensi"
                                 >
                                     <SparklesIcon className="w-5 h-5" />
+                                </NavLink>
+                            </li>
+                            <li>
+                                <NavLink
+                                    href={route("admin.live-location.index")}
+                                    active={route().current("admin.live-location.*")}
+                                    isCollapsed={false}
+                                    label="Live Lokasi Siswa"
+                                >
+                                    <MapPinIcon className="w-5 h-5" />
                                 </NavLink>
                             </li>
 

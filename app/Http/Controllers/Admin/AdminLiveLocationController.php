@@ -1,0 +1,82 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use App\Models\SiswaLiveLocation;
+use Carbon\Carbon;
+
+class AdminLiveLocationController extends Controller
+{
+    public function page()
+    {
+        $sekolah = \App\Models\Pengaturan::first();
+        return Inertia::render('admin/LiveLocation/Siswa', [
+            'sekolah' => $sekolah
+        ]);
+    }
+
+    public function index()
+    {
+        $locations = SiswaLiveLocation::from('tbl_siswa_live_locations as live')
+            ->join('tbl_siswa as siswa', 'siswa.id_siswa', '=', 'live.id_siswa')
+            ->leftJoin('tbl_kelas as kelas', 'kelas.id_kelas', '=', 'siswa.id_kelas')
+            ->select(
+                'live.id_siswa',
+                'siswa.nama_lengkap',
+                'siswa.nis',
+                'kelas.tingkat',
+                'kelas.jurusan',
+                'live.latitude',
+                'live.longitude',
+                'live.accuracy',
+                'live.distance_meters',
+                'live.status',
+                'live.is_online',
+                'live.last_seen_at',
+                'live.updated_at'
+            )
+            ->get();
+
+        $now = now();
+        $formattedData = [];
+
+        foreach ($locations as $loc) {
+            $lastSeen = Carbon::parse($loc->last_seen_at);
+            $secondsAgo = $lastSeen->diffInSeconds($now);
+
+            $calculatedStatus = 'offline';
+            if ($secondsAgo <= 30) {
+                $calculatedStatus = 'online';
+            } elseif ($secondsAgo <= 120) {
+                $calculatedStatus = 'idle';
+            }
+
+            // Fallback to update status in DB if needed, but not strictly necessary since we calculate it on the fly
+            // For now, return the dynamically calculated status
+
+            $formattedData[] = [
+                'id_siswa' => $loc->id_siswa,
+                'nama_lengkap' => $loc->nama_lengkap,
+                'nis' => $loc->nis,
+                'kelas' => trim(($loc->tingkat ?? '') . ' ' . ($loc->jurusan ?? '')),
+                'latitude' => (float) $loc->latitude,
+                'longitude' => (float) $loc->longitude,
+                'accuracy' => $loc->accuracy,
+                'distance_meters' => $loc->distance_meters,
+                'status' => $calculatedStatus,
+                'is_online' => $calculatedStatus !== 'offline',
+                'last_seen_at' => $loc->last_seen_at,
+                'seconds_ago' => $secondsAgo,
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $formattedData,
+            'server_time' => now()->toIso8601String()
+        ]);
+    }
+}

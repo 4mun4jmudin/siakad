@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
+import axios from 'axios';
 import SiswaLayout from '@/Layouts/SiswaLayout';
 import {
   Activity,
@@ -744,6 +745,58 @@ export default function SiswaDashboard({
 
   const locateRequestRef = useRef(null);
   const liveWatchRef = useRef(null);
+  const lastLiveSentRef = useRef(null);
+
+  const sendLiveLocation = (nextCoords, distance) => {
+    if (!nextCoords || distance === null) return;
+
+    const now = Date.now();
+    const lastSent = lastLiveSentRef.current;
+
+    let shouldSend = false;
+    if (!lastSent) {
+      shouldSend = true;
+    } else {
+      const timeDiff = now - lastSent.time;
+      const distDiff = Math.abs(distance - lastSent.distance);
+      
+      // Kirim jika lebih dari 5 detik atau berpindah 5 meter
+      if (timeDiff >= 5000 || distDiff >= 5) {
+        shouldSend = true;
+      }
+    }
+
+    if (shouldSend) {
+      lastLiveSentRef.current = {
+        time: now,
+        distance: distance,
+        latitude: nextCoords.latitude,
+        longitude: nextCoords.longitude,
+      };
+
+      const payload = {
+        latitude: String(nextCoords.latitude),
+        longitude: String(nextCoords.longitude),
+        accuracy: String(nextCoords.accuracy),
+        distance_to_school: String(distance),
+        network_meta: JSON.stringify(getNetworkSnapshot()),
+        location_meta: JSON.stringify({
+          latitude: nextCoords.latitude,
+          longitude: nextCoords.longitude,
+          accuracy: nextCoords.accuracy,
+          distance_to_school: distance,
+          timestamp: now,
+          source: 'browser_live_location'
+        })
+      };
+
+      // Background Axios POST
+      axios.post(safeRoute('siswa.lokasi.realtime'), payload)
+        .catch((error) => {
+          console.warn('Gagal mengirim live location:', error);
+        });
+    }
+  };
 
   const profilePhotoUrl = siswa?.foto_profil_url || avatarFallback(siswa?.nama_lengkap || 'Siswa');
   const isCheckedIn = !!absensiHariIni;
@@ -960,6 +1013,8 @@ export default function SiswaDashboard({
     setCoords(nextCoords);
     setDistanceToSchool(distance);
     setMapCenterMode('student');
+
+    sendLiveLocation(nextCoords, distance);
 
     return {
       coords: nextCoords,

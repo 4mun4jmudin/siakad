@@ -17,7 +17,9 @@ use App\Http\Controllers\Admin\AbsensiSiswaController;
 use App\Http\Controllers\Admin\JadwalMengajarController;
 use App\Http\Controllers\Admin\JurnalMengajarController;
 use App\Http\Controllers\Admin\LaporanController;
+use App\Http\Controllers\Admin\AdminLiveLocationController;
 use App\Http\Controllers\Siswa\AbsensiController as SiswaAbsensiController;
+use App\Http\Controllers\Siswa\SiswaLocationController;
 use App\Http\Controllers\Siswa\NilaiController as SiswaNilaiController;
 use App\Http\Controllers\Siswa\JadwalController as SiswaJadwalController;
 use App\Http\Controllers\Auth\SiswaLoginController;
@@ -149,6 +151,7 @@ Route::middleware('auth')->group(function () {
     Route::prefix('siswa')->name('siswa.')->middleware('check.level:Siswa')->group(function () {
         Route::get('/dashboard', [SiswaAbsensiController::class, 'index'])->name('dashboard');
         Route::post('/absensi', [SiswaAbsensiController::class, 'store'])->name('absensi.store');
+        Route::post('/lokasi/realtime', [SiswaLocationController::class, 'update'])->name('lokasi.realtime');
 
         Route::get('/akun', [SiswaAccountController::class, 'edit'])->name('akun.edit');
         Route::post('/akun/update-profile', [SiswaAccountController::class, 'updateProfile'])->name('akun.update-profile');
@@ -342,6 +345,10 @@ Route::middleware('auth')->group(function () {
     */
     Route::prefix('admin')->name('admin.')->middleware('check.level:Admin')->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+        // Live Location
+        Route::get('/live-location', [AdminLiveLocationController::class, 'page'])->name('live-location.index');
+        Route::get('/live-location/siswa', [AdminLiveLocationController::class, 'index'])->name('live-location.siswa');
 
         // Monitoring Materi
         Route::get('/monitoring/materi', [MonitoringMateriController::class, 'index'])->name('monitoring.materi');

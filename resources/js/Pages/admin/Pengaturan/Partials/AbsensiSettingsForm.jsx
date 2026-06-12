@@ -7,6 +7,18 @@ import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
 import Checkbox from '@/Components/Checkbox';
 import { Clock, Users, User, QrCode, Fingerprint, Save, CheckCircle, Target, MapPin } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMapEvents, useMap } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+const createIcon = (color) => {
+    return L.divIcon({
+        className: 'custom-div-icon',
+        html: `<div style="background-color: ${color}; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.4);"></div>`,
+        iconSize: [14, 14],
+        iconAnchor: [7, 7]
+    });
+};
 
 export default function AbsensiSettingsForm({ className = '', pengaturan = {} }) {
   const { data, setData, put, processing, errors, recentlySuccessful } = useForm({
@@ -24,6 +36,29 @@ export default function AbsensiSettingsForm({ className = '', pengaturan = {} })
     lokasi_sekolah_longitude: pengaturan.lokasi_sekolah_longitude || '',
     radius_absen_meters: pengaturan.radius_absen_meters ?? 200,
   });
+
+  const LocationPicker = () => {
+    useMapEvents({
+      click(e) {
+        setData(data => ({
+          ...data,
+          lokasi_sekolah_latitude: String(e.latlng.lat),
+          lokasi_sekolah_longitude: String(e.latlng.lng),
+        }));
+      },
+    });
+    return null;
+  };
+
+  const MapUpdater = ({ lat, lng }) => {
+    const map = useMap();
+    React.useEffect(() => {
+      if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+        map.flyTo([parseFloat(lat), parseFloat(lng)], map.getZoom());
+      }
+    }, [lat, lng, map]);
+    return null;
+  };
 
   const submit = (e) => {
     e.preventDefault();
@@ -88,6 +123,35 @@ export default function AbsensiSettingsForm({ className = '', pengaturan = {} })
                 </p>
               </div>
             </div>
+
+            <div className="mt-4 rounded-xl overflow-hidden border border-gray-200 h-[300px] relative z-0">
+                <MapContainer 
+                    center={[parseFloat(data.lokasi_sekolah_latitude || '-6.200000'), parseFloat(data.lokasi_sekolah_longitude || '106.816666')]} 
+                    zoom={16} 
+                    style={{ height: '100%', width: '100%', zIndex: 0 }}
+                >
+                    <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
+                    <LocationPicker />
+                    <MapUpdater lat={data.lokasi_sekolah_latitude} lng={data.lokasi_sekolah_longitude} />
+                    
+                    {data.lokasi_sekolah_latitude && data.lokasi_sekolah_longitude && !isNaN(data.lokasi_sekolah_latitude) && !isNaN(data.lokasi_sekolah_longitude) && (
+                        <>
+                            <Circle 
+                                center={[parseFloat(data.lokasi_sekolah_latitude), parseFloat(data.lokasi_sekolah_longitude)]} 
+                                radius={parseFloat(data.radius_absen_meters || 0)} 
+                                pathOptions={{ color: '#3b82f6', fillColor: '#60a5fa', fillOpacity: 0.15, weight: 2 }} 
+                            />
+                            <Marker 
+                                position={[parseFloat(data.lokasi_sekolah_latitude), parseFloat(data.lokasi_sekolah_longitude)]} 
+                                icon={createIcon('#3b82f6')}
+                            >
+                                <Popup>Pusat Sekolah Saat Ini</Popup>
+                            </Marker>
+                        </>
+                    )}
+                </MapContainer>
+            </div>
+            <p className="mt-2 text-xs text-indigo-600 font-medium italic">* Klik di mana saja pada peta untuk mengatur koordinat dengan cepat.</p>
 
             <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
