@@ -241,6 +241,14 @@ Route::middleware('auth')->group(function () {
         Route::post('/absensi-harian', [AbsensiHarianController::class, 'store'])->name('absensi-harian.store');
         Route::post('/absensi-harian/izin', [AbsensiHarianController::class, 'submitIzin'])->name('absensi-harian.izin');
 
+        // Guru Pengganti
+        Route::get('/pengganti/ajukan', [\App\Http\Controllers\Guru\GuruPenggantiController::class, 'create'])->name('pengganti.ajukan');
+        Route::post('/pengganti/store', [\App\Http\Controllers\Guru\GuruPenggantiController::class, 'store'])->name('pengganti.store');
+        Route::get('/pengganti/riwayat', [\App\Http\Controllers\Guru\GuruPenggantiController::class, 'riwayat'])->name('pengganti.riwayat');
+        Route::get('/pengganti/incoming', [\App\Http\Controllers\Guru\GuruPenggantiController::class, 'incomingRequests'])->name('pengganti.incoming');
+        Route::post('/pengganti/{id_pengajuan}/accept', [\App\Http\Controllers\Guru\GuruPenggantiController::class, 'accept'])->name('pengganti.accept');
+        Route::post('/pengganti/{id_pengajuan}/reject', [\App\Http\Controllers\Guru\GuruPenggantiController::class, 'reject'])->name('pengganti.reject');
+
         Route::resource('/jadwal', App\Http\Controllers\Guru\JadwalController::class);
         Route::get('/jadwal/export/ical', [JadwalController::class, 'exportIcal'])->name('jadwal.export.ical');
 
@@ -505,6 +513,15 @@ Route::middleware('auth')->group(function () {
         Route::get('jurnal-mengajar/find-pengganti', [JurnalMengajarController::class, 'findGuruPengganti'])->name('jurnal-mengajar.find-pengganti');
         Route::get('jurnal-mengajar/export/excel', [JurnalMengajarController::class, 'exportExcel'])->name('jurnal-mengajar.export.excel');
         Route::get('jurnal-mengajar/export/pdf', [JurnalMengajarController::class, 'exportPdf'])->name('jurnal-mengajar.export.pdf');
+
+        // Pengajuan Guru Pengganti (Admin Monitor & CRUD)
+        Route::prefix('pengajuan-guru')->name('pengajuan-guru.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\PengajuanGuruPenggantiController::class, 'index'])->name('index');
+            Route::get('/{id}', [\App\Http\Controllers\Admin\PengajuanGuruPenggantiController::class, 'show'])->name('show');
+            Route::post('/{id}/close', [\App\Http\Controllers\Admin\PengajuanGuruPenggantiController::class, 'close'])->name('close');
+            Route::post('/{id}/assign', [\App\Http\Controllers\Admin\PengajuanGuruPenggantiController::class, 'assign'])->name('assign');
+            Route::delete('/{id}', [\App\Http\Controllers\Admin\PengajuanGuruPenggantiController::class, 'destroy'])->name('destroy');
+        });
 
         // Absensi Siswa per Mapel (Admin)
         Route::prefix('absensi-siswa-mapel')->name('absensi-siswa-mapel.')->group(function () {

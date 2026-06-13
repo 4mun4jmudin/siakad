@@ -49,6 +49,7 @@ class Pengaturan extends Model
         'lokasi_sekolah_latitude',
         'lokasi_sekolah_longitude',
         'radius_absen_meters',
+        'batas_akurasi_gps',
         'jadwal_hari',
         'jadwal_waktu',
         'is_kunci_absensi',

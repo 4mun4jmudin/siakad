@@ -1,7 +1,7 @@
 // resources/js/Pages/Siswa/Dashboard.jsx
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import axios from 'axios';
 import SiswaLayout from '@/Layouts/SiswaLayout';
 import {
@@ -27,6 +27,7 @@ import {
   TrendingUp,
   Wifi,
   X,
+  BookOpen,
 } from 'lucide-react';
 
 const cn = (...classes) => classes.filter(Boolean).join(' ');
@@ -615,29 +616,10 @@ function SmartGoogleMap({
             ? 'Lokasi di luar radius sekolah'
             : isInside === true
               ? 'Lokasi valid dalam radius sekolah'
-              : 'Aktifkan GPS realtime untuk validasi lokasi'}
+              : 'Sedang melacak lokasi realtime...'}
         </div>
 
         <div className="flex flex-wrap gap-2 pointer-events-auto">
-          {!liveTracking ? (
-            <button
-              type="button"
-              onClick={onRequestLocation}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-black text-white shadow-xl shadow-cyan-500/20 transition hover:-translate-y-0.5"
-            >
-              <LocateFixed className="h-5 w-5" />
-              GPS Realtime
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={onStopTracking}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-600 px-4 py-2 text-sm font-black text-white shadow-xl shadow-rose-500/20 transition hover:-translate-y-0.5"
-            >
-              <X className="h-5 w-5" />
-              Stop GPS
-            </button>
-          )}
 
           {onOpenFullMap && (
             <button
@@ -719,6 +701,7 @@ export default function SiswaDashboard({
   riwayatAbsensi = [],
   batasWaktuAbsen = null,
   pengaturanAbsensi: pengaturan = null,
+  absensiMapelMingguIni = [],
 }) {
   const { flash } = usePage().props;
 
@@ -1076,6 +1059,15 @@ export default function SiswaDashboard({
     setLocating(false);
   };
 
+  useEffect(() => {
+    // Otomatis aktifkan GPS Realtime saat komponen dimount
+    startRealtimeTracking();
+    
+    return () => {
+      stopRealtimeTracking();
+    };
+  }, []);
+
   const cancelLocating = () => {
     if (locateRequestRef.current) {
       locateRequestRef.current.stop();
@@ -1126,7 +1118,7 @@ export default function SiswaDashboard({
 
       try {
         const request = getPrecisePosition({
-          desiredAccuracy: 50,
+          desiredAccuracy: parseInt(pengaturan?.batas_akurasi_gps || 50, 10),
           timeout: 15000,
         });
 
@@ -1413,10 +1405,10 @@ export default function SiswaDashboard({
                         <div className="rounded-3xl border border-slate-100 bg-slate-50/80 p-4">
                           <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-slate-400">
                             <Wifi className="h-4 w-4 text-cyan-600" />
-                            Network Hint
+                            Jaringan & Ping
                           </div>
                           <p className="mt-2 text-lg font-black text-slate-900">
-                            {networkSnapshot?.effectiveType || 'Unknown'}
+                            {networkSnapshot?.effectiveType || 'Unknown'} <span className="text-sm font-semibold text-slate-500 ml-1">• {networkSnapshot?.rtt || '-'}ms</span>
                           </p>
                         </div>
                       </div>
@@ -1556,6 +1548,55 @@ export default function SiswaDashboard({
                         </button>
                       </div>
                     )}
+                  </div>
+                </div>
+              </PremiumCard>
+
+              {/* === Kehadiran Mapel Minggu Ini === */}
+              <PremiumCard className="overflow-hidden p-0" delay={70}>
+                <div className="border-b border-slate-100 p-5">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700">
+                      <BookOpen className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-black uppercase tracking-wide text-slate-900">
+                        Kehadiran Mapel Minggu Ini
+                      </h2>
+                      <p className="mt-0.5 text-xs font-medium text-slate-500">
+                        {absensiMapelMingguIni.length} catatan kehadiran mata pelajaran
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-5">
+                  {absensiMapelMingguIni.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {absensiMapelMingguIni.map((mapel) => (
+                        <div key={mapel.id_absensi_mapel} className="flex items-center justify-between p-4 border border-slate-100 rounded-3xl bg-slate-50">
+                          <div>
+                            <div className="text-sm font-bold text-slate-900">{mapel.jadwal?.mata_pelajaran?.nama_mapel}</div>
+                            <div className="text-xs text-slate-500 mt-1">{mapel.tanggal} • {mapel.jadwal?.jam_mulai?.substring(0,5)}</div>
+                          </div>
+                          <span className={cn(
+                            "px-2.5 py-1 text-[10px] font-bold rounded-full uppercase tracking-wider",
+                            mapel.status_kehadiran === 'Hadir' ? 'bg-emerald-100 text-emerald-700' :
+                            mapel.status_kehadiran === 'Alfa' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'
+                          )}>
+                            {mapel.status_kehadiran}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center text-sm font-bold text-slate-400 py-4">
+                      Belum ada data kehadiran mapel minggu ini.
+                    </div>
+                  )}
+                  <div className="mt-4 text-center">
+                    <Link href={safeRoute('siswa.absensi-mapel.index')} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition">
+                      Lihat Detil Kehadiran Mapel &rarr;
+                    </Link>
                   </div>
                 </div>
               </PremiumCard>

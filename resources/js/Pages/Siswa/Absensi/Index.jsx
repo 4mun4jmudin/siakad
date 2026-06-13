@@ -706,6 +706,90 @@ function RiwayatTab({
   );
 }
 
+function MapelTab({ absensiMapel = {} }) {
+  const flattened = useMemo(() => {
+    const arr = [];
+    Object.keys(absensiMapel).forEach((date) => {
+      absensiMapel[date].forEach((absen) => {
+        arr.push({ ...absen, tanggal: date });
+      });
+    });
+    return arr.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+  }, [absensiMapel]);
+
+  return (
+    <div className="space-y-6">
+      <PremiumCard className="overflow-hidden p-0" delay={120}>
+        <div className="border-b border-slate-100 p-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700">
+              <BookOpen className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-base font-black text-slate-900">
+                Detail Absensi Mata Pelajaran
+              </h2>
+              <p className="mt-1 text-xs font-medium leading-relaxed text-slate-500">
+                Data kehadiran mapel bulan ini.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[860px] text-left text-sm text-slate-600">
+            <thead className="border-b border-slate-100 bg-slate-50 text-[10px] font-black uppercase tracking-wide text-slate-400">
+              <tr>
+                <th className="px-6 py-4">Tanggal & Waktu</th>
+                <th className="px-6 py-4">Mata Pelajaran</th>
+                <th className="px-6 py-4">Guru</th>
+                <th className="px-6 py-4">Status</th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-slate-50">
+              {flattened.length > 0 ? (
+                flattened.map((absen, index) => (
+                  <tr
+                    key={absen.id_absensi_mapel || index}
+                    className="bg-white transition hover:bg-cyan-50/30"
+                  >
+                    <td className="whitespace-nowrap px-6 py-4 font-black text-slate-800">
+                      <div>{formatDate(absen.tanggal, { weekday: 'long' })}</div>
+                      <div className="text-xs text-slate-500 mt-0.5">{formatTime(absen.jam_mulai)} - {formatTime(absen.jam_selesai)}</div>
+                    </td>
+
+                    <td className="px-6 py-4 font-bold text-slate-700">
+                      {absen?.jadwal?.mata_pelajaran?.nama_mapel || absen?.jadwal?.mapel?.nama_mapel || absen?.mapel?.nama_mapel || 'Mata Pelajaran'}
+                    </td>
+
+                    <td className="px-6 py-4 text-slate-600">
+                      {absen?.jadwal?.guru?.nama_lengkap || '-'}
+                    </td>
+
+                    <td className="px-6 py-4">
+                      <AttendanceStatusTag status={absen.status_kehadiran} />
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="4" className="px-6 py-14 text-center">
+                    <BookOpen className="mx-auto h-12 w-12 text-slate-300" />
+                    <p className="mt-3 text-sm font-black text-slate-500">
+                      Tidak ada catatan kehadiran mapel
+                    </p>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </PremiumCard>
+    </div>
+  );
+}
+
 export default function AbsensiIndex({
   auth,
   siswa,
@@ -870,7 +954,15 @@ export default function AbsensiIndex({
                 onClick={() => setActiveTab('riwayat')}
                 icon={BarChart3}
               >
-                Tabel Riwayat
+                Tabel Riwayat Harian
+              </TabButton>
+
+              <TabButton
+                active={activeTab === 'mapel'}
+                onClick={() => setActiveTab('mapel')}
+                icon={BookOpen}
+              >
+                Absensi Mapel
               </TabButton>
             </div>
           </PremiumCard>
@@ -963,6 +1055,12 @@ export default function AbsensiIndex({
             <RiwayatTab
               riwayatKehadiran={riwayatKehadiran}
               filters={filters}
+            />
+          )}
+
+          {activeTab === 'mapel' && (
+            <MapelTab
+              absensiMapel={absensiMapel}
             />
           )}
         </main>

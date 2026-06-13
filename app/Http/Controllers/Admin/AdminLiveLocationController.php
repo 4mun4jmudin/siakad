@@ -35,6 +35,7 @@ class AdminLiveLocationController extends Controller
                 'live.distance_meters',
                 'live.status',
                 'live.is_online',
+                'live.network_meta',
                 'live.last_seen_at',
                 'live.updated_at'
             )
@@ -68,6 +69,7 @@ class AdminLiveLocationController extends Controller
                 'distance_meters' => $loc->distance_meters,
                 'status' => $calculatedStatus,
                 'is_online' => $calculatedStatus !== 'offline',
+                'network_meta' => is_string($loc->network_meta) ? json_decode($loc->network_meta, true) : $loc->network_meta,
                 'last_seen_at' => $loc->last_seen_at,
                 'seconds_ago' => $secondsAgo,
             ];

@@ -132,6 +132,7 @@ class PengaturanController extends Controller
             'lokasi_sekolah_latitude' => ['nullable', 'regex:/^[-]?(([0-8]?[0-9])\.(\d+))|(90(\.0+)?)$/'],
             'lokasi_sekolah_longitude' => ['nullable', 'regex:/^[-]?((((1[0-7][0-9])|([0-9]?[0-9]))\.(\d+))|180(\.0+)?)$/'],
             'radius_absen_meters' => 'nullable|integer|min:10',
+            'batas_akurasi_gps' => 'nullable|integer|min:1',
         ]);
 
         DB::beginTransaction();

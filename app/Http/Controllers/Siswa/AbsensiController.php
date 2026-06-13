@@ -81,12 +81,21 @@ class AbsensiController extends Controller
             'radius_absen_meters'      => $pengaturan?->radius_absen_meters ?? 200,
         ];
 
+        // Absensi Mapel Minggu Ini
+        $absensiMapelMingguIni = \App\Models\AbsensiSiswaMapel::with(['jadwal.mataPelajaran'])
+            ->where('id_siswa', $siswa->id_siswa)
+            ->whereBetween('tanggal', [Carbon::today()->startOfWeek(), Carbon::today()->endOfWeek()])
+            ->orderBy('tanggal', 'desc')
+            ->orderBy('jam_mulai', 'asc')
+            ->get();
+
         return Inertia::render('Siswa/Dashboard', [
             'siswa'             => $siswa->load('kelas.waliKelas'),
             'absensiHariIni'    => $absensiHariIni,
             'riwayatAbsensi'    => $riwayatAbsensi,
             'pengaturanAbsensi' => $pengaturanForFrontend,
             'activeFilter'      => $filter,
+            'absensiMapelMingguIni' => $absensiMapelMingguIni,
         ]);
     }
 
@@ -135,7 +144,7 @@ class AbsensiController extends Controller
         $schoolLat = $pengaturan?->lokasi_sekolah_latitude;
         $schoolLng = $pengaturan?->lokasi_sekolah_longitude;
         $allowedRadius = (int) ($pengaturan?->radius_absen_meters ?? 200);
-        $maxAccuracy = (int) env('ABSENSI_MAX_GPS_ACCURACY', 80);
+        $maxAccuracy = (int) ($pengaturan?->batas_akurasi_gps ?? 50);
         
         $isWithinRadius = null;
         $backendDistance = null;
@@ -319,7 +328,7 @@ class AbsensiController extends Controller
         // 2. Data absensi mapel untuk detail kalender
         $absensiMapelCalendar = AbsensiSiswaMapel::where('id_siswa', $siswa->id_siswa)
             ->whereBetween('tanggal', [$startDate, $endDate])
-            ->with(['jadwal.mapel', 'jadwal.guru'])
+            ->with(['jadwal.mapel', 'jadwal.guru', 'guruPengganti'])
             ->orderBy('jam_mulai', 'asc')
             ->get()
             ->groupBy(function ($item) {

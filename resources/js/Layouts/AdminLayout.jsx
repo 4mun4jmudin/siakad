@@ -554,6 +554,16 @@ export default function AdminLayout({ user, header, children }) {
                                 </li>
                                 <li>
                                     <NavLink
+                                        href={route("admin.pengajuan-guru.index")}
+                                        active={route().current("admin.pengajuan-guru.*")}
+                                        isCollapsed={false}
+                                        label="Pengajuan Guru Pengganti"
+                                    >
+                                        <UsersIcon className="w-5 h-5" />
+                                    </NavLink>
+                                </li>
+                                <li>
+                                    <NavLink
                                         href={route("admin.monitoring.materi")}
                                         active={route().current("admin.monitoring.materi*")}
                                         isCollapsed={false}

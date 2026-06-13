@@ -35,6 +35,7 @@ export default function AbsensiSettingsForm({ className = '', pengaturan = {} })
     lokasi_sekolah_latitude: pengaturan.lokasi_sekolah_latitude || '',
     lokasi_sekolah_longitude: pengaturan.lokasi_sekolah_longitude || '',
     radius_absen_meters: pengaturan.radius_absen_meters ?? 200,
+    batas_akurasi_gps: pengaturan.batas_akurasi_gps ?? 50,
   });
 
   const LocationPicker = () => {
@@ -176,7 +177,7 @@ export default function AbsensiSettingsForm({ className = '', pengaturan = {} })
                 />
                 <InputError message={errors.lokasi_sekolah_longitude} className="mt-2" />
               </div>
-              <div className="md:col-span-2">
+              <div>
                 <InputLabel htmlFor="radius_absen_meters" value="Radius Absensi (dalam meter)" />
                 <div className="relative mt-1">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -191,8 +192,27 @@ export default function AbsensiSettingsForm({ className = '', pengaturan = {} })
                     onChange={(e) => setData('radius_absen_meters', e.target.value)}
                   />
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Jarak toleransi dari titik pusat sekolah. Disarankan 50 - 200 meter.</p>
+                <p className="text-xs text-gray-500 mt-1">Disarankan 50 - 200 meter.</p>
                 <InputError message={errors.radius_absen_meters} className="mt-2" />
+              </div>
+
+              <div>
+                <InputLabel htmlFor="batas_akurasi_gps" value="Batas Akurasi GPS (dalam meter)" />
+                <div className="relative mt-1">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                    <MapPin className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <TextInput
+                    id="batas_akurasi_gps"
+                    type="number"
+                    min="1"
+                    className="block w-full pl-10 text-sm"
+                    value={data.batas_akurasi_gps}
+                    onChange={(e) => setData('batas_akurasi_gps', e.target.value)}
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Maksimal error GPS yg diizinkan (Cth: 50).</p>
+                <InputError message={errors.batas_akurasi_gps} className="mt-2" />
               </div>
             </div>
           </div>

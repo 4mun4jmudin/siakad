@@ -55,12 +55,34 @@ class AbsensiSiswaMapelController extends Controller
         Carbon::setLocale('id');
         $tz = config('app.timezone', 'Asia/Jakarta');
         $hariIni = Carbon::now($tz)->translatedFormat('l');
+        $tanggalSekarang = Carbon::now($tz)->toDateString();
 
-        $jadwalHariIni = JadwalMengajar::with(['kelas', 'mataPelajaran'])
+        $jadwalHariIni = JadwalMengajar::with(['kelas', 'mataPelajaran', 'guru'])
             ->where('id_guru', $guru->id_guru)
             ->where('hari', $hariIni)
             ->orderBy('jam_mulai', 'asc')
             ->get();
+
+        // Cari jadwal guru pengganti untuk hari ini
+        $jadwalPenggantiIds = \App\Models\PengajuanGuruPengganti::where('id_guru_pengganti', $guru->id_guru)
+            ->where('tanggal', $tanggalSekarang)
+            ->where('status', 'accepted')
+            ->pluck('id_jadwal');
+
+        if ($jadwalPenggantiIds->isNotEmpty()) {
+            $jadwalPengganti = JadwalMengajar::with(['kelas', 'mataPelajaran', 'guru'])
+                ->whereIn('id_jadwal', $jadwalPenggantiIds)
+                ->get();
+            
+            // Tandai jadwal pengganti
+            $jadwalPengganti->each(function ($item) {
+                $item->is_pengganti = true;
+                $item->guru_asli = $item->guru->nama_lengkap ?? '';
+            });
+
+            // Gabungkan
+            $jadwalHariIni = $jadwalHariIni->concat($jadwalPengganti)->sortBy('jam_mulai')->values();
+        }
 
         return Inertia::render('Guru/Absensi/SelectJadwal', [
             'jadwalHariIni' => $jadwalHariIni,
@@ -79,14 +101,22 @@ class AbsensiSiswaMapelController extends Controller
         if (!$guru) abort(403, 'Akses ditolak.');
 
         $jadwal = JadwalMengajar::with(['kelas', 'mataPelajaran'])->find($id_jadwal);
-        if (!$jadwal || $jadwal->id_guru !== $guru->id_guru) {
-            abort(403, 'Anda tidak memiliki izin untuk jadwal ini.');
-        }
+        if (!$jadwal) abort(404, 'Jadwal tidak ditemukan.');
 
         $tz = config('app.timezone', 'Asia/Jakarta');
         $tanggalReq = $request->input('tanggal');
         $todayStr   = Carbon::now($tz)->toDateString();
         $tanggal    = Carbon::parse($tanggalReq ?: $todayStr, $tz)->toDateString();
+
+        $isPengganti = \App\Models\PengajuanGuruPengganti::where('id_jadwal', $id_jadwal)
+            ->where('tanggal', $tanggal)
+            ->where('id_guru_pengganti', $guru->id_guru)
+            ->where('status', 'accepted')
+            ->exists();
+
+        if ($jadwal->id_guru !== $guru->id_guru && !$isPengganti) {
+            abort(403, 'Anda tidak memiliki izin untuk jadwal ini.');
+        }
 
         // Cek apakah masih dalam window normal (jam_selesai + 24 jam)
         $normalEditable = $this->isEditableDate($tanggal, $jadwal);
@@ -217,7 +247,14 @@ class AbsensiSiswaMapelController extends Controller
         $entries = $data['entries'];
 
         $jadwal = JadwalMengajar::findOrFail($id_jadwal);
-        if ($jadwal->id_guru !== $guru->id_guru) {
+        
+        $isPengganti = \App\Models\PengajuanGuruPengganti::where('id_jadwal', $id_jadwal)
+            ->where('tanggal', $tanggal)
+            ->where('id_guru_pengganti', $guru->id_guru)
+            ->where('status', 'accepted')
+            ->exists();
+
+        if ($jadwal->id_guru !== $guru->id_guru && !$isPengganti) {
             return back()->with('error', 'Anda tidak berwenang menyimpan absensi untuk jadwal ini.');
         }
 
@@ -286,6 +323,7 @@ class AbsensiSiswaMapelController extends Controller
                         'overridden_by'       => $isOverridden ? (string) $user->id_pengguna : null,
                         'overridden_at'       => $isOverridden ? now() : null,
                         'id_penginput_manual' => $user->id_pengguna,
+                        'id_guru_pengganti'   => $isPengganti ? $guru->id_guru : null,
                     ]
                 );
             }

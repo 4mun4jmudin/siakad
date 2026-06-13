@@ -309,17 +309,29 @@ function JadwalCard({ jadwal, tanggal, index }) {
           )}
         </div>
 
-        <Link
-          href={safeRoute('guru.absensi-mapel.show', {
-            id_jadwal: jadwal.id_jadwal,
-            tanggal,
-          })}
-          className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-indigo-200 transition-all duration-300 hover:-translate-y-0.5 hover:brightness-105"
-          title="Buka halaman absensi"
-        >
-          Buka Absensi
-          <ChevronRight className="h-4 w-4" />
-        </Link>
+        <div className="mt-4 flex items-center gap-2">
+          <Link
+            href={safeRoute('guru.absensi-mapel.show', {
+              id_jadwal: jadwal.id_jadwal,
+              tanggal,
+            })}
+            className="flex-1 inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-indigo-200 transition-all duration-300 hover:-translate-y-0.5 hover:brightness-105"
+            title="Buka halaman absensi"
+          >
+            Buka Absensi
+            <ChevronRight className="h-4 w-4" />
+          </Link>
+
+          {!jadwal.is_pengganti && (
+            <Link
+              href={safeRoute('guru.pengganti.ajukan', { id_jadwal: jadwal.id_jadwal, tanggal })}
+              className="inline-flex min-h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 transition-all duration-300 hover:-translate-y-0.5 hover:bg-rose-100"
+              title="Ajukan Guru Pengganti"
+            >
+              <Users className="h-4 w-4" />
+            </Link>
+          )}
+        </div>
       </div>
     </PremiumCard>
   );

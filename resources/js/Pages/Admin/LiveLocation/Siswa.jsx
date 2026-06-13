@@ -25,14 +25,19 @@ const icons = {
 export default function AdminLiveLocationSiswa({ auth, sekolah }) {
     const [locations, setLocations] = useState([]);
     const [stats, setStats] = useState({ total: 0, online: 0, idle: 0, offline: 0 });
+    const [adminPing, setAdminPing] = useState(null);
     
     const schoolLat = parseFloat(sekolah?.lokasi_sekolah_latitude || '-6.200000');
     const schoolLng = parseFloat(sekolah?.lokasi_sekolah_longitude || '106.816666');
     const radius = parseFloat(sekolah?.radius_absen_meters || 200);
 
     const fetchLocations = async () => {
+        const start = performance.now();
         try {
             const response = await axios.get(route('admin.live-location.siswa'));
+            const end = performance.now();
+            setAdminPing(Math.round(end - start));
+
             if (response.data.success) {
                 const data = response.data.data;
                 setLocations(data);
@@ -91,7 +96,16 @@ export default function AdminLiveLocationSiswa({ auth, sekolah }) {
                     </div>
                 </div>
 
-                <div className="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
+                <div className="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden relative">
+                    {adminPing !== null && (
+                        <div className="absolute top-4 right-4 z-[400] bg-slate-900/80 backdrop-blur-md border border-slate-700 text-white px-3 py-1.5 rounded-xl shadow-lg flex items-center gap-2 pointer-events-none">
+                            <Wifi className="w-4 h-4 text-cyan-400" />
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-black uppercase text-cyan-400 leading-none">Admin Ping</span>
+                                <span className="text-xs font-bold leading-none mt-0.5">{adminPing}ms</span>
+                            </div>
+                        </div>
+                    )}
                     <div className="h-[600px] w-full relative z-0">
                         <MapContainer 
                             center={[schoolLat, schoolLng]} 
@@ -143,6 +157,14 @@ export default function AdminLiveLocationSiswa({ auth, sekolah }) {
                                                         <span className="text-slate-500">Update:</span>
                                                         <span className="font-semibold text-slate-700">{loc.seconds_ago} detik lalu</span>
                                                     </div>
+                                                    {loc.network_meta && (
+                                                        <div className="flex justify-between gap-4 border-t border-slate-200 mt-2 pt-2">
+                                                            <span className="text-slate-500">Jaringan (Ping):</span>
+                                                            <span className="font-semibold text-cyan-700">
+                                                                {loc.network_meta.effectiveType || '?'} • {loc.network_meta.rtt || '-'}ms
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                 </div>
 
                                                 <a 
