@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from '@/utils/toast';
-import { useForm } from '@inertiajs/react';
+import { useForm, router } from '@inertiajs/react';
 import axios from 'axios';
 import PrimaryButton from '@/Components/PrimaryButton';
 import InputLabel from '@/Components/InputLabel';
@@ -26,7 +26,7 @@ async function postJson(url, body = {}) {
     return { ok: true, status: res.status, payload: res.data };
   } catch (err) {
     if (err.response && err.response.status === 419) {
-      window.location.reload();
+      router.reload();
       return { ok: false, status: 419, payload: null };
     }
     return {
@@ -47,7 +47,7 @@ async function getJson(url) {
     return { ok: true, status: res.status, payload: res.data };
   } catch (err) {
     if (err.response && err.response.status === 419) {
-      window.location.reload();
+      router.reload();
       return { ok: false, status: 419, payload: null };
     }
     return {

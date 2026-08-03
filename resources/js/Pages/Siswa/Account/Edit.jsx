@@ -341,6 +341,48 @@ export default function Edit({
         password_confirmation: '',
     });
 
+    const {
+        data: biodataData,
+        setData: setBiodataData,
+        errors: biodataErrors,
+        processing: biodataProcessing,
+        recentlySuccessful: biodataSuccess,
+        post: postBiodata,
+    } = useForm({
+        jenis_kelamin: siswa?.jenis_kelamin || '',
+        tempat_lahir: siswa?.tempat_lahir || '',
+        tanggal_lahir: siswa?.tanggal_lahir || '',
+        agama: siswa?.agama || '',
+        nik: siswa?.nik || '',
+        nomor_kk: siswa?.nomor_kk || '',
+        anak_ke: siswa?.anak_ke || '',
+        jumlah_saudara: siswa?.jumlah_saudara || '',
+
+        nama_ayah: siswa?.nama_ayah || '',
+        pendidikan_ayah: siswa?.pendidikan_ayah || '',
+        pekerjaan_ayah: siswa?.pekerjaan_ayah || '',
+
+        nama_ibu: siswa?.nama_ibu || '',
+        pendidikan_ibu: siswa?.pendidikan_ibu || '',
+        pekerjaan_ibu: siswa?.pekerjaan_ibu || '',
+
+        alamat_lengkap: siswa?.alamat_lengkap || '',
+        kelurahan: siswa?.kelurahan || '',
+        kecamatan: siswa?.kecamatan || '',
+        hp_siswa: siswa?.hp_siswa || '',
+        telepon_siswa: siswa?.telepon_siswa || '',
+        jarak_rumah_ke_sekolah: siswa?.jarak_rumah_ke_sekolah || '',
+        alat_transportasi: siswa?.alat_transportasi || '',
+    });
+
+    const submitBiodata = (event) => {
+        event.preventDefault();
+
+        postBiodata(safeRoute('siswa.akun.update-biodata'), {
+            preserveScroll: true,
+        });
+    };
+
     useEffect(() => {
         return () => {
             if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -523,6 +565,14 @@ export default function Edit({
                                 icon={ShieldCheck}
                             >
                                 Keamanan Akun
+                            </TabButton>
+
+                            <TabButton
+                                active={activeTab === 'biodata'}
+                                onClick={() => setActiveTab('biodata')}
+                                icon={IdCard}
+                            >
+                                Biodata Lengkap
                             </TabButton>
                         </div>
                     </PremiumCard>
@@ -736,6 +786,145 @@ export default function Edit({
 
                                             <SaveButton processing={passwordProcessing} tone="emerald" icon={ShieldCheck}>
                                                 {passwordProcessing ? 'Memproses...' : 'Ubah Password'}
+                                            </SaveButton>
+                                        </div>
+                                    </form>
+                                </PremiumCard>
+                            )}
+
+                            {activeTab === 'biodata' && (
+                                <PremiumCard className="overflow-hidden p-0" delay={100}>
+                                    <div className="border-b border-slate-100 p-5 sm:p-6">
+                                        <div className="flex items-start gap-3">
+                                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700">
+                                                <IdCard className="h-6 w-6" />
+                                            </div>
+
+                                            <div>
+                                                <h2 className="text-lg font-black text-slate-900">
+                                                    Biodata Lengkap
+                                                </h2>
+                                                <p className="mt-1 text-sm font-medium text-slate-500">
+                                                    Informasi lengkap data diri, orang tua, dan alamat yang terdaftar di sistem. Hubungi administrator jika terdapat data yang salah.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <form onSubmit={submitBiodata} className="p-5 sm:p-6 space-y-6">
+                                        {/* Profil Dasar */}
+                                        <div className="rounded-3xl border border-slate-100 bg-slate-50 p-5">
+                                            <h3 className="mb-4 text-base font-black text-slate-900">Profil Dasar</h3>
+                                            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                                                <Field label="NIS / NISN (Tidak dapat diubah)" error={null}>
+                                                    <TextField value={`${siswa.nis || '-'} / ${siswa.nisn || '-'}`} disabled={true} />
+                                                </Field>
+                                                <Field label="Jenis Kelamin" error={biodataErrors.jenis_kelamin}>
+                                                    <select
+                                                        value={biodataData.jenis_kelamin}
+                                                        onChange={(e) => setBiodataData('jenis_kelamin', e.target.value)}
+                                                        className="min-h-12 w-full rounded-2xl border border-slate-200 bg-white/90 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-200"
+                                                    >
+                                                        <option value="">Pilih Jenis Kelamin</option>
+                                                        <option value="Laki-laki">Laki-laki</option>
+                                                        <option value="Perempuan">Perempuan</option>
+                                                    </select>
+                                                </Field>
+                                                <Field label="Tempat Lahir" error={biodataErrors.tempat_lahir}>
+                                                    <TextField value={biodataData.tempat_lahir} onChange={(e) => setBiodataData('tempat_lahir', e.target.value)} />
+                                                </Field>
+                                                <Field label="Tanggal Lahir" error={biodataErrors.tanggal_lahir}>
+                                                    <TextField type="date" value={biodataData.tanggal_lahir} onChange={(e) => setBiodataData('tanggal_lahir', e.target.value)} />
+                                                </Field>
+                                                <Field label="Agama" error={biodataErrors.agama}>
+                                                    <TextField value={biodataData.agama} onChange={(e) => setBiodataData('agama', e.target.value)} />
+                                                </Field>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <Field label="NIK" error={biodataErrors.nik}>
+                                                        <TextField value={biodataData.nik} onChange={(e) => setBiodataData('nik', e.target.value)} />
+                                                    </Field>
+                                                    <Field label="Nomor KK" error={biodataErrors.nomor_kk}>
+                                                        <TextField value={biodataData.nomor_kk} onChange={(e) => setBiodataData('nomor_kk', e.target.value)} />
+                                                    </Field>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <Field label="Anak Ke" error={biodataErrors.anak_ke}>
+                                                        <TextField type="number" value={biodataData.anak_ke} onChange={(e) => setBiodataData('anak_ke', e.target.value)} />
+                                                    </Field>
+                                                    <Field label="Jumlah Saudara" error={biodataErrors.jumlah_saudara}>
+                                                        <TextField type="number" value={biodataData.jumlah_saudara} onChange={(e) => setBiodataData('jumlah_saudara', e.target.value)} />
+                                                    </Field>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Informasi Orang Tua */}
+                                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                                            <div className="rounded-3xl border border-slate-100 bg-slate-50 p-5 space-y-4">
+                                                <h3 className="text-base font-black text-slate-900">Data Ayah</h3>
+                                                <Field label="Nama Ayah" error={biodataErrors.nama_ayah}>
+                                                    <TextField value={biodataData.nama_ayah} onChange={(e) => setBiodataData('nama_ayah', e.target.value)} />
+                                                </Field>
+                                                <Field label="Pendidikan Ayah" error={biodataErrors.pendidikan_ayah}>
+                                                    <TextField value={biodataData.pendidikan_ayah} onChange={(e) => setBiodataData('pendidikan_ayah', e.target.value)} />
+                                                </Field>
+                                                <Field label="Pekerjaan Ayah" error={biodataErrors.pekerjaan_ayah}>
+                                                    <TextField value={biodataData.pekerjaan_ayah} onChange={(e) => setBiodataData('pekerjaan_ayah', e.target.value)} />
+                                                </Field>
+                                            </div>
+                                            <div className="rounded-3xl border border-slate-100 bg-slate-50 p-5 space-y-4">
+                                                <h3 className="text-base font-black text-slate-900">Data Ibu</h3>
+                                                <Field label="Nama Ibu" error={biodataErrors.nama_ibu}>
+                                                    <TextField value={biodataData.nama_ibu} onChange={(e) => setBiodataData('nama_ibu', e.target.value)} />
+                                                </Field>
+                                                <Field label="Pendidikan Ibu" error={biodataErrors.pendidikan_ibu}>
+                                                    <TextField value={biodataData.pendidikan_ibu} onChange={(e) => setBiodataData('pendidikan_ibu', e.target.value)} />
+                                                </Field>
+                                                <Field label="Pekerjaan Ibu" error={biodataErrors.pekerjaan_ibu}>
+                                                    <TextField value={biodataData.pekerjaan_ibu} onChange={(e) => setBiodataData('pekerjaan_ibu', e.target.value)} />
+                                                </Field>
+                                            </div>
+                                        </div>
+
+                                        {/* Alamat Lengkap */}
+                                        <div className="rounded-3xl border border-slate-100 bg-slate-50 p-5 space-y-4">
+                                            <h3 className="text-base font-black text-slate-900">Alamat & Kontak</h3>
+                                            <Field label="Alamat Lengkap" error={biodataErrors.alamat_lengkap}>
+                                                <textarea
+                                                    value={biodataData.alamat_lengkap}
+                                                    onChange={(e) => setBiodataData('alamat_lengkap', e.target.value)}
+                                                    rows={3}
+                                                    className="w-full rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-200"
+                                                />
+                                            </Field>
+                                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                                <Field label="Kelurahan" error={biodataErrors.kelurahan}>
+                                                    <TextField value={biodataData.kelurahan} onChange={(e) => setBiodataData('kelurahan', e.target.value)} />
+                                                </Field>
+                                                <Field label="Kecamatan" error={biodataErrors.kecamatan}>
+                                                    <TextField value={biodataData.kecamatan} onChange={(e) => setBiodataData('kecamatan', e.target.value)} />
+                                                </Field>
+                                                <Field label="No. HP Siswa" error={biodataErrors.hp_siswa}>
+                                                    <TextField value={biodataData.hp_siswa} onChange={(e) => setBiodataData('hp_siswa', e.target.value)} />
+                                                </Field>
+                                                <Field label="Telepon Siswa" error={biodataErrors.telepon_siswa}>
+                                                    <TextField value={biodataData.telepon_siswa} onChange={(e) => setBiodataData('telepon_siswa', e.target.value)} />
+                                                </Field>
+                                                <Field label="Jarak ke Sekolah" error={biodataErrors.jarak_rumah_ke_sekolah}>
+                                                    <TextField value={biodataData.jarak_rumah_ke_sekolah} onChange={(e) => setBiodataData('jarak_rumah_ke_sekolah', e.target.value)} />
+                                                </Field>
+                                                <Field label="Transportasi" error={biodataErrors.alat_transportasi}>
+                                                    <TextField value={biodataData.alat_transportasi} onChange={(e) => setBiodataData('alat_transportasi', e.target.value)} />
+                                                </Field>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-end">
+                                            <SuccessMessage show={biodataSuccess}>
+                                                Biodata disimpan
+                                            </SuccessMessage>
+                                            <SaveButton processing={biodataProcessing} tone="cyan" icon={Save}>
+                                                {biodataProcessing ? 'Menyimpan...' : 'Simpan Biodata'}
                                             </SaveButton>
                                         </div>
                                     </form>

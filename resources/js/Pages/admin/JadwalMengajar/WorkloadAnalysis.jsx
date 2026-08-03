@@ -1,4 +1,5 @@
 import React from "react";
+import { router } from "@inertiajs/react";
 import { Card, CardContent } from "@/Components/ui/card";
 import { Progress } from "@/Components/ui/progress";
 import { Button } from "@/Components/ui/button";
@@ -10,7 +11,7 @@ export default function WorkloadAnalysis({ analysis = [], tahunAjaranAktif = {} 
         <h1 className="text-2xl font-bold">
           Analisis Beban Kerja Guru ({tahunAjaranAktif?.tahun_ajaran ?? "Tahun Ajaran"})
         </h1>
-        <Button onClick={() => window.location.reload()}>Refresh</Button>
+        <Button onClick={() => router.reload()}>Refresh</Button>
       </div>
 
       <Card>

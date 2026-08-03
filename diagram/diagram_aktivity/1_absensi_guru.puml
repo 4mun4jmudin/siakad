@@ -1,0 +1,22 @@
+@startuml absensiguru
+|Guru|
+start
+:Login ke SIAKAD;
+:Pilih Menu Absensi Guru;
+:Sistem meminta akses lokasi & waktu;
+|Sistem|
+:Mendeteksi Lokasi & Waktu Terkini;
+|Guru|
+:Klik Tombol "Absen Hadir" / "Absen Pulang";
+|Sistem|
+:Validasi Lokasi & Waktu;
+if (Valid?) then (Ya)
+  :Simpan Data Absensi Guru;
+  :Membuka Akses Guru untuk Mengisi Jurnal & Absensi Mapel;
+  :Tampilkan Pesan Berhasil;
+else (Tidak)
+  :Tampilkan Pesan Gagal / Di Luar Radius;
+endif
+|Guru|
+stop
+@enduml

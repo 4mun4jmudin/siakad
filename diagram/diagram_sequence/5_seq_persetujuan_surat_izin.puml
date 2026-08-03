@@ -1,0 +1,21 @@
+@startuml
+actor "Admin / Wali" as Admin
+participant "View" as View
+participant "SuratIzinController" as Controller
+participant "SuratIzin" as ModelIzin
+participant "AbsensiSiswa" as ModelAbsen
+
+Admin -> View : Melihat Daftar Pengajuan Izin
+View -> Controller : GET /admin/surat-izin
+Controller -> ModelIzin : Ambil data dengan status="Diajukan"
+ModelIzin --> Controller : List Pengajuan
+Controller --> View : Tampilkan ke tabel
+
+Admin -> View : Klik "Setujui" pada satu pengajuan
+View -> Controller : POST /admin/surat-izin/approve/{id}
+Controller -> ModelIzin : update_data(status="Disetujui")
+Controller -> ModelAbsen : insert_data() (Otomatis generate absen Sakit/Izin di tanggal terkait)
+ModelAbsen --> Controller : Sukses
+Controller --> View : Notifikasi "Disetujui"
+View --> Admin : Tabel terupdate
+@enduml

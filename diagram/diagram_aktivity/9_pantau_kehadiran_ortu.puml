@@ -1,0 +1,14 @@
+@startuml pantaukehadiranortu
+|Orang Tua / Wali Siswa|
+start
+:Login ke Akun Orang Tua di SIAKAD;
+:Buka Menu Laporan / Rekap Kehadiran Siswa;
+|Sistem|
+:Menarik Data Absensi Harian Siswa;
+:Menarik Data Absensi per Mata Pelajaran;
+:Tampilkan Notifikasi Peringatan (Jika Siswa Hadir Harian tapi Alfa di Mapel Tertentu);
+|Orang Tua / Wali Siswa|
+:Mengecek Detail Kehadiran & Jurnal Mapel;
+:Mengetahui Status Real-time Anak;
+stop
+@enduml

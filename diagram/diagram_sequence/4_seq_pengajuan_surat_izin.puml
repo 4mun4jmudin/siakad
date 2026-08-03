@@ -1,0 +1,18 @@
+@startuml
+actor "Siswa / Ortu" as Siswa
+participant "View" as View
+participant "SuratIzinController" as Controller
+participant "Storage/File" as Storage
+participant "SuratIzin (Model)" as Model
+
+Siswa -> View : Membuka Form Pengajuan Izin
+View --> Siswa : Tampilkan Form
+Siswa -> View : Isi Data & Upload Dokumen -> Submit
+View -> Controller : POST /surat-izin
+Controller -> Storage : Simpan File Dokumen (PDF/JPG)
+Storage --> Controller : File Path
+Controller -> Model : insert_data(jenis, tanggal, path)
+Model --> Controller : Berhasil menyimpan (Status: Diajukan)
+Controller --> View : Redirect dengan Notifikasi
+View --> Siswa : Halaman Riwayat Pengajuan
+@enduml

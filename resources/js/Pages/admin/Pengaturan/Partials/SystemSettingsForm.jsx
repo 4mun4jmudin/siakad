@@ -1,6 +1,6 @@
 import React from 'react';
 import { toast } from '@/utils/toast';
-import { useForm } from '@inertiajs/react';
+import { useForm, router } from '@inertiajs/react';
 import axios from 'axios';
 import PrimaryButton from '@/Components/PrimaryButton';
 import InputLabel from '@/Components/InputLabel';
@@ -22,6 +22,10 @@ export default function SystemSettingsForm({ className = '', pengaturan = {} }) 
         smtp_server: pengaturan.smtp_server || '',
         is_kunci_absensi: !!pengaturan.is_kunci_absensi,
         is_kunci_jurnal: !!pengaturan.is_kunci_jurnal,
+        mode_admin: pengaturan.mode_admin || 'full',
+        mode_guru: pengaturan.mode_guru || 'full',
+        mode_siswa: pengaturan.mode_siswa || 'full',
+        mode_ortu: pengaturan.mode_ortu || 'full',
     });
 
     const submit = (e) => {
@@ -52,7 +56,7 @@ export default function SystemSettingsForm({ className = '', pengaturan = {} }) 
         } catch (err) {
             console.error(err);
             if (err.response && err.response.status === 419) {
-                window.location.reload();
+                router.reload();
                 return;
             }
             const msg = err.response?.data?.message || `${title} gagal. Cek log server.`;
@@ -173,6 +177,81 @@ export default function SystemSettingsForm({ className = '', pengaturan = {} }) 
                         ) : (
                             <div className="mt-4 text-sm text-gray-500">Notifikasi email dinonaktifkan. Aktifkan untuk melihat pengaturan email.</div>
                         )}
+                    </div>
+                </div>
+
+                {/* Akses Global (Mode Sistem) */}
+                <div className="bg-white shadow rounded-lg p-6 relative">
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                            <div className="rounded-md bg-indigo-50 p-2 text-indigo-600"><Server className="w-5 h-5" /></div>
+                            <div>
+                                <h3 className="text-xl font-semibold text-gray-800">Mode Sistem Per Role</h3>
+                                <p className="text-sm text-gray-500">Pilih mode operasional sistem untuk masing-masing peran pengguna.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-6">
+                        <div className="flex flex-col gap-2">
+                            <InputLabel htmlFor="mode_admin" value="Mode Admin" />
+                            <select
+                                id="mode_admin"
+                                name="mode_admin"
+                                value={data.mode_admin}
+                                onChange={(e) => setData('mode_admin', e.target.value)}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            >
+                                <option value="full">Full SIAKAD</option>
+                                <option value="absensi">Absensi Only</option>
+                            </select>
+                            <InputError message={errors.mode_admin} className="mt-1" />
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                            <InputLabel htmlFor="mode_guru" value="Mode Guru" />
+                            <select
+                                id="mode_guru"
+                                name="mode_guru"
+                                value={data.mode_guru}
+                                onChange={(e) => setData('mode_guru', e.target.value)}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            >
+                                <option value="full">Full SIAKAD</option>
+                                <option value="absensi">Absensi Only</option>
+                            </select>
+                            <InputError message={errors.mode_guru} className="mt-1" />
+                        </div>
+                        
+                        <div className="flex flex-col gap-2">
+                            <InputLabel htmlFor="mode_siswa" value="Mode Siswa" />
+                            <select
+                                id="mode_siswa"
+                                name="mode_siswa"
+                                value={data.mode_siswa}
+                                onChange={(e) => setData('mode_siswa', e.target.value)}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            >
+                                <option value="full">Full SIAKAD</option>
+                                <option value="absensi">Absensi Only</option>
+                            </select>
+                            <InputError message={errors.mode_siswa} className="mt-1" />
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                            <InputLabel htmlFor="mode_ortu" value="Mode Orang Tua" />
+                            <select
+                                id="mode_ortu"
+                                name="mode_ortu"
+                                value={data.mode_ortu}
+                                onChange={(e) => setData('mode_ortu', e.target.value)}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            >
+                                <option value="full">Full SIAKAD</option>
+                                <option value="absensi">Absensi Only</option>
+                            </select>
+                            <InputError message={errors.mode_ortu} className="mt-1" />
+                        </div>
                     </div>
                 </div>
 

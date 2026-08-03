@@ -22,8 +22,8 @@ import {
 const StatCard = ({ title, value, icon, color, isFeatured = false }) => (
     <div
         className={`group relative overflow-hidden rounded-3xl border bg-white/70 backdrop-blur-md p-5 transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.02] ${isFeatured
-                ? 'border-blue-200 shadow-xl shadow-blue-100/50 ring-1 ring-blue-100'
-                : 'border-white/40 shadow-lg hover:shadow-xl'
+            ? 'border-blue-200 shadow-xl shadow-blue-100/50 ring-1 ring-blue-100'
+            : 'border-white/40 shadow-lg hover:shadow-xl'
             }`}
     >
         {/* Glow effect for featured card */}
@@ -42,8 +42,8 @@ const StatCard = ({ title, value, icon, color, isFeatured = false }) => (
             </div>
             <div
                 className={`flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-lg ${isFeatured
-                        ? 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-blue-200'
-                        : color
+                    ? 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-blue-200'
+                    : color
                     }`}
             >
                 {icon}
@@ -97,10 +97,10 @@ const Pagination = ({ links }) => {
                                 preserveScroll
                                 preserveState
                                 className={`inline-flex h-10 w-10 items-center justify-center rounded-xl text-sm font-medium transition-all duration-200 ${isDisabled
-                                        ? 'pointer-events-none text-slate-300'
-                                        : isActive
-                                            ? 'bg-blue-600 text-white shadow-md hover:bg-blue-700'
-                                            : 'text-slate-700 hover:bg-white/60 backdrop-blur-sm'
+                                    ? 'pointer-events-none text-slate-300'
+                                    : isActive
+                                        ? 'bg-blue-600 text-white shadow-md hover:bg-blue-700'
+                                        : 'text-slate-700 hover:bg-white/60 backdrop-blur-sm'
                                     }`}
                                 dangerouslySetInnerHTML={{ __html: link.label }}
                             />
@@ -122,10 +122,10 @@ const Pagination = ({ links }) => {
                             preserveScroll
                             preserveState
                             className={`inline-flex h-10 min-w-[2.5rem] items-center justify-center rounded-xl px-3 text-sm font-medium transition-all duration-200 ${isActive
-                                    ? 'bg-blue-600 text-white shadow-md'
-                                    : isDisabled
-                                        ? 'pointer-events-none text-slate-300'
-                                        : 'text-slate-700 hover:bg-white/60 backdrop-blur-sm'
+                                ? 'bg-blue-600 text-white shadow-md'
+                                : isDisabled
+                                    ? 'pointer-events-none text-slate-300'
+                                    : 'text-slate-700 hover:bg-white/60 backdrop-blur-sm'
                                 }`}
                         >
                             {link.label}
@@ -416,8 +416,8 @@ export default function Index({ auth, gurus, stats, filters }) {
                                                     <td className="whitespace-nowrap px-6 py-5">
                                                         <span
                                                             className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ring-1 backdrop-blur-sm ${guru.status === 'Aktif'
-                                                                    ? 'bg-emerald-50/80 text-emerald-700 ring-emerald-200'
-                                                                    : 'bg-rose-50/80 text-rose-700 ring-rose-200'
+                                                                ? 'bg-emerald-50/80 text-emerald-700 ring-emerald-200'
+                                                                : 'bg-rose-50/80 text-rose-700 ring-rose-200'
                                                                 }`}
                                                         >
                                                             {guru.status}

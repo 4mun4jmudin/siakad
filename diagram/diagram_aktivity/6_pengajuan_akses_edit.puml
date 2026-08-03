@@ -1,0 +1,33 @@
+@startuml
+|Guru|
+start
+:Menemukan Absensi Terkunci (Melewati Batas Waktu);
+:Klik Tombol "Ajukan Edit Absensi";
+:Isi Alasan Pengubahan Absensi;
+:Klik Kirim Pengajuan;
+|Sistem|
+:Menyimpan Request di AksesEditAbsensi;
+:Kirim Notifikasi ke Admin;
+|Admin|
+:Menerima Notifikasi;
+:Buka Menu Request Akses Edit;
+:Cek Alasan Guru;
+if (Diberi Izin?) then (Ya)
+  :Klik Setujui;
+  |Sistem|
+  :Ubah Status Akses Menjadi "Dibuka";
+  :Berikan Batas Waktu Akses;
+  |Guru|
+  :Mendapat Akses;
+  :Mengedit & Menyimpan Absensi yang Diperbaiki;
+  |Sistem|
+  :Tutup Akses Setelah Selesai / Waktu Habis;
+else (Tidak)
+  |Admin|
+  :Klik Tolak;
+  |Sistem|
+  :Ubah Status Akses Menjadi "Ditolak";
+endif
+|Guru|
+stop
+@enduml

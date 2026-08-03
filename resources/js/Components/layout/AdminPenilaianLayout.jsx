@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, usePage } from "@inertiajs/react";
+import { Link, usePage, router } from "@inertiajs/react";
 import NavItem from "./NavItem";
 
 // ikon minimal (tanpa dependency)
@@ -79,7 +79,7 @@ export default function AdminPenilaianLayout({ children, title = "Penilaian" }) 
           </Link> */}
           <div className="ml-auto flex items-center gap-3">
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => router.reload()}
               className="p-2 rounded hover:bg-gray-100"
               title="Refresh"
             >

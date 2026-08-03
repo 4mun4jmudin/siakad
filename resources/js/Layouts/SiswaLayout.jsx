@@ -24,25 +24,27 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 
-const mainNavigation = [
+const getMainNavigation = (isAbsensiMode) => [
   {
     name: 'Dashboard Absensi',
     routeName: 'siswa.dashboard',
     icon: HomeIcon,
     activePatterns: ['siswa.dashboard'],
   },
-  {
-    name: 'Materi Belajar',
-    routeName: 'siswa.materi.index',
-    icon: BookOpenIcon,
-    activePatterns: ['siswa.materi.*'],
-  },
-  {
-    name: 'Tugas Saya',
-    routeName: 'siswa.tugas.index',
-    icon: ClipboardDocumentListIcon,
-    activePatterns: ['siswa.tugas.*'],
-  },
+  ...(!isAbsensiMode ? [
+    {
+      name: 'Materi Belajar',
+      routeName: 'siswa.materi.index',
+      icon: BookOpenIcon,
+      activePatterns: ['siswa.materi.*'],
+    },
+    {
+      name: 'Tugas Saya',
+      routeName: 'siswa.tugas.index',
+      icon: ClipboardDocumentListIcon,
+      activePatterns: ['siswa.tugas.*'],
+    }
+  ] : []),
   {
     name: 'Profil Saya',
     routeName: 'siswa.akun.edit',
@@ -51,13 +53,13 @@ const mainNavigation = [
   },
 ];
 
-const academicNavigation = [
-  {
+const getAcademicNavigation = (isAbsensiMode) => [
+  ...(!isAbsensiMode ? [{
     name: 'Lihat Nilai',
     routeName: 'siswa.nilai.index',
     icon: AcademicCapIcon,
     activePatterns: ['siswa.nilai.*'],
-  },
+  }] : []),
   {
     name: 'Lihat Absensi',
     routeName: 'siswa.absensi.index',
@@ -72,12 +74,14 @@ const academicNavigation = [
   },
 ];
 
-const mobileNavigation = [
-  mainNavigation[0],
-  mainNavigation[1],
-  mainNavigation[2],
-  academicNavigation[0],
-];
+const getMobileNavigation = (isAbsensiMode) => {
+  const mainNav = getMainNavigation(isAbsensiMode);
+  const acadNav = getAcademicNavigation(isAbsensiMode);
+  return [
+    mainNav[0],
+    ...(!isAbsensiMode ? [mainNav[1], mainNav[2], acadNav[0]] : [acadNav[0], acadNav[1]]),
+  ];
+};
 
 const cn = (...classes) => classes.filter(Boolean).join(' ');
 
@@ -203,7 +207,10 @@ function SidebarContent({
   displayName,
   userPhoto,
   closeMobile,
+  isAbsensiMode,
 }) {
+  const mainNavigation = getMainNavigation(isAbsensiMode);
+  const academicNavigation = getAcademicNavigation(isAbsensiMode);
   return (
     <div className="flex h-full grow flex-col overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.18),transparent_32%),linear-gradient(180deg,#020617_0%,#0f172a_50%,#082f49_100%)]">
       <div className="flex-1 overflow-y-auto px-4 pb-4 pt-4 custom-sidebar-scroll">
@@ -428,7 +435,8 @@ function UserDropdown({
   );
 }
 
-function MobileBottomNav() {
+function MobileBottomNav({ isAbsensiMode }) {
+  const mobileNavigation = getMobileNavigation(isAbsensiMode);
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/90 px-2 py-2 shadow-[0_-16px_40px_-30px_rgba(15,23,42,0.9)] backdrop-blur-xl lg:hidden">
       <div className="grid grid-cols-4 gap-1">
@@ -467,7 +475,8 @@ export default function SiswaLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const { auth, app, pengaturan } = usePage().props;
+  const { auth, app, pengaturan, systemMode } = usePage().props;
+  const isAbsensiMode = systemMode?.siswa === 'absensi';
 
   const user = auth?.user || {};
   const displayName = user?.nama_lengkap || user?.name || 'Siswa';
@@ -548,6 +557,7 @@ export default function SiswaLayout({
                   displayName={displayName}
                   userPhoto={userPhoto}
                   closeMobile={closeMobile}
+                  isAbsensiMode={isAbsensiMode}
                 />
               </Dialog.Panel>
             </Transition.Child>
@@ -564,6 +574,7 @@ export default function SiswaLayout({
           displayName={displayName}
           userPhoto={userPhoto}
           closeMobile={closeMobile}
+          isAbsensiMode={isAbsensiMode}
         />
       </aside>
 
@@ -629,7 +640,7 @@ export default function SiswaLayout({
         </main>
       </div>
 
-      <MobileBottomNav />
+      <MobileBottomNav isAbsensiMode={isAbsensiMode} />
 
       <style>{`
         .custom-sidebar-scroll::-webkit-scrollbar {

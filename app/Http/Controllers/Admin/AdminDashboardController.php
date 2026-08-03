@@ -50,31 +50,31 @@ class AdminDashboardController extends BaseController
     {
         // Locale Indonesia untuk nama hari
         Carbon::setLocale('id');
-        $today         = Carbon::today();
-        $startOfMonth  = Carbon::now()->startOfMonth();
-        $endOfMonth    = Carbon::now()->endOfDay();
-        $hariNamaID    = Carbon::now()->translatedFormat('l'); // "Senin", "Selasa", ...
+        $today = Carbon::today();
+        $startOfMonth = Carbon::now()->startOfMonth();
+        $endOfMonth = Carbon::now()->endOfDay();
+        $hariNamaID = Carbon::now()->translatedFormat('l'); // "Senin", "Selasa", ...
 
         // ===================== 1) Statistik dasar — CACHE 60 menit =====================
         $statsBasic = Cache::remember('dashboard:stats_basic', now()->addHour(), function () use ($hariNamaID) {
             return [
-                'totalGuru'   => Guru::where('status', 'Aktif')->count(),
-                'totalSiswa'  => Siswa::where('status', 'Aktif')->count(),
-                'totalMapel'  => MataPelajaran::count(),
+                'totalGuru' => Guru::where('status', 'Aktif')->count(),
+                'totalSiswa' => Siswa::where('status', 'Aktif')->count(),
+                'totalMapel' => MataPelajaran::count(),
                 'totalJadwal' => JadwalMengajar::where('hari', $hariNamaID)->count(),
             ];
         });
 
         // ===================== 2) Ringkasan Kehadiran Hari Ini — REAL-TIME =====================
-        $kehadiranGuruHariIni   = AbsensiGuru::whereDate('tanggal', $today);
-        $guruHadir              = (clone $kehadiranGuruHariIni)->where('status_kehadiran', 'Hadir')->count();
-        $totalBarisGuru         = (clone $kehadiranGuruHariIni)->count();
-        $guruTidakHadir         = max(0, $totalBarisGuru - $guruHadir);
+        $kehadiranGuruHariIni = AbsensiGuru::whereDate('tanggal', $today);
+        $guruHadir = (clone $kehadiranGuruHariIni)->where('status_kehadiran', 'Hadir')->count();
+        $totalBarisGuru = (clone $kehadiranGuruHariIni)->count();
+        $guruTidakHadir = max(0, $totalBarisGuru - $guruHadir);
 
-        $kehadiranSiswaHariIni  = AbsensiSiswa::whereDate('tanggal', $today);
-        $siswaHadir             = (clone $kehadiranSiswaHariIni)->where('status_kehadiran', 'Hadir')->count();
-        $totalBarisSiswa        = (clone $kehadiranSiswaHariIni)->count();
-        $siswaTidakHadir        = max(0, $totalBarisSiswa - $siswaHadir);
+        $kehadiranSiswaHariIni = AbsensiSiswa::whereDate('tanggal', $today);
+        $siswaHadir = (clone $kehadiranSiswaHariIni)->where('status_kehadiran', 'Hadir')->count();
+        $totalBarisSiswa = (clone $kehadiranSiswaHariIni)->count();
+        $siswaTidakHadir = max(0, $totalBarisSiswa - $siswaHadir);
 
         // ===================== 3) Ringkasan Per Kelas =====================
         // Hari Ini — REAL-TIME
@@ -95,10 +95,10 @@ class AdminDashboardController extends BaseController
             ->get()
             ->map(function ($r) {
                 return [
-                    'kelas'       => trim(($r->tingkat ?? '') . ' ' . ($r->jurusan ?? '')) ?: $r->id_kelas,
-                    'hadir'       => (int) $r->hadir,
-                    'tidakHadir'  => (int) $r->tidak_hadir,
-                    'telatMenit'  => round((float)$r->telat_menit),
+                    'kelas' => trim(($r->tingkat ?? '') . ' ' . ($r->jurusan ?? '')) ?: $r->id_kelas,
+                    'hadir' => (int) $r->hadir,
+                    'tidakHadir' => (int) $r->tidak_hadir,
+                    'telatMenit' => round((float) $r->telat_menit),
                 ];
             })
             ->values();
@@ -123,10 +123,10 @@ class AdminDashboardController extends BaseController
                 ->get()
                 ->map(function ($r) {
                     return [
-                        'kelas'       => trim(($r->tingkat ?? '') . ' ' . ($r->jurusan ?? '')) ?: $r->id_kelas,
-                        'hadir'       => (int) $r->hadir,
-                        'tidakHadir'  => (int) $r->tidak_hadir,
-                        'telatMenit'  => round((float)$r->telat_menit),
+                        'kelas' => trim(($r->tingkat ?? '') . ' ' . ($r->jurusan ?? '')) ?: $r->id_kelas,
+                        'hadir' => (int) $r->hadir,
+                        'tidakHadir' => (int) $r->tidak_hadir,
+                        'telatMenit' => round((float) $r->telat_menit),
                     ];
                 })
                 ->values();
@@ -149,10 +149,10 @@ class AdminDashboardController extends BaseController
             ->get()
             ->map(function ($r) {
                 return [
-                    'guru'       => $r->nama_lengkap,
-                    'hadir'      => (int) $r->hadir,
+                    'guru' => $r->nama_lengkap,
+                    'hadir' => (int) $r->hadir,
                     'tidakHadir' => (int) $r->tidak_hadir,
-                    'telatMenit' => round((float)$r->telat_menit),
+                    'telatMenit' => round((float) $r->telat_menit),
                 ];
             })
             ->values();
@@ -174,10 +174,10 @@ class AdminDashboardController extends BaseController
                 ->get()
                 ->map(function ($r) {
                     return [
-                        'guru'       => $r->nama_lengkap,
-                        'hadir'      => (int) $r->hadir,
+                        'guru' => $r->nama_lengkap,
+                        'hadir' => (int) $r->hadir,
                         'tidakHadir' => (int) $r->tidak_hadir,
-                        'telatMenit' => round((float)$r->telat_menit),
+                        'telatMenit' => round((float) $r->telat_menit),
                     ];
                 })
                 ->values();
@@ -198,36 +198,85 @@ class AdminDashboardController extends BaseController
                 ->get();
 
             $trend = $rows->map(function ($r) {
-                $total = max(1, (int)$r->total);
-                $percent = round(((int)$r->hadir / $total) * 100);
-                $label = 'W' . substr((string)$r->yw, -2);
+                $total = max(1, (int) $r->total);
+                $percent = round(((int) $r->hadir / $total) * 100);
+                $label = 'W' . substr((string) $r->yw, -2);
                 return ['label' => $label, 'value' => $percent];
             })->values();
 
-            return $trend->take(-4)->values();
+            return $trend->values();
         };
 
-        $trendSiswa = Cache::remember('dashboard:trend_siswa', now()->addMinutes(30), fn () => $buildWeeklyTrend('tbl_absensi_siswa'));
-        $trendGuru  = Cache::remember('dashboard:trend_guru', now()->addMinutes(30), fn () => $buildWeeklyTrend('tbl_absensi_guru'));
+        $trendSiswa = Cache::remember('dashboard:trend_siswa', now()->addMinutes(30), fn() => $buildWeeklyTrend('tbl_absensi_siswa'));
+        $trendGuru = Cache::remember('dashboard:trend_guru', now()->addMinutes(30), fn() => $buildWeeklyTrend('tbl_absensi_guru'));
 
-        // ===================== 6) Sparkline 30 hari — CACHE 30 menit =====================
-        $sparkLast30 = Cache::remember('dashboard:spark_30d', now()->addMinutes(30), function () {
-            $dailyRows = DB::table('tbl_absensi_siswa as a')
-                ->select(
-                    DB::raw('DATE(a.tanggal) as d'),
-                    DB::raw('SUM(CASE WHEN a.status_kehadiran = "Hadir" THEN 1 ELSE 0 END) as hadir'),
-                    DB::raw('COUNT(*) as total')
-                )
-                ->where('a.tanggal', '>=', Carbon::now()->subDays(30)->startOfDay())
-                ->groupBy('d')
-                ->orderBy('d')
-                ->get();
-
-            return $dailyRows->map(function ($r) {
-                $total = max(1, (int)$r->total);
-                return (int) round(((int)$r->hadir / $total) * 100);
-            })->values();
+        // Trend Semester (Combined 12 weeks for Siswa & Guru)
+        $trendSemester = Cache::remember('dashboard:trend_semester', now()->addMinutes(30), function() use ($trendSiswa, $trendGuru) {
+            $siswaData = collect($trendSiswa)->keyBy('label');
+            $guruData = collect($trendGuru)->keyBy('label');
+            
+            $labels = $siswaData->keys()->merge($guruData->keys())->unique()->sort()->values();
+            
+            $result = [];
+            foreach ($labels as $lbl) {
+                $result[] = [
+                    'date' => $lbl,
+                    'siswa' => $siswaData->get($lbl)['value'] ?? 0,
+                    'guru' => $guruData->get($lbl)['value'] ?? 0,
+                ];
+            }
+            return $result;
         });
+
+        // ===================== 6) Trend 30 Hari (Siswa & Guru) — CACHE 30 menit =====================
+        $trend30Hari = Cache::remember('dashboard:trend_30d_all', now()->addMinutes(30), function () {
+            $startDate = Carbon::now()->subDays(29)->startOfDay();
+            
+            $siswaDaily = DB::table('tbl_absensi_siswa')
+                ->select(DB::raw('DATE(tanggal) as d'), DB::raw('SUM(CASE WHEN status_kehadiran = "Hadir" THEN 1 ELSE 0 END) as hadir'), DB::raw('COUNT(*) as total'))
+                ->where('tanggal', '>=', $startDate)
+                ->groupBy('d')
+                ->get()
+                ->keyBy('d');
+                
+            $guruDaily = DB::table('tbl_absensi_guru')
+                ->select(DB::raw('DATE(tanggal) as d'), DB::raw('SUM(CASE WHEN status_kehadiran = "Hadir" THEN 1 ELSE 0 END) as hadir'), DB::raw('COUNT(*) as total'))
+                ->where('tanggal', '>=', $startDate)
+                ->groupBy('d')
+                ->get()
+                ->keyBy('d');
+
+            $result = [];
+            $months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+            
+            for ($i = 29; $i >= 0; $i--) {
+                $date = Carbon::now()->subDays($i);
+                $dStr = $date->format('Y-m-d');
+                
+                $sRow = $siswaDaily->get($dStr);
+                $gRow = $guruDaily->get($dStr);
+                
+                $sTotal = max(1, (int) ($sRow->total ?? 0));
+                $sHadir = (int) ($sRow->hadir ?? 0);
+                $sPct = $sRow ? round(($sHadir / $sTotal) * 100) : 0;
+
+                $gTotal = max(1, (int) ($gRow->total ?? 0));
+                $gHadir = (int) ($gRow->hadir ?? 0);
+                $gPct = $gRow ? round(($gHadir / $gTotal) * 100) : 0;
+
+                $dateLabel = $date->format('j') . ' ' . $months[$date->format('n') - 1];
+
+                $result[] = [
+                    'date' => $dateLabel,
+                    'siswa' => $sPct,
+                    'guru' => $gPct,
+                ];
+            }
+            return $result;
+        });
+
+        // Sparkline 30 hari (hanya persentase array untuk banner)
+        $sparkLast30 = collect($trend30Hari)->pluck('siswa')->toArray();
 
         // ===================== 7) Aktivitas & Pengumuman — CACHE 5 menit =====================
         $latestActivities = Cache::remember('dashboard:activities', now()->addMinutes(5), function () {
@@ -249,32 +298,34 @@ class AdminDashboardController extends BaseController
         return Inertia::render('admin/Dashboard', [
             'adminMode' => $adminMode,
             'stats' => [
-                'totalGuru'   => $statsBasic['totalGuru'],
-                'totalSiswa'  => $statsBasic['totalSiswa'],
-                'totalMapel'  => $statsBasic['totalMapel'],
+                'totalGuru' => $statsBasic['totalGuru'],
+                'totalSiswa' => $statsBasic['totalSiswa'],
+                'totalMapel' => $statsBasic['totalMapel'],
                 'totalJadwal' => $statsBasic['totalJadwal'],
                 'kehadiranGuru' => [
-                    'hadir'       => $guruHadir,
-                    'tidakHadir'  => $guruTidakHadir,
+                    'hadir' => $guruHadir,
+                    'tidakHadir' => $guruTidakHadir,
                 ],
                 'kehadiranSiswa' => [
-                    'hadir'       => $siswaHadir,
-                    'tidakHadir'  => $siswaTidakHadir,
+                    'hadir' => $siswaHadir,
+                    'tidakHadir' => $siswaTidakHadir,
                 ],
 
                 // Ringkasan tabel
-                'perKelasHariIni'  => $perKelasHariIni,
+                'perKelasHariIni' => $perKelasHariIni,
                 'perKelasBulanIni' => $perKelasBulanIni,
-                'perGuruHariIni'   => $perGuruHariIni,
-                'perGuruBulanIni'  => $perGuruBulanIni,
+                'perGuruHariIni' => $perGuruHariIni,
+                'perGuruBulanIni' => $perGuruBulanIni,
 
                 // Tren & spark
-                'trendSiswa'  => $trendSiswa,
-                'trendGuru'   => $trendGuru,
+                'trendSiswa' => $trendSiswa,
+                'trendGuru' => $trendGuru,
+                'trendSemester' => $trendSemester,
+                'trend30Hari' => $trend30Hari,
                 'sparkLast30' => $sparkLast30,
             ],
             'latestActivities' => $latestActivities,
-            'announcements'    => $announcements,
+            'announcements' => $announcements,
         ]);
     }
 

@@ -289,7 +289,10 @@ class JadwalInteractiveController extends Controller
         // Cek konflik untuk guru yang sama
         $guruConflict = (clone $query)->where('id_guru', $data['id_guru'])->first();
         if ($guruConflict) {
-            throw new \Exception('Jadwal bentrok! Guru tersebut sudah mengajar di kelas lain pada jam ini.');
+            $guru = \App\Models\Guru::find($data['id_guru']);
+            if (!str_contains(strtolower($guru->nama_lengkap ?? ''), 'pembina')) {
+                throw new \Exception('Jadwal bentrok! Guru tersebut sudah mengajar di kelas lain pada jam ini.');
+            }
         }
     }
 

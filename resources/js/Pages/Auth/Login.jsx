@@ -15,8 +15,6 @@ export default function Login({ status, canResetPassword }) {
     username: '',
     password: '',
     remember: false,
-    // NEW: pilihan mode admin — default "absensi" biar fokus demo
-    mode: 'absensi',
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -146,24 +144,6 @@ export default function Login({ status, canResetPassword }) {
                 </div>
               )}
               <InputError message={errors.password} className="mt-2" />
-            </div>
-
-            {/* NEW: Mode Admin Checkbox Toggle */}
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
-              <Checkbox
-                id="mode"
-                name="mode"
-                checked={data.mode === 'full'}
-                onChange={(e) => setData('mode', e.target.checked ? 'full' : 'absensi')}
-                className="w-5 h-5 rounded-md border-slate-300 text-indigo-600 focus:ring-indigo-500"
-              />
-              <div className="flex flex-col">
-                <InputLabel htmlFor="mode" value="Aktifkan Mode Full Fitur" className="text-slate-800 font-bold" />
-                <span className="text-[11px] text-slate-500 leading-tight">
-                  Biarkan kosong untuk <b>Absensi Only</b> (Cocok untuk demo/ujian).
-                </span>
-              </div>
-              <InputError message={errors.mode} className="mt-2" />
             </div>
 
             {/* Remember + Forgot */}

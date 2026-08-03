@@ -1,0 +1,16 @@
+@startuml
+|Siswa / Orang Tua|
+start
+:Login ke SIAKAD;
+:Buka Menu Pengajuan Surat Izin;
+:Isi Form Izin (Alasan, Tanggal Mulai, Tanggal Selesai);
+:Upload Lampiran Bukti (Misal: Surat Dokter);
+:Klik Ajukan Surat Izin;
+|Sistem|
+:Validasi Input & Lampiran;
+:Simpan ke Tabel SuratIzin;
+:Set Status Pengajuan menjadi "Diajukan";
+:Kirim Notifikasi ke Admin/Wali Kelas;
+|Siswa / Orang Tua|
+stop
+@enduml

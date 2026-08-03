@@ -1246,7 +1246,14 @@ export default function SiswaDashboard({
         <div className="pointer-events-none absolute bottom-24 left-1/3 h-72 w-72 rounded-full bg-emerald-200/30 blur-3xl" />
 
         <main className="relative z-10 mx-auto max-w-7xl space-y-6 px-3 py-5 sm:px-6 lg:px-8 lg:py-6">
-          <section className="relative overflow-hidden rounded-[2.25rem] bg-gradient-to-r from-slate-950 via-blue-950 to-cyan-900 p-5 text-white shadow-[0_28px_90px_-55px_rgba(15,23,42,0.9)] sm:p-6 lg:p-7">
+          <section className="relative overflow-hidden rounded-[2.25rem] p-5 text-white shadow-[0_28px_90px_-55px_rgba(15,23,42,0.9)] sm:p-6 lg:p-7">
+            {/* Background Image & Overlay */}
+            <div 
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat" 
+              style={{ backgroundImage: 'url(/images/bgdashboard.jpeg)' }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-blue-950/80 to-cyan-900/80 mix-blend-multiply" />
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-900/40 via-blue-900/40 to-cyan-800/40" />
             <div className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-cyan-300/10 blur-3xl" />
             <div className="pointer-events-none absolute bottom-0 left-1/3 h-48 w-48 translate-y-12 rounded-full bg-sky-400/10 blur-3xl" />
 
@@ -1413,6 +1420,17 @@ export default function SiswaDashboard({
                         </div>
                       </div>
                     )}
+
+                    <div className="mb-6 grid grid-cols-2 gap-3">
+                      <div className="rounded-3xl border border-slate-100 bg-white p-4 text-center shadow-sm">
+                        <span className="block text-[10px] font-black uppercase tracking-wide text-slate-400">Jam Masuk</span>
+                        <span className={cn("mt-1.5 block font-mono text-2xl font-black", absensiHariIni?.jam_masuk ? "text-emerald-600" : "text-slate-300")}>{absensiHariIni?.jam_masuk ? formatTime(absensiHariIni.jam_masuk) : '—'}</span>
+                      </div>
+                      <div className="rounded-3xl border border-slate-100 bg-white p-4 text-center shadow-sm">
+                        <span className="block text-[10px] font-black uppercase tracking-wide text-slate-400">Jam Pulang</span>
+                        <span className={cn("mt-1.5 block font-mono text-2xl font-black", absensiHariIni?.jam_pulang ? "text-sky-600" : "text-slate-300")}>{absensiHariIni?.jam_pulang ? formatTime(absensiHariIni.jam_pulang) : '—'}</span>
+                      </div>
+                    </div>
 
                     {isCheckedOut ? (
                       <div className="rounded-3xl border border-emerald-100 bg-emerald-50 p-5">

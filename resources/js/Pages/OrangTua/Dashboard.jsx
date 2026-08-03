@@ -366,7 +366,12 @@ export default function Dashboard({
         <div className="relative mx-auto max-w-7xl space-y-5 px-3 sm:space-y-6 sm:px-6 lg:px-8">
           {/* Hero */}
           <PremiumCard className="relative overflow-hidden p-0" delay={0}>
-            <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-700" />
+            {/* Background Image & Overlay */}
+            <div 
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-40" 
+              style={{ backgroundImage: 'url(/images/bgdashboard.jpeg)', mixBlendMode: 'overlay' }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/90 via-teal-600/90 to-sky-700/90" />
             <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/15 blur-2xl" />
             <div className="absolute bottom-0 left-1/3 h-32 w-32 translate-y-10 rounded-full bg-emerald-200/20 blur-2xl" />
 

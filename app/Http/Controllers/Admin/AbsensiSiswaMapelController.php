@@ -69,6 +69,13 @@ class AbsensiSiswaMapelController extends Controller
         } elseif ($selectedKelas) {
             $kelas = Kelas::with(['siswa'])->find($selectedKelas);
             if ($kelas) $students = $kelas->siswa;
+        } else {
+            // Jika tidak ada filter, tampilkan semua siswa agar data tidak kosong
+            $students = \App\Models\Siswa::with('kelas')->orderBy('nama_lengkap')->get();
+        }
+
+        if ($students->isNotEmpty()) {
+            $students->loadMissing('kelas');
         }
 
         // Build merged list: for each student (if we have students list) find existing attendance else placeholder.
@@ -171,6 +178,7 @@ class AbsensiSiswaMapelController extends Controller
         return Inertia::render('admin/AbsensiSiswaMapel/Index', [
             'absensi' => $absensiToSend->values(),
             'pertemuan' => $pertemuan,
+            'rawJadwals' => $jadwals,
             'jadwalOptions' => $jadwalOptions,
             'kelasOptions' => $kelasOptions,
             'guruOptions' => $guruOptions,
@@ -195,7 +203,7 @@ class AbsensiSiswaMapelController extends Controller
             'absensi' => 'required|array',
             'absensi.*.id_siswa' => 'required|string|exists:tbl_siswa,id_siswa',
             // Izinkan "Belum Absen" agar tidak mental, tapi kita skip saat proses
-            'absensi.*.status_kehadiran' => 'required|in:Hadir,Sakit,Izin,Alfa,Tugas,Digantikan,Belum Absen',
+            'absensi.*.status_kehadiran' => 'required|in:Hadir,Sakit,Izin,Alfa,Alfa_Mapel,Izin_Mapel,Sakit_Mapel,Tugas_Mapel,Belum Absen',
             'absensi.*.keterangan' => 'nullable|string|max:500',
             'absensi.*.id_absensi_mapel' => 'nullable|string',
             'absensi.*.jam_mulai'   => ['nullable', 'regex:/^\d{2}:\d{2}(:\d{2})?$/'],

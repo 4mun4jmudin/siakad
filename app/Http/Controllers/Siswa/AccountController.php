@@ -123,6 +123,44 @@ class AccountController extends Controller
         return back()->with('success', 'Foto profil berhasil diperbarui.');
     }
 
+    public function updateBiodata(Request $request)
+    {
+        $siswa = $this->getSiswaFromUser($request);
+
+        // NIS dan NISN sengaja tidak dimasukkan agar tidak bisa diubah siswa (identitas primary)
+        $validated = $request->validate([
+            'jenis_kelamin' => ['nullable', 'in:Laki-laki,Perempuan'],
+            'tempat_lahir' => ['nullable', 'string', 'max:255'],
+            'tanggal_lahir' => ['nullable', 'date'],
+            'agama' => ['nullable', 'string', 'max:50'],
+            'nik' => ['nullable', 'string', 'max:20'],
+            'nomor_kk' => ['nullable', 'string', 'max:20'],
+            'anak_ke' => ['nullable', 'integer'],
+            'jumlah_saudara' => ['nullable', 'integer'],
+
+            'nama_ayah' => ['nullable', 'string', 'max:255'],
+            'pendidikan_ayah' => ['nullable', 'string', 'max:100'],
+            'pekerjaan_ayah' => ['nullable', 'string', 'max:100'],
+
+            'nama_ibu' => ['nullable', 'string', 'max:255'],
+            'pendidikan_ibu' => ['nullable', 'string', 'max:100'],
+            'pekerjaan_ibu' => ['nullable', 'string', 'max:100'],
+
+            'alamat_lengkap' => ['nullable', 'string'],
+            'kelurahan' => ['nullable', 'string', 'max:255'],
+            'kecamatan' => ['nullable', 'string', 'max:255'],
+            'hp_siswa' => ['nullable', 'string', 'max:20'],
+            'telepon_siswa' => ['nullable', 'string', 'max:20'],
+            'jarak_rumah_ke_sekolah' => ['nullable', 'string', 'max:50'],
+            'alat_transportasi' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $siswa->fill($validated);
+        $siswa->save();
+
+        return back()->with('success', 'Biodata lengkap berhasil diperbarui.');
+    }
+
     public function updatePassword(Request $request)
     {
         $user = $request->user();

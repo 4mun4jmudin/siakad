@@ -193,6 +193,10 @@ class PengaturanController extends Controller
             'smtp_server' => 'nullable|required_if:notification_email_enabled,true|string|max:255',
             'is_kunci_absensi' => 'nullable|boolean',
             'is_kunci_jurnal' => 'nullable|boolean',
+            'mode_admin' => 'required|in:full,absensi',
+            'mode_guru' => 'required|in:full,absensi',
+            'mode_siswa' => 'required|in:full,absensi',
+            'mode_ortu' => 'required|in:full,absensi',
         ]);
 
         DB::beginTransaction();

@@ -1,0 +1,20 @@
+@startuml
+actor "Wali Kelas" as Wali
+participant "View (Browser)" as View
+participant "AbsensiSiswaController" as Controller
+participant "Siswa (Model)" as ModelSiswa
+participant "AbsensiSiswa (Model)" as ModelAbsen
+
+Wali -> View : Membuka Menu Absensi Kelas
+View -> Controller : GET /wali/absensi-kelas
+Controller -> ModelSiswa : Dapatkan daftar siswa di kelas
+ModelSiswa --> Controller : List Siswa
+Controller --> View : Tampilkan tabel daftar siswa
+
+Wali -> View : Ubah status tiap siswa (H/S/I/A) & Simpan
+View -> Controller : POST /wali/absensi-kelas (data absensi)
+Controller -> ModelAbsen : insert_data() / update_data() (Bulk)
+ModelAbsen --> Controller : Berhasil menyimpan
+Controller --> View : Notifikasi "Data Tersimpan"
+View --> Wali : Update tampilan tabel
+@enduml

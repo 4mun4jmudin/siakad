@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect, Fragment } from "react";
 import { Head, Link, router } from "@inertiajs/react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import {
@@ -19,10 +19,107 @@ import {
     CheckCircleIcon as CheckSolid,
     ExclamationTriangleIcon as WarnSolid,
     InformationCircleIcon as InfoSolid,
-    XCircleIcon as XSolid
+    XCircleIcon as XSolid,
+    ChevronLeftIcon,
+    ChevronRightIcon
 } from "@heroicons/react/24/solid";
+import { Popover, Transition } from '@headlessui/react';
 
 // --- Components ---
+
+const CustomMonthPicker = ({ value, onChange }) => {
+    const [currentDate, setCurrentDate] = useState(new Date((value || new Date().toISOString().slice(0, 7)) + "-01"));
+    const [viewYear, setViewYear] = useState(currentDate.getFullYear());
+
+    useEffect(() => {
+        if (value) {
+            const d = new Date(value + "-01");
+            setCurrentDate(d);
+            setViewYear(d.getFullYear());
+        }
+    }, [value]);
+
+    const months = [
+        "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+    ];
+
+    const handleSelectMonth = (monthIndex, close) => {
+        const formattedMonth = String(monthIndex + 1).padStart(2, '0');
+        const newMonth = `${viewYear}-${formattedMonth}`;
+        onChange(newMonth);
+        close();
+    };
+
+    return (
+        <Popover className="relative">
+            {({ open, close }) => (
+                <>
+                    <Popover.Button
+                        className={`w-full flex items-center justify-between pl-10 pr-4 py-[9px] text-left rounded-xl border border-gray-300 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all ${
+                            open ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'hover:border-indigo-400'
+                        }`}
+                    >
+                        <CalendarDaysIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <span className="block truncate text-gray-700 font-medium text-[15px]">
+                            {months[currentDate.getMonth()]} {currentDate.getFullYear()}
+                        </span>
+                    </Popover.Button>
+
+                    <Transition
+                        as={Fragment}
+                        enter="transition ease-out duration-200"
+                        enterFrom="opacity-0 translate-y-2 scale-95"
+                        enterTo="opacity-100 translate-y-0 scale-100"
+                        leave="transition ease-in duration-150"
+                        leaveFrom="opacity-100 translate-y-0 scale-100"
+                        leaveTo="opacity-0 translate-y-2 scale-95"
+                    >
+                        <Popover.Panel className="absolute z-50 mt-2 w-64 rounded-2xl bg-white shadow-xl ring-1 ring-black/5 p-4 focus:outline-none left-0 transform origin-top-left">
+                            <div className="flex items-center justify-between mb-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setViewYear(y => y - 1)}
+                                    className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"
+                                >
+                                    <ChevronLeftIcon className="w-5 h-5" />
+                                </button>
+                                <span className="font-bold text-gray-800 text-lg">{viewYear}</span>
+                                <button
+                                    type="button"
+                                    onClick={() => setViewYear(y => y + 1)}
+                                    className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"
+                                >
+                                    <ChevronRightIcon className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
+                                {months.map((m, idx) => {
+                                    const isSelected = viewYear === currentDate.getFullYear() && idx === currentDate.getMonth();
+                                    return (
+                                        <button
+                                            key={m}
+                                            type="button"
+                                            onClick={() => handleSelectMonth(idx, close)}
+                                            className={`py-2 px-1 text-sm font-medium rounded-xl transition-all ${
+                                                isSelected 
+                                                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' 
+                                                : 'text-gray-700 hover:bg-indigo-50 hover:text-indigo-700'
+                                            }`}
+                                        >
+                                            {m.substring(0,3)}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </Popover.Panel>
+                    </Transition>
+                </>
+            )}
+        </Popover>
+    );
+};
+
 
 const StatCard = ({ label, value, icon, colorClass, bgClass, detail }) => (
     <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 group relative overflow-hidden flex flex-col justify-between h-full">
@@ -53,7 +150,7 @@ const ProgressBar = ({ value, colorClass }) => (
     </div>
 );
 
-export default function Monthly({ auth, filters, kelasOptions = [], rows = [], featureMode = 'full' }) {
+export default function Monthly({ auth, filters, kelasOptions = [], rows = [], featureMode = 'full', summary = null }) {
     const month = filters?.month || new Date().toISOString().slice(0, 7);
     const kelas = filters?.id_kelas || "";
 
@@ -73,18 +170,34 @@ export default function Monthly({ auth, filters, kelasOptions = [], rows = [], f
     };
 
     const total = useMemo(() => {
-        const init = { hadir: 0, sakit: 0, izin: 0, alfa: 0, expected: 0 };
-        return (rows || []).reduce((acc, r) => {
+        if (summary) {
+            return {
+                hadir: summary.hadir || 0,
+                sakit: summary.sakit || 0,
+                izin: summary.izin || 0,
+                alfa: summary.alfa || 0,
+                expected: summary.expected || 0,
+                belum_diinput: summary.belum_diinput || 0,
+                persenHadir: summary.persen_hadir || 0,
+            };
+        }
+
+        const init = { hadir: 0, sakit: 0, izin: 0, alfa: 0, expected: 0, belum_diinput: 0 };
+        const result = (rows || []).reduce((acc, r) => {
             acc.hadir += Number(r.hadir || 0);
             acc.sakit += Number(r.sakit || 0);
             acc.izin += Number(r.izin || 0);
             acc.alfa += Number(r.alfa || 0);
+            acc.expected += Number(r.expected_total || 0);
+            acc.belum_diinput += Number(r.belum_diinput || 0);
             return acc;
         }, init);
-    }, [rows]);
+        
+        result.persenHadir = result.expected > 0 ? Math.min(100, Math.round((result.hadir / result.expected) * 100)) : 0;
+        return result;
+    }, [rows, summary]);
 
-    const totalTercatat = total.hadir + total.sakit + total.izin + total.alfa;
-    const persenHadir = totalTercatat ? Math.round((total.hadir / totalTercatat) * 100) : 0;
+    const persenHadir = total.persenHadir;
 
     // Format Month Label
     const monthLabel = new Date(month + "-01").toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
@@ -116,12 +229,17 @@ export default function Monthly({ auth, filters, kelasOptions = [], rows = [], f
                                 </p>
                                 <div className="space-y-3">
                                     <div className="flex justify-between text-xs text-indigo-200">
-                                        <span>Kehadiran</span>
-                                        <span>{total.hadir} siswa</span>
+                                        <span>Kehadiran Terinput</span>
+                                        <span>{total.hadir + total.sakit + total.izin + total.alfa} dari {total.expected}</span>
                                     </div>
-                                    <div className="w-full bg-indigo-900/50 rounded-full h-2">
+                                    <div className="w-full bg-indigo-900/50 rounded-full h-2 overflow-hidden">
                                         <div className="bg-emerald-400 h-2 rounded-full transition-all duration-1000" style={{ width: `${persenHadir}%` }}></div>
                                     </div>
+                                    {total.belum_diinput > 0 && (
+                                        <div className="text-[10px] text-amber-200/80 italic mt-1 text-right">
+                                            *Ada {total.belum_diinput} data absensi belum diinput
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             {/* Decor */}
@@ -173,12 +291,9 @@ export default function Monthly({ auth, filters, kelasOptions = [], rows = [], f
                                     Pilih Periode
                                 </label>
                                 <div className="relative">
-                                    <CalendarDaysIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                    <input
-                                        type="month"
-                                        value={month}
-                                        onChange={(e) => onChangeFilter('month', e.target.value)}
-                                        className="pl-10 block w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 transition-colors"
+                                    <CustomMonthPicker 
+                                        value={month} 
+                                        onChange={(val) => onChangeFilter('month', val)} 
                                     />
                                 </div>
                             </div>

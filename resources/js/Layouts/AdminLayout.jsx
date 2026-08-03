@@ -33,21 +33,20 @@ function NavLink({ href, active, isCollapsed, children, label }) {
     return (
         <Link
             href={href}
-            className={`group relative flex items-center w-full p-2.5 rounded-xl transition-all duration-300 ease-out text-sm font-medium ${
-                active 
-                    ? "bg-white/15 text-white shadow-inner backdrop-blur-md" 
+            className={`group relative flex items-center w-full p-2.5 rounded-xl transition-all duration-300 ease-out text-sm font-medium ${active
+                    ? "bg-white/15 text-white shadow-inner backdrop-blur-md"
                     : "text-white/70 hover:bg-white/10 hover:text-white"
-            } ${isCollapsed ? "justify-center" : ""}`}
+                } ${isCollapsed ? "justify-center" : ""}`}
         >
             {active && (
                 <div className="absolute left-0 top-1/2 -translate-y-1/2 h-3/4 w-1 bg-gradient-to-b from-sky-400 to-indigo-400 rounded-r-full shadow-[0_0_8px_rgba(56,189,248,0.6)]" />
             )}
-            
+
             <div className={`transition-transform duration-300 group-hover:scale-110 ${isCollapsed ? "mx-auto" : "mr-3 group-hover:translate-x-1"}`}>
                 {children}
             </div>
 
-            {!isCollapsed && <span className="truncate transition-transform duration-300 group-hover:translate-x-1">{label}</span>}
+            {!isCollapsed && <span className="whitespace-normal leading-snug break-words transition-transform duration-300 group-hover:translate-x-1 flex-1 text-left">{label}</span>}
 
             {isCollapsed && (
                 <span
@@ -73,27 +72,25 @@ function CollapsibleNavGroup({ title, icon, isCollapsed, children, active = fals
             <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
-                className={`group relative flex w-full items-center p-2.5 rounded-xl transition-all duration-300 ease-out text-sm font-medium ${
-                    active || isOpen 
-                        ? "bg-white/10 text-white backdrop-blur-sm" 
+                className={`group relative flex w-full items-center p-2.5 rounded-xl transition-all duration-300 ease-out text-sm font-medium ${active || isOpen
+                        ? "bg-white/10 text-white backdrop-blur-sm"
                         : "text-white/70 hover:bg-white/10 hover:text-white"
-                } ${isCollapsed ? "justify-center" : ""}`}
+                    } ${isCollapsed ? "justify-center" : ""}`}
             >
                 {(active && isCollapsed) && (
                     <div className="absolute left-0 top-1/2 -translate-y-1/2 h-3/4 w-1 bg-gradient-to-b from-sky-400 to-indigo-400 rounded-r-full shadow-[0_0_8px_rgba(56,189,248,0.6)]" />
                 )}
-                
+
                 <div className={`transition-transform duration-300 group-hover:scale-110 ${isCollapsed ? "mx-auto" : "mr-3 group-hover:translate-x-1"}`}>
                     {icon}
                 </div>
 
                 {!isCollapsed && (
                     <>
-                        <span className="flex-1 text-left transition-transform duration-300 group-hover:translate-x-1">{title}</span>
+                        <span className="flex-1 text-left whitespace-normal leading-snug break-words transition-transform duration-300 group-hover:translate-x-1">{title}</span>
                         <ChevronDownIcon
-                            className={`w-4 h-4 ml-2 transform transition-transform duration-300 ease-in-out ${
-                                isOpen ? "rotate-180 text-sky-400" : "rotate-0 text-white/40 group-hover:text-white/70"
-                            }`}
+                            className={`w-4 h-4 ml-2 transform transition-transform duration-300 ease-in-out ${isOpen ? "rotate-180 text-sky-400" : "rotate-0 text-white/40 group-hover:text-white/70"
+                                }`}
                             aria-hidden
                         />
                     </>
@@ -140,7 +137,7 @@ export default function AdminLayout({ user, header, children }) {
     const pageProps = usePage().props || {};
     const flash = pageProps.flash || {};
     // ✅ Tambahkan globalStats di sini
-    const { pengaturan, adminMode, errors, globalStats } = pageProps;
+    const { pengaturan, systemMode, errors, globalStats } = pageProps;
     const currentUser = user ?? pageProps.auth?.user ?? null;
 
     // ✅ Ambil data notifikasi (asumsi struktur data dari backend)
@@ -150,7 +147,7 @@ export default function AdminLayout({ user, header, children }) {
     const unreadCount = globalStats?.unreadSurat ?? notifications.length ?? 0;
 
     // Flag mode absensi
-    const isAbsensiMode = adminMode === "absensi";
+    const isAbsensiMode = systemMode?.admin === "absensi";
 
     useEffect(() => {
         console.log("AdminLayout useEffect flash triggered. Flash object:", flash, "Errors:", errors);
@@ -192,7 +189,7 @@ export default function AdminLayout({ user, header, children }) {
         <div className={`flex items-center gap-3 p-5 relative ${isCollapsed ? "justify-center" : ""}`}>
             {/* Subtle glow effect behind logo */}
             <div className="absolute top-1/2 left-6 -translate-y-1/2 w-10 h-10 bg-sky-400/20 blur-xl rounded-full" />
-            
+
             {pengaturan?.logo_url ? (
                 <img
                     src={pengaturan.logo_url}
@@ -792,9 +789,8 @@ export default function AdminLayout({ user, header, children }) {
 
                 {/* Desktop sidebar */}
                 <aside
-                    className={`hidden lg:fixed lg:inset-y-0 lg:z-40 lg:flex lg:flex-col bg-gradient-to-b from-indigo-950 via-indigo-900 to-slate-900 border-r border-white/10 shadow-2xl text-white/70 transition-all duration-300 ease-in-out ${
-                        isSidebarOpen ? "lg:w-64" : "lg:w-20"
-                    }`}
+                    className={`hidden lg:fixed lg:inset-y-0 lg:z-40 lg:flex lg:flex-col bg-gradient-to-b from-indigo-950 via-indigo-900 to-slate-900 border-r border-white/10 shadow-2xl text-white/70 transition-all duration-300 ease-in-out ${isSidebarOpen ? "lg:w-64" : "lg:w-20"
+                        }`}
                 >
                     {sidebarContent(false)}
                 </aside>

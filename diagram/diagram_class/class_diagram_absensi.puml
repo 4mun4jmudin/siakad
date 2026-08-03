@@ -1,0 +1,206 @@
+@startuml class_diagram_absensi
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 80
+
+class User {
+  - id_pengguna: int
+  - nama_lengkap: string
+  - peran: string
+  ---
+  + login()
+  + logout()
+  + update_profile()
+}
+
+class Siswa {
+  - id_siswa: int
+  - nis: string
+  - id_kelas: int
+  - id_pengguna: int
+  ---
+  + get_jadwal()
+  + get_rekap_absensi()
+  + ajukan_izin()
+  + absen_mandiri()
+}
+
+class Guru {
+  - id_guru: int
+  - nip: string
+  - id_pengguna: int
+  ---
+  + absen_hadir()
+  + absen_pulang()
+  + isi_jurnal_kelas()
+}
+
+class JadwalMengajar {
+  - id_jadwal: int
+  - id_guru: int
+  - id_kelas: int
+  - id_mapel: int
+  - hari: string
+  - waktu_mulai: time
+  - waktu_selesai: time
+  ---
+  + insert_data()
+  + update_data()
+  + get_detail_jadwal()
+}
+
+class AbsensiGuru {
+  - id_absensi: string
+  - id_guru: int
+  - tanggal: date
+  - waktu_datang: time
+  - waktu_pulang: time
+  - status: string
+  - koordinat_lokasi: string
+  ---
+  + insert_data()
+  + update_data()
+  + validasi_lokasi()
+}
+
+class AbsensiSiswa {
+  - id_absensi: string
+  - id_siswa: int
+  - tanggal: date
+  - status: string
+  - keterangan: string
+  ---
+  + insert_data()
+  + update_data()
+}
+
+class SiswaLiveLocation {
+  - id_lokasi: string
+  - id_siswa: int
+  - tanggal: date
+  - koordinat: string
+  ---
+  + insert_data()
+  + get_lokasi()
+}
+
+class AbsensiSiswaMapel {
+  - id_absensi_mapel: string
+  - id_jadwal: int
+  - id_siswa: int
+  - tanggal: date
+  - status: string
+  ---
+  + insert_data()
+  + update_data()
+}
+
+class JurnalMengajar {
+  - id_jurnal: string
+  - id_jadwal: int
+  - tanggal: date
+  - materi_pembelajaran: text
+  ---
+  + insert_data()
+  + update_data()
+}
+
+class SuratIzin {
+  - id_surat: string
+  - id_siswa: int
+  - jenis_surat: string
+  - tanggal_mulai: date
+  - tanggal_selesai: date
+  - keterangan: text
+  - status_pengajuan: string
+  - id_penyetuju: int
+  ---
+  + insert_data()
+  + setujui_izin()
+  + tolak_izin()
+}
+
+class AksesEditAbsensi {
+  - id_akses: string
+  - id_guru: int
+  - tanggal_absensi: date
+  - alasan: text
+  - status_akses: string
+  ---
+  + ajukan_akses()
+  + beri_izin()
+  + tutup_akses()
+}
+
+class PengajuanGuruPengganti {
+  - id_pengajuan: string
+  - id_jadwal: int
+  - tanggal: date
+  - id_guru_peminta: int
+  - id_guru_pengganti: int
+  - status: string
+  ---
+  + ajukan_pengganti()
+  + validasi_ketersediaan()
+  + setujui_pengajuan()
+}
+
+class PengajuanGuruTarget {
+  - id_target: string
+  - id_pengajuan: string
+  - id_guru: int
+  - status_respon: string
+  ---
+  + insert_data()
+  + terima_tawaran()
+  + tolak_tawaran()
+}
+
+class OrangTuaWali {
+  - id_ortu: int
+  - id_siswa: int
+  - id_pengguna: int
+  ---
+  + pantau_absensi()
+}
+
+' Relasi Agregasi (o--) dan Komposisi (*--)
+User "1" o-down- "1" Siswa : memiliki >
+User "1" o-down- "1" Guru : memiliki >
+User "1" o-left- "1" OrangTuaWali : memiliki >
+
+OrangTuaWali "1" -down- "1..*" Siswa : wali dari >
+
+' Cabang Kiri (Siswa)
+Siswa "1" *-down- "*" AbsensiSiswaMapel : memiliki >
+Siswa "1" *-left- "*" AbsensiSiswa : memiliki >
+Siswa "1" *-left- "*" SuratIzin : mengajukan >
+Siswa "1" *-left- "*" SiswaLiveLocation : mencatat >
+
+' Susunan Vertikal Kiri
+AbsensiSiswa -down[hidden]- SuratIzin
+SuratIzin -down[hidden]- SiswaLiveLocation
+
+' Cabang Kanan (Guru)
+Guru "1" -down- "*" JadwalMengajar : mengajar >
+Guru "1" *-right- "*" AbsensiGuru : melakukan >
+Guru "1" -right- "*" AksesEditAbsensi : mengajukan >
+Guru "1" -right- "*" PengajuanGuruPengganti : meminta >
+Guru "1" -right- "*" PengajuanGuruTarget : merespon tawaran >
+
+' Susunan Vertikal Kanan
+AbsensiGuru -down[hidden]- AksesEditAbsensi
+AksesEditAbsensi -down[hidden]- PengajuanGuruPengganti
+PengajuanGuruPengganti -down[hidden]- PengajuanGuruTarget
+
+' Cabang Bawah (Jadwal)
+JadwalMengajar "1" *-down- "*" JurnalMengajar : memiliki >
+JadwalMengajar "1" *-left- "*" AbsensiSiswaMapel : memiliki >
+JadwalMengajar "1" -right- "*" PengajuanGuruPengganti : digantikan >
+
+PengajuanGuruPengganti "1" *-right- "*" PengajuanGuruTarget : memiliki target >
+
+User "1" -down- "*" SuratIzin : menyetujui >
+
+@enduml

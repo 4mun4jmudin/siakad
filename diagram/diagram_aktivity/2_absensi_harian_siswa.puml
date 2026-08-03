@@ -1,0 +1,18 @@
+@startuml
+|Wali Kelas / Guru Piket|
+start
+:Login ke SIAKAD;
+:Pilih Menu Absensi Harian;
+:Pilih Kelas & Tanggal;
+|Sistem|
+:Menampilkan Daftar Siswa Kelas Tersebut;
+|Wali Kelas / Guru Piket|
+:Mengubah Status Kehadiran (Hadir, Sakit, Izin, Alpa);
+:Klik Simpan Absensi;
+|Sistem|
+:Validasi Data Input;
+:Simpan ke Tabel AbsensiSiswa;
+:Tampilkan Notifikasi Berhasil;
+|Wali Kelas / Guru Piket|
+stop
+@enduml

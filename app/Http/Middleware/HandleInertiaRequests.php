@@ -68,8 +68,16 @@ class HandleInertiaRequests extends Middleware
             // Data Pengaturan Global (Logo, Nama Sekolah, dll)
             'pengaturan' => fn () => Pengaturan::first(),
             
-            // Mode Admin (Full / Absensi Only) - disimpan di session
-            'adminMode' => fn () => $request->session()->get('admin_mode', 'full'),
+            // Mode Sistem Per Role (Full / Absensi Only) - disimpan di database
+            'systemMode' => function () {
+                $pengaturan = Pengaturan::first();
+                return [
+                    'admin' => $pengaturan->mode_admin ?? 'full',
+                    'guru' => $pengaturan->mode_guru ?? 'full',
+                    'siswa' => $pengaturan->mode_siswa ?? 'full',
+                    'ortu' => $pengaturan->mode_ortu ?? 'full',
+                ];
+            },
 
             // Statistik Global untuk Navbar/Sidebar (Notifikasi)
             'globalStats' => function () use ($request) {

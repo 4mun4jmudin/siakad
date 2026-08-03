@@ -1,7 +1,7 @@
 import React, { Fragment, useEffect, useState } from 'react';
 import { Menu, Transition } from '@headlessui/react';
 import { Bell, Check, X, Clock, Mail } from 'lucide-react';
-import { usePage, Link } from '@inertiajs/react';
+import { usePage, Link, router } from '@inertiajs/react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
@@ -88,8 +88,8 @@ export default function NotificationDropdown() {
         const targetUrl = parsed.url || parsed.link || parsed.route || null;
         if (targetUrl) {
             // Jika target url berupa route name (ziggy) Anda bisa handle sendiri.
-            // Untuk sekarang gunakan location.href
-            window.location.href = targetUrl;
+            // Menggunakan router.visit() agar SPA navigation aktif
+            router.visit(targetUrl);
         } else {
             // kalau tidak ada link, cukup beri toast
             toast.info('Notifikasi dibuka');

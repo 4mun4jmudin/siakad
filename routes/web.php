@@ -72,6 +72,7 @@ use App\Http\Controllers\Admin\AnalitikNilaiController;
 use App\Http\Controllers\Admin\RemedialController;
 use App\Http\Controllers\Admin\PenilaianNilaiController;
 use App\Http\Controllers\Admin\SuratIzinController;
+use App\Http\Controllers\Guru\SuratIzinController as GuruSuratIzinController;
 use App\Http\Controllers\Admin\LogAktivitasController;
 use App\Http\Controllers\Admin\UserController;
 
@@ -158,6 +159,7 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/akun/edit-foto', [SiswaAccountController::class, 'editPhoto'])->name('akun.edit-foto');
         Route::post('/akun/update-foto', [SiswaAccountController::class, 'updatePhoto'])->name('akun.update-foto');
+        Route::post('/akun/update-biodata', [SiswaAccountController::class, 'updateBiodata'])->name('akun.update-biodata');
 
         Route::post('/akun/update-password', [SiswaAccountController::class, 'updatePassword'])->name('akun.update-password');
 
@@ -224,6 +226,18 @@ Route::middleware('auth')->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::prefix('guru')->name('guru.')->middleware('check.level:Guru')->group(function () {
+
+        // Surat Izin
+        Route::get('/surat-izin/create', [GuruSuratIzinController::class, 'create'])->name('surat-izin.create');
+        Route::post('/surat-izin', [GuruSuratIzinController::class, 'store'])->name('surat-izin.store');
+        Route::get('/surat-izin', [GuruSuratIzinController::class, 'index'])->name('surat-izin.index');
+        Route::post('/surat-izin/{surat}/approve', [GuruSuratIzinController::class, 'approve'])->name('surat-izin.approve');
+        Route::post('/surat-izin/{surat}/reject', [GuruSuratIzinController::class, 'reject'])->name('surat-izin.reject');
+        Route::post('/surat-izin/{surat}/resync', [GuruSuratIzinController::class, 'resync'])->name('surat-izin.resync');
+        Route::post('/surat-izin/{surat}/unsync', [GuruSuratIzinController::class, 'unsync'])->name('surat-izin.unsync');
+        Route::get('/surat-izin/{surat}/lampiran', [GuruSuratIzinController::class, 'lampiranView'])->name('surat-izin.lampiran.view');
+        Route::get('/surat-izin/{surat}/lampiran/download', [GuruSuratIzinController::class, 'lampiranDownload'])->name('surat-izin.lampiran.download');
+
         // Halaman
         Route::get('/dashboard', [GuruDashboardController::class, 'index'])->name('dashboard');
 

@@ -1,0 +1,24 @@
+@startuml
+actor "Guru Peminta" as Guru
+actor "Admin" as Admin
+participant "View" as View
+participant "GuruPenggantiController" as Controller
+participant "PengajuanGuruPengganti" as ModelPengajuan
+participant "PengajuanGuruTarget" as ModelTarget
+
+Guru -> View : Ajukan Inval (Guru Pengganti)
+View -> Controller : POST /guru/inval
+Controller -> ModelPengajuan : insert_data(id_jadwal, keterangan)
+Controller --> View : Sukses
+
+Admin -> View : Buka Request Guru Pengganti
+View -> Controller : GET /admin/inval
+Controller -> ModelPengajuan : Dapatkan daftar request
+Controller --> View : Tampilkan data
+
+Admin -> View : Assign ke "Guru B" (Guru Pengganti)
+View -> Controller : POST /admin/inval/assign/{id}
+Controller -> ModelTarget : insert_data(id_guru_B, status="Menunggu Respon")
+Controller -> ModelPengajuan : update_data(status="Disetujui")
+Controller --> View : Notifikasi Berhasil Assign
+@enduml

@@ -58,10 +58,10 @@ function isCurrentRoute(name) {
   }
 }
 
-const navigationItems = [
+const getNavigationItems = (isAbsensiMode) => [
   { name: 'Dashboard', href: 'orangtua.dashboard', icon: Home },
   { name: 'Absensi Ananda', href: 'orangtua.absensi.index', icon: CalendarDays },
-  { name: 'Nilai Anak', href: 'orangtua.nilai.index', icon: Award },
+  ...(!isAbsensiMode ? [{ name: 'Nilai Anak', href: 'orangtua.nilai.index', icon: Award }] : []),
   { name: 'Jadwal Pelajaran', href: 'orangtua.jadwal.index', icon: BookOpen },
   { name: 'Pengumuman', href: 'orangtua.pengumuman.index', icon: Megaphone },
   { name: 'Pengajuan Izin', href: 'orangtua.surat-izin.index', icon: FileText },
@@ -322,7 +322,8 @@ function normalizeLogoUrl(url) {
 
 export default function OrangTuaLayout({ children, header = 'Panel Orang Tua/Wali' }) {
   const { props } = usePage();
-  const { auth, flash } = props;
+  const { auth, flash, systemMode } = props;
+  const isAbsensiMode = systemMode?.ortu === 'absensi';
 
   const user = auth?.user ?? { nama_lengkap: 'Pengguna' };
   const app = useMemo(() => props?.pengaturan || props?.app || {}, [props]);
@@ -406,7 +407,7 @@ export default function OrangTuaLayout({ children, header = 'Panel Orang Tua/Wal
           )}
           aria-label="Sidebar"
         >
-          {navigationItems.map((item) => (
+          {getNavigationItems(isAbsensiMode).map((item) => (
             <NavItem
               key={item.name}
               item={item}

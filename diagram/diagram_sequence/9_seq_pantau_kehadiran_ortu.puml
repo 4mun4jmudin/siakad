@@ -1,0 +1,17 @@
+@startuml
+actor "Orang Tua" as Ortu
+participant "View" as View
+participant "LaporanController" as Controller
+participant "AbsensiSiswa" as ModelAbsenHarian
+participant "AbsensiSiswaMapel" as ModelAbsenMapel
+
+Ortu -> View : Login & Buka Rekap Kehadiran Anak
+View -> Controller : GET /ortu/rekap-kehadiran/{id_siswa}
+Controller -> ModelAbsenHarian : get_data(id_siswa, bulan)
+ModelAbsenHarian --> Controller : Data Kehadiran Harian
+Controller -> ModelAbsenMapel : get_data(id_siswa, bulan)
+ModelAbsenMapel --> Controller : Data Kehadiran per Mapel
+Controller -> Controller : Analisis Anomali (Hadir Harian tapi Alfa Mapel)
+Controller --> View : Render Grafik & Tabel Data
+View --> Ortu : Menampilkan Highlight & Detail Ketidakhadiran
+@enduml

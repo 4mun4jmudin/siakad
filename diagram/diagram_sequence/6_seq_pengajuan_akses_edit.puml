@@ -1,0 +1,24 @@
+@startuml
+actor Guru
+actor Admin
+participant "View" as View
+participant "AksesController" as Controller
+participant "AksesEditAbsensi" as Model
+
+Guru -> View : Klik "Ajukan Edit Absensi"
+View -> Controller : POST /guru/akses-edit (beserta alasan)
+Controller -> Model : insert_data(id_guru, tanggal_absensi, alasan)
+Model --> Controller : Sukses (Status: Menunggu)
+Controller --> View : Tampilkan pesan sukses
+
+Admin -> View : Buka Daftar Request Akses Edit
+View -> Controller : GET /admin/akses-edit
+Controller -> Model : Dapatkan list request
+Model --> Controller : List Data
+Controller --> View : Tampilkan Request
+
+Admin -> View : Klik "Setujui & Buka Akses"
+View -> Controller : POST /admin/akses-edit/approve/{id}
+Controller -> Model : update_data(status_akses="Dibuka", batas_waktu)
+Controller --> View : Pesan Akses Dibuka
+@enduml

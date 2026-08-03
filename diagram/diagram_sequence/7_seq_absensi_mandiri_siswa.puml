@@ -1,0 +1,20 @@
+@startuml
+actor Siswa
+participant "View" as View
+participant "AbsensiSiswaController" as Controller
+participant "SiswaLiveLocation" as ModelLokasi
+participant "AbsensiSiswa" as ModelAbsen
+
+Siswa -> View : Membuka Menu Absen Harian Mandiri
+View -> Controller : Permintaan Halaman Absen
+Controller --> View : Tampilkan Tombol Absen & Permintaan GPS
+
+Siswa -> View : Klik "Absen Hadir" (Lokasi terkirim)
+View -> Controller : POST /siswa/absensi-mandiri
+Controller -> Controller : Validasi Waktu & Radius Lokasi
+Controller -> ModelLokasi : insert_data(koordinat)
+Controller -> ModelAbsen : insert_data(status="Hadir")
+ModelAbsen --> Controller : Sukses
+Controller --> View : Notifikasi "Berhasil Absen"
+View --> Siswa : Tampilan Dashboard Siswa
+@enduml

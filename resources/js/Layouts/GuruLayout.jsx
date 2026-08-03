@@ -67,46 +67,7 @@ function normalizeLogoUrl(url) {
   return `/storage/${url.replace(/^\/+/, '')}`;
 }
 
-const navigationStructure = [
-  {
-    type: 'item',
-    name: 'Dashboard',
-    href: 'guru.dashboard',
-    icon: Home,
-  },
-  {
-    type: 'group',
-    name: 'Pembelajaran',
-    icon: BookOpen,
-    items: [
-      { name: 'Jadwal Saya', href: 'guru.jadwal.index', icon: CalendarDays },
-      { name: 'Rencana Materi', href: 'guru.rencana-materi.index', icon: FolderOpen },
-      { name: 'Jurnal & Absensi', href: 'guru.jurnal.index', icon: BookOpen },
-      { name: 'Manajemen Tugas', href: 'guru.tugas.index', icon: ClipboardList },
-      { name: 'Penilaian Siswa', href: 'guru.penilaian.index', icon: FileText },
-    ],
-  },
-  {
-    type: 'group',
-    name: 'Akademik & Kehadiran',
-    icon: ClipboardCheck,
-    items: [
-      { name: 'Absensi Siswa', href: 'guru.absensi-mapel.index', icon: Users },
-      { name: 'Akses Edit Absensi', href: 'guru.akses-edit-absensi.index', icon: ShieldCheck },
-      { name: 'Absensi Harian', href: 'guru.absensi-harian.index', icon: ClipboardCheck },
-      { name: 'Permintaan Pengganti', href: 'guru.pengganti.incoming', icon: Users },
-      { name: 'Riwayat Pengajuan', href: 'guru.pengganti.riwayat', icon: ClipboardList },
-      { name: 'Kelas Perwalian', href: 'guru.walikelas.index', icon: Users },
-      { name: 'Daftar Siswa', href: 'guru.siswa.index', icon: Users },
-    ],
-  },
-  {
-    type: 'item',
-    name: 'Laporan',
-    href: 'guru.laporan.index',
-    icon: FileText,
-  },
-];
+
 
 function UserAvatar({ user, size = 'md' }) {
   const sizeClass = size === 'lg' ? 'h-11 w-11' : 'h-9 w-9';
@@ -339,7 +300,62 @@ function Brand({ collapsed, schoolName, logoSrc }) {
 }
 
 export default function GuruLayout({ children, header = 'Panel Guru' }) {
-  const { auth, flash, app, pengaturan } = usePage().props;
+  const { auth, flash, app, pengaturan, systemMode } = usePage().props;
+  const isAbsensiMode = systemMode?.guru === 'absensi';
+
+  const navigationStructure = [
+    {
+      type: 'item',
+      name: 'Dashboard',
+      href: 'guru.dashboard',
+      icon: Home,
+    },
+    ...(!isAbsensiMode ? [{
+      type: 'group',
+      name: 'Pembelajaran',
+      icon: BookOpen,
+      items: [
+        { name: 'Jadwal Saya', href: 'guru.jadwal.index', icon: CalendarDays },
+        { name: 'Rencana Materi', href: 'guru.rencana-materi.index', icon: FolderOpen },
+        { name: 'Jurnal & Absensi', href: 'guru.jurnal.index', icon: BookOpen },
+        { name: 'Manajemen Tugas', href: 'guru.tugas.index', icon: ClipboardList },
+        { name: 'Penilaian Siswa', href: 'guru.penilaian.index', icon: FileText },
+      ],
+    }] : [
+      {
+        type: 'group',
+        name: 'Pembelajaran',
+        icon: BookOpen,
+        items: [
+          { name: 'Jadwal Saya', href: 'guru.jadwal.index', icon: CalendarDays },
+          { name: 'Jurnal & Absensi', href: 'guru.jurnal.index', icon: BookOpen },
+        ],
+      }
+    ]),
+    {
+      type: 'group',
+      name: 'Akademik & Kehadiran',
+      icon: ClipboardCheck,
+      items: [
+        { name: 'Absensi Siswa', href: 'guru.absensi-mapel.index', icon: Users },
+        { name: 'Surat Izin Siswa', href: 'guru.surat-izin.index', icon: FileText },
+        { name: 'Akses Edit Absensi', href: 'guru.akses-edit-absensi.index', icon: ShieldCheck },
+        { name: 'Absensi Harian', href: 'guru.absensi-harian.index', icon: ClipboardCheck },
+        { name: 'Permintaan Pengganti', href: 'guru.pengganti.incoming', icon: Users },
+        { name: 'Riwayat Pengajuan', href: 'guru.pengganti.riwayat', icon: ClipboardList },
+        ...(!isAbsensiMode ? [
+          { name: 'Kelas Perwalian', href: 'guru.walikelas.index', icon: Users },
+          { name: 'Daftar Siswa', href: 'guru.siswa.index', icon: Users },
+        ] : []),
+      ],
+    },
+    ...(!isAbsensiMode ? [{
+      type: 'item',
+      name: 'Laporan',
+      href: 'guru.laporan.index',
+      icon: FileText,
+    }] : []),
+  ];
 
   const user = auth?.user ?? {
     nama_lengkap: 'Pengguna',

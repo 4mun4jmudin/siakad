@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { usePage, Link } from '@inertiajs/react';
+import { usePage, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import SkeletonStatCard from '@/Components/SkeletonStatCard';
 import {
@@ -22,6 +22,10 @@ import {
   DocumentTextIcon,
   PresentationChartBarIcon,
 } from '@heroicons/react/24/outline';
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, AreaChart, Area, BarChart, Bar
+} from 'recharts';
+import { ChevronDownIcon } from '@heroicons/react/20/solid';
 
 /* ═══════════════════════════════════════════════════════════
    Hook: reveal on scroll (intersection observer)
@@ -174,40 +178,27 @@ function Sparkline({ values = [], stroke = '#06b6d4', height = 40 }) {
 /* ═══════════════════════════════════════════════════════════
    Sub-components — Premium SaaS Style
    ═══════════════════════════════════════════════════════════ */
-const StatCard = ({ icon, label, value, description, color = 'indigo', trend }) => {
+const StatCard = ({ icon, label, value, description, color = 'indigo' }) => {
   const themes = {
-    indigo: { bg: 'bg-indigo-50', text: 'text-indigo-600', border: 'border-indigo-100', ring: 'ring-indigo-500/20' },
-    emerald: { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-100', ring: 'ring-emerald-500/20' },
-    violet: { bg: 'bg-violet-50', text: 'text-violet-600', border: 'border-violet-100', ring: 'ring-violet-500/20' },
-    sky: { bg: 'bg-sky-50', text: 'text-sky-600', border: 'border-sky-100', ring: 'ring-sky-500/20' },
-    rose: { bg: 'bg-rose-50', text: 'text-rose-600', border: 'border-rose-100', ring: 'ring-rose-500/20' },
-    orange: { bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-100', ring: 'ring-orange-500/20' },
-    amber: { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-100', ring: 'ring-amber-500/20' },
+    emerald: { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-100', iconBg: 'bg-emerald-100' },
+    rose: { bg: 'bg-rose-50', text: 'text-rose-600', border: 'border-rose-100', iconBg: 'bg-rose-100' },
+    sky: { bg: 'bg-sky-50', text: 'text-sky-600', border: 'border-sky-100', iconBg: 'bg-sky-100' },
+    orange: { bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-100', iconBg: 'bg-orange-100' },
+    violet: { bg: 'bg-violet-50', text: 'text-violet-600', border: 'border-violet-100', iconBg: 'bg-violet-100' },
+    indigo: { bg: 'bg-indigo-50', text: 'text-indigo-600', border: 'border-indigo-100', iconBg: 'bg-indigo-100' },
+    amber: { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-100', iconBg: 'bg-amber-100' },
   };
   const t = themes[color] || themes.indigo;
 
   return (
-    <div className="group relative bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-slate-100 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 transition-all duration-300 h-full overflow-hidden">
-      {/* Subtle gradient accent line */}
-      <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-indigo-500 to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-t-2xl`} />
-
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">{label}</p>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-slate-800 tracking-tight tabular-nums">{value}</span>
-          </div>
-          {description && (
-            <div className="mt-1.5 flex items-center gap-1.5">
-              {trend === 'up' && <ArrowTrendingUpIcon className="w-3.5 h-3.5 text-emerald-500" />}
-              {trend === 'down' && <ArrowTrendingDownIcon className="w-3.5 h-3.5 text-rose-500" />}
-              <span className={`text-xs font-medium ${trend === 'up' ? 'text-emerald-600' : trend === 'down' ? 'text-rose-600' : 'text-slate-400'}`}>{description}</span>
-            </div>
-          )}
-        </div>
-        <div className={`flex-none p-2.5 rounded-xl ${t.bg} ${t.border} border ring-1 ${t.ring} group-hover:scale-110 transition-transform duration-300`}>
-          <span className={t.text}>{icon}</span>
-        </div>
+    <div className="bg-white rounded-2xl p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100 hover:shadow-lg transition-all flex items-center justify-between">
+      <div>
+        <p className="text-sm text-slate-500 font-medium mb-1">{label}</p>
+        <h3 className="text-3xl font-extrabold text-slate-800">{value}</h3>
+        {description && <p className="text-xs text-slate-400 mt-1">{description}</p>}
+      </div>
+      <div className={`w-12 h-12 rounded-full ${t.iconBg} flex items-center justify-center ${t.text}`}>
+        {icon}
       </div>
     </div>
   );
@@ -310,10 +301,13 @@ export default function Dashboard({ auth, stats = {}, latestActivities = [], ann
     totalSiswa: stats.totalSiswa ?? 0,
     totalMapel: stats.totalMapel ?? 0,
     totalJadwal: stats.totalJadwal ?? 0,
-    kehadiranGuru: stats.kehadiranGuru ?? { hadir: 0, tidakHadir: 0 },
-    kehadiranSiswa: stats.kehadiranSiswa ?? { hadir: 0, tidakHadir: 0 },
+    kehadiranGuru: stats.kehadiranGuru ?? { hadir: 0, tidakHadir: 0, izin: 0, sakit: 0, alfa: 0 },
+    kehadiranSiswa: stats.kehadiranSiswa ?? { hadir: 0, tidakHadir: 0, izin: 0, sakit: 0, alfa: 0 },
+    trendKehadiranSemester: stats.trendKehadiranSemester ?? [],
     trendSiswa: stats.trendSiswa ?? [],
     trendGuru: stats.trendGuru ?? [],
+    trendSemester: stats.trendSemester ?? [],
+    trend30Hari: stats.trend30Hari ?? [],
     sparkLast30: stats.sparkLast30 ?? [],
     perKelasHariIni: stats.perKelasHariIni ?? [],
     perKelasBulanIni: stats.perKelasBulanIni ?? [],
@@ -369,7 +363,7 @@ export default function Dashboard({ auth, stats = {}, latestActivities = [], ann
   }, [s.totalGuru, s.totalSiswa, s.totalMapel, s.totalJadwal]);
 
   // trend timeframe control
-  const [timeframe, setTimeframe] = useState('4w');
+  const [timeframe, setTimeframe] = useState('30d');
   const trendSiswaData = useMemo(
     () => (s.trendSiswa.length ? s.trendSiswa.map((d, i) => ({ label: d.label ?? `W${i + 1}`, value: Number(d.value ?? 0) })) : []),
     [s.trendSiswa]
@@ -404,35 +398,39 @@ export default function Dashboard({ auth, stats = {}, latestActivities = [], ann
         {/* ─────────────────── Greeting Header ─────────────────── */}
         <div
           ref={topRef}
-          className={`relative overflow-hidden bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-slate-100 transition-all duration-700 ease-out ${topRevealed ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
+          className={`relative overflow-hidden bg-slate-900 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-slate-800 transition-all duration-700 ease-out ${topRevealed ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
         >
-          {/* Decorative gradient background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/[0.03] via-transparent to-violet-500/[0.03]" />
+          {/* Background Image & Overlay */}
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-60"
+            style={{ backgroundImage: 'url(/images/bgdashboard.jpeg)' }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-900/90 to-transparent" />
 
           <div className="relative p-6 md:p-8">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
               <div>
-                <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 leading-tight tracking-tight">
+                <h1 className="text-2xl md:text-3xl font-extrabold text-white leading-tight tracking-tight">
                   {getGreeting()},{' '}
-                  <span className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
+                  <span className="text-indigo-400">
                     {auth.user?.name ?? auth.user?.nama_lengkap}
                   </span>
                 </h1>
-                <p className="mt-2 text-sm text-slate-500 max-w-xl leading-relaxed">
+                <p className="mt-2 text-sm text-slate-300 max-w-xl leading-relaxed">
                   Selamat datang di panel admin {pengaturan?.nama_sekolah ?? 'Sekolah'}. Berikut ringkasan aktivitas {isAbsensiMode ? 'absensi' : 'operasional'} hari ini.
                 </p>
 
                 {/* Status Badges */}
                 <div className="mt-4 flex flex-wrap items-center gap-2.5">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-100">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 text-xs font-semibold border border-emerald-500/30 backdrop-blur-sm">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                     Sistem Online
                   </span>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 text-slate-600 text-xs font-medium border border-slate-200">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/60 text-slate-300 text-xs font-medium border border-slate-700/50 backdrop-blur-sm">
                     <CalendarDaysIcon className="w-3.5 h-3.5" />
                     {currentDate}
                   </span>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-semibold border border-indigo-100 font-mono min-w-[96px] justify-center tabular-nums">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/20 text-indigo-300 text-xs font-semibold border border-indigo-500/30 backdrop-blur-sm font-mono min-w-[96px] justify-center tabular-nums">
                     <ClockIcon className="w-3.5 h-3.5" />
                     {currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                   </span>
@@ -456,7 +454,7 @@ export default function Dashboard({ auth, stats = {}, latestActivities = [], ann
                   Lihat Rekap
                 </Link>
                 <button
-                  onClick={() => window.location.reload()}
+                  onClick={() => router.reload()}
                   className="inline-flex items-center justify-center p-2.5 bg-white text-slate-500 rounded-xl border border-slate-200 shadow-sm hover:bg-slate-50 hover:text-indigo-600 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200"
                   aria-label="Refresh dashboard"
                   title="Segarkan Data"
@@ -511,15 +509,7 @@ export default function Dashboard({ auth, stats = {}, latestActivities = [], ann
                 trend="down"
               />
 
-              {/* Baris Kedua — mode Full */}
-              {!isAbsensiMode && (
-                <>
-                  <StatCard icon={<UserGroupIcon className="w-5 h-5" />} label="Total Guru" value={formatNumber(animCounts.g)} description="Terdaftar Aktif" color="violet" />
-                  <StatCard icon={<AcademicCapIcon className="w-5 h-5" />} label="Total Siswa" value={formatNumber(animCounts.s)} description="Terdaftar Aktif" color="indigo" />
-                  <StatCard icon={<BookOpenIcon className="w-5 h-5" />} label="Mata Pelajaran" value={formatNumber(animCounts.m)} description="Kurikulum Aktif" color="amber" />
-                  <StatCard icon={<CalendarDaysIcon className="w-5 h-5" />} label="Jadwal Hari Ini" value={formatNumber(animCounts.j)} description="Sesi Pelajaran" color="sky" />
-                </>
-              )}
+
             </>
           )}
         </div>
@@ -552,51 +542,85 @@ export default function Dashboard({ auth, stats = {}, latestActivities = [], ann
           {/* ═══ Left Column: Charts & Tables ═══ */}
           <div className="lg:col-span-2 space-y-6">
 
-            {/* ── Tren Kehadiran + Donut Cards (Grouped Layout) ── */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* ── Tren Kehadiran + Grafik Per Kelas ── */}
+            <div className="grid grid-cols-1 gap-4">
 
-              {/* LEFT: Grouped Bar Chart */}
-              <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-slate-100">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
-                  <h3 className="text-lg font-bold text-slate-800 tracking-tight">Tren Kehadiran</h3>
-                  <select
-                    value={timeframe}
-                    onChange={(e) => setTimeframe(e.target.value)}
-                    className="text-sm rounded-xl border-slate-200 bg-slate-50 px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500 cursor-pointer font-medium text-slate-600"
-                  >
-                    <option value="4w">4 Minggu Terakhir</option>
-                    <option value="12w">3 Bulan Terakhir</option>
-                  </select>
-                </div>
-
-                {/* Legend */}
-                <div className="flex items-center gap-5 mb-4">
-                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded bg-emerald-500" />
-                    <span className="text-xs font-semibold text-slate-600">Siswa</span>
+              {/* Area Chart Tren 30 Hari / Semester */}
+              <div className="bg-white p-6 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6">
+                      <div>
+                          <h3 className="text-lg font-bold text-slate-800">Tren Kehadiran {timeframe === 'semester' ? 'Per Semester' : '30 Hari Terakhir'}</h3>
+                          <div className="flex items-center gap-4 mt-2">
+                              <div className="flex items-center gap-2">
+                                  <span className="w-3 h-3 rounded-full bg-violet-500"></span>
+                                  <span className="text-sm font-medium text-slate-600">Siswa</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                  <span className="w-3 h-3 rounded-full bg-emerald-400"></span>
+                                  <span className="text-sm font-medium text-slate-600">Guru</span>
+                              </div>
+                          </div>
+                      </div>
+                      <div className="mt-4 sm:mt-0 relative">
+                          <select 
+                              value={timeframe}
+                              onChange={(e) => setTimeframe(e.target.value)}
+                              className="appearance-none bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 px-4 py-2 pr-10 hover:bg-slate-50 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-slate-100"
+                          >
+                              <option value="30d">30 Hari Terakhir</option>
+                              <option value="semester">Per Semester</option>
+                          </select>
+                          <ChevronDownIcon className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded bg-[#4f72f5]" />
-                    <span className="text-xs font-semibold text-slate-600">Guru</span>
+                  <div className="h-[250px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={timeframe === 'semester' ? s.trendSemester : s.trend30Hari} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                              <defs>
+                                  <linearGradient id="colorSiswa" x1="0" y1="0" x2="0" y2="1">
+                                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
+                                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                                  </linearGradient>
+                                  <linearGradient id="colorGuru" x1="0" y1="0" x2="0" y2="1">
+                                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                                  </linearGradient>
+                              </defs>
+                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                              <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
+                              <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} tickFormatter={(val) => `${val}%`} />
+                              <RechartsTooltip 
+                                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                  formatter={(value) => [`${value}%`]}
+                              />
+                              <Area type="monotone" dataKey="siswa" stroke="#8b5cf6" strokeWidth={2} fillOpacity={1} fill="url(#colorSiswa)" activeDot={{r: 6}} />
+                              <Area type="monotone" dataKey="guru" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorGuru)" activeDot={{r: 6}} />
+                          </AreaChart>
+                      </ResponsiveContainer>
                   </div>
-                </div>
-
-                {/* Grouped Bar Chart */}
-                <GroupedBarChart
-                  dataSiswa={trendSiswaData.length ? trendSiswaData : [{ label: '1 week', value: 0 }, { label: '2 week', value: 0 }, { label: '3 week', value: 0 }, { label: '4 week', value: 0 }]}
-                  dataGuru={trendGuruData.length ? trendGuruData : [{ label: '1 week', value: 0 }, { label: '2 week', value: 0 }, { label: '3 week', value: 0 }, { label: '4 week', value: 0 }]}
-                  height={160}
-                />
-
-                <div className="mt-4 pt-3 border-t border-slate-50 text-center">
-                  <p className="text-xs text-slate-400">Data diperbarui secara realtime sesuai pencatatan absensi.</p>
-                </div>
               </div>
 
-              {/* RIGHT: Donut Presence Cards (stacked) */}
-              <div className="flex flex-col gap-4">
-                <PresenceCard title="Kehadiran Guru" present={s.kehadiranGuru.hadir} absent={s.kehadiranGuru.tidakHadir} accent="blue" />
-                <PresenceCard title="Kehadiran Siswa" present={s.kehadiranSiswa.hadir} absent={s.kehadiranSiswa.tidakHadir} accent="green" />
+              {/* Bar Chart Kehadiran Per Kelas */}
+              <div className="bg-white p-6 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+                      <h3 className="text-lg font-bold text-slate-800">Kehadiran Per Kelas ({period === 'hari' ? 'Hari Ini' : 'Bulan Ini'})</h3>
+                      <Tabs value={period} onChange={setPeriod} items={[{ label: 'Hari Ini', value: 'hari' }, { label: 'Bulan Ini', value: 'bulan' }]} />
+                  </div>
+                  <div className="h-[250px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={((period === 'hari' ? s.perKelasHariIni : s.perKelasBulanIni) || []).map(r => ({ kelas: r.kelas, persen: pct(r.hadir ?? 0, r.tidakHadir ?? r.tidak_hadir ?? 0) }))} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                              <XAxis dataKey="kelas" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
+                              <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} tickFormatter={(val) => `${val}%`} />
+                              <RechartsTooltip 
+                                  cursor={{fill: '#f8fafc'}}
+                                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                  formatter={(value) => [`${value}%`, 'Kehadiran']}
+                              />
+                              <Bar dataKey="persen" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={32} />
+                          </BarChart>
+                      </ResponsiveContainer>
+                  </div>
               </div>
 
             </div>
@@ -606,7 +630,7 @@ export default function Dashboard({ auth, stats = {}, latestActivities = [], ann
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
                   <h3 className="text-lg font-bold text-slate-800 tracking-tight">Analisis Detail</h3>
-                  <p className="text-sm text-slate-500 mt-0.5">Peringkat kehadiran berdasarkan kelas & guru.</p>
+                  <p className="text-sm text-slate-500 mt-0.5">Peringkat kehadiran berdasarkan {scope === 'kelas' ? 'kelas' : 'guru'}.</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2.5">
                   <Tabs value={scope} onChange={setScope} items={[{ label: 'Per Kelas', value: 'kelas' }, { label: 'Per Guru', value: 'guru' }]} />
@@ -670,6 +694,41 @@ export default function Dashboard({ auth, stats = {}, latestActivities = [], ann
 
           {/* ═══ Right Column: Quick Actions, Activities, Announcements ═══ */}
           <div className="space-y-6">
+
+              {/* Ringkasan Sekolah */}
+              <div className="bg-white p-6 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-slate-100">
+                  <h3 className="text-lg font-bold text-slate-800 mb-4">Ringkasan Sekolah</h3>
+                  <div className="space-y-4">
+                      <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                          <div className="flex items-center gap-3">
+                              <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg"><UserGroupIcon className="w-5 h-5"/></div>
+                              <span className="font-semibold text-slate-700">Total Guru</span>
+                          </div>
+                          <span className="font-bold text-slate-800">{s.totalGuru}</span>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                          <div className="flex items-center gap-3">
+                              <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg"><AcademicCapIcon className="w-5 h-5"/></div>
+                              <span className="font-semibold text-slate-700">Total Siswa</span>
+                          </div>
+                          <span className="font-bold text-slate-800">{s.totalSiswa}</span>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                          <div className="flex items-center gap-3">
+                              <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg"><BookOpenIcon className="w-5 h-5"/></div>
+                              <span className="font-semibold text-slate-700">Mata Pelajaran</span>
+                          </div>
+                          <span className="font-bold text-slate-800">{s.totalMapel}</span>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                          <div className="flex items-center gap-3">
+                              <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg"><CalendarDaysIcon className="w-5 h-5"/></div>
+                              <span className="font-semibold text-slate-700">Kelas Aktif</span>
+                          </div>
+                          <span className="font-bold text-slate-800">{s.totalJadwal}</span>
+                      </div>
+                  </div>
+              </div>
 
             {/* Quick Actions */}
             <div className="bg-white p-6 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-slate-100">

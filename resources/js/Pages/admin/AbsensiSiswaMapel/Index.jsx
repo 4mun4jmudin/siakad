@@ -1,5 +1,5 @@
 // resources/js/Pages/Admin/AbsensiSiswaMapel/Index.jsx
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Head, useForm, usePage, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -43,6 +43,7 @@ export default function AbsensiSiswaMapelIndex(props) {
     jadwalOptions = [],
     kelasOptions = [],
     guruOptions = [],
+    rawJadwals = [],
     filters = {},
     routes = {},
   } = props;
@@ -70,8 +71,51 @@ export default function AbsensiSiswaMapelIndex(props) {
     }))
   });
 
-  const [localRows, setLocalRows] = useState(form.data.absensi);
-  useEffect(() => { setLocalRows(form.data.absensi); }, [form.data.absensi]);
+  const [localRows, setLocalRows] = useState([]);
+  
+  useEffect(() => { 
+    const mapped = absensi.map(a => ({
+      id_absensi_mapel: a.id_absensi_mapel ?? null,
+      id_siswa: a.siswa?.id_siswa ?? null,
+      nis: a.siswa?.nis ?? '',
+      nama_lengkap: a.siswa?.nama_lengkap ?? '',
+      kelas_label: a.siswa?.kelas?.tingkat ? `${a.siswa.kelas.tingkat} ${a.siswa.kelas.jurusan ?? ''}` : (a.siswa?.kelas?.nama_lengkap ?? ''),
+      status_kehadiran: a.status_kehadiran ?? 'Belum Absen',
+      jam_mulai: toTimeInput(a.jam_mulai),
+      jam_selesai: toTimeInput(a.jam_selesai),
+      metode_absen: a.metode_absen ?? 'Manual',
+      keterangan: a.keterangan ?? '',
+      id_penginput_manual: a.id_penginput_manual ?? null,
+      updated_at: a.updated_at ?? null,
+    }));
+    setLocalRows(mapped);
+    form.setData('absensi', mapped);
+  }, [absensi]);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const filteredRows = useMemo(() => {
+    if (!searchQuery) return localRows;
+    const q = searchQuery.toLowerCase();
+    return localRows.filter(r => 
+      (r.nis && r.nis.toLowerCase().includes(q)) || 
+      (r.nama_lengkap && r.nama_lengkap.toLowerCase().includes(q))
+    );
+  }, [localRows, searchQuery]);
+
+  const [pageSize, setPageSize] = useState(50);
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  // reset page to 1 when search query changes
+  useEffect(() => { setCurrentPage(1); }, [searchQuery]);
+
+  const showPagination = filteredRows.length > 35;
+  const totalPages = pageSize === 'All' ? 1 : Math.ceil(filteredRows.length / pageSize);
+  
+  const paginatedRows = useMemo(() => {
+    if (!showPagination || pageSize === 'All') return filteredRows;
+    const start = (currentPage - 1) * pageSize;
+    return filteredRows.slice(start, start + pageSize);
+  }, [filteredRows, currentPage, pageSize, showPagination]);
 
   const [filterState, setFilterState] = useState({
     tanggal: filters.tanggal ?? form.data.tanggal,
@@ -86,8 +130,8 @@ export default function AbsensiSiswaMapelIndex(props) {
 
   /* ===== selection ===== */
   const [selectedKeys, setSelectedKeys] = useState(new Set());
-  useEffect(() => { setSelectedKeys(new Set()); }, [absensi]);
-  const allKeys = useMemo(() => localRows.map(r => rowKey(r)), [localRows]);
+  useEffect(() => { setSelectedKeys(new Set()); }, [absensi, searchQuery]);
+  const allKeys = useMemo(() => filteredRows.map(r => rowKey(r)), [filteredRows]);
   const isAllSelected = allKeys.length > 0 && allKeys.every(k => selectedKeys.has(k));
   const toggleSelect = (key) => setSelectedKeys(prev => {
     const s = new Set(prev);
@@ -210,7 +254,7 @@ export default function AbsensiSiswaMapelIndex(props) {
     fd.append('tanggal', importForm.data.tanggal);
 
     window.axios.post(routes.import ?? route('admin.absensi-siswa-mapel.import'), fd, { headers: { 'Content-Type': 'multipart/form-data' } })
-      .then(() => { window.toast?.success?.('Import selesai.'); window.location.reload(); })
+      .then(() => { window.toast?.success?.('Import selesai.'); router.reload(); })
       .catch(() => { window.toast?.error?.('Import gagal. Periksa format CSV.'); });
   };
 
@@ -249,24 +293,62 @@ export default function AbsensiSiswaMapelIndex(props) {
   };
 
   const derivedSummary = useMemo(() => {
-    const total = localRows.length;
-    const counts = localRows.reduce((acc, r) => { acc[r.status_kehadiran] = (acc[r.status_kehadiran] || 0) + 1; return acc; }, {});
+    const total = filteredRows.length;
+    const counts = filteredRows.reduce((acc, r) => { acc[r.status_kehadiran] = (acc[r.status_kehadiran] || 0) + 1; return acc; }, {});
     return { total, counts };
-  }, [localRows]);
+  }, [filteredRows]);
 
-  const selectedJadwalOption = useMemo(() => jadwalOptions.find(j => j.value === filterState.id_jadwal) ?? null, [filterState.id_jadwal, jadwalOptions]);
-  const selectedKelasOption = useMemo(() => kelasOptions.find(k => k.value === filterState.id_kelas) ?? null, [filterState.id_kelas, kelasOptions]);
-  const selectedGuruOption = useMemo(() => guruOptions.find(g => g.value === filterState.id_guru) ?? null, [filterState.id_guru, guruOptions]);
+  // Cross-filtering logic
+  const computedJadwalOptions = useMemo(() => {
+    if (!filterState.id_kelas && !filterState.id_guru) return jadwalOptions;
+    const validIds = new Set(rawJadwals.filter(j => 
+       (filterState.id_kelas ? j.id_kelas === filterState.id_kelas : true) &&
+       (filterState.id_guru ? j.id_guru === filterState.id_guru : true)
+    ).map(j => j.id_jadwal));
+    return jadwalOptions.filter(opt => validIds.has(opt.value));
+  }, [jadwalOptions, rawJadwals, filterState.id_kelas, filterState.id_guru]);
 
-  const handleShow = (e) => {
-    e?.preventDefault?.();
+  const computedKelasOptions = useMemo(() => {
+    if (!filterState.id_jadwal && !filterState.id_guru) return kelasOptions;
+    const validIds = new Set(rawJadwals.filter(j => 
+       (filterState.id_jadwal ? j.id_jadwal === filterState.id_jadwal : true) &&
+       (filterState.id_guru ? j.id_guru === filterState.id_guru : true)
+    ).map(j => j.id_kelas));
+    return kelasOptions.filter(opt => validIds.has(opt.value));
+  }, [kelasOptions, rawJadwals, filterState.id_jadwal, filterState.id_guru]);
+
+  const computedGuruOptions = useMemo(() => {
+    if (!filterState.id_jadwal && !filterState.id_kelas) return guruOptions;
+    const validIds = new Set(rawJadwals.filter(j => 
+       (filterState.id_jadwal ? j.id_jadwal === filterState.id_jadwal : true) &&
+       (filterState.id_kelas ? j.id_kelas === filterState.id_kelas : true)
+    ).map(j => j.id_guru));
+    return guruOptions.filter(opt => validIds.has(opt.value));
+  }, [guruOptions, rawJadwals, filterState.id_jadwal, filterState.id_kelas]);
+
+  const extendedJadwalOptions = useMemo(() => [{ value: '', label: 'Semua Jadwal' }, ...computedJadwalOptions], [computedJadwalOptions]);
+  const extendedKelasOptions = useMemo(() => [{ value: '', label: 'Semua Kelas' }, ...computedKelasOptions], [computedKelasOptions]);
+  const extendedGuruOptions = useMemo(() => [{ value: '', label: 'Semua Guru' }, ...computedGuruOptions], [computedGuruOptions]);
+
+  const selectedJadwalOption = useMemo(() => extendedJadwalOptions.find(j => j.value === (filterState.id_jadwal ?? '')) ?? extendedJadwalOptions[0], [filterState.id_jadwal, extendedJadwalOptions]);
+  const selectedKelasOption = useMemo(() => extendedKelasOptions.find(k => k.value === (filterState.id_kelas ?? '')) ?? extendedKelasOptions[0], [filterState.id_kelas, extendedKelasOptions]);
+  const selectedGuruOption = useMemo(() => extendedGuruOptions.find(g => g.value === (filterState.id_guru ?? '')) ?? extendedGuruOptions[0], [filterState.id_guru, extendedGuruOptions]);
+
+  const isInitialMount = useRef(true);
+
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     const payload = { tanggal: filterState.tanggal, id_jadwal: filterState.id_jadwal, id_kelas: filterState.id_kelas, id_guru: filterState.id_guru };
     const qObj = {};
     Object.keys(payload).forEach(k => { if (payload[k] !== null && payload[k] !== undefined && payload[k] !== '') qObj[k] = payload[k]; });
-    const q = new URLSearchParams(qObj).toString();
+    
+    // Auto submit to refresh data
     const base = route('admin.absensi-siswa-mapel.index');
-    window.location.href = q ? `${base}?${q}` : base;
-  };
+    router.get(base, qObj, { preserveState: true, preserveScroll: true, replace: true });
+  }, [filterState.tanggal, filterState.id_jadwal, filterState.id_kelas, filterState.id_guru]);
 
   useEffect(() => {
     if (flash?.success) window.toast?.success?.(flash.success);
@@ -278,8 +360,10 @@ export default function AbsensiSiswaMapelIndex(props) {
     { value: 'Sakit', label: 'Sakit' },
     { value: 'Izin', label: 'Izin' },
     { value: 'Alfa', label: 'Alfa' },
-    { value: 'Digantikan', label: 'Digantikan' },
-    { value: 'Tugas', label: 'Tugas' },
+    { value: 'Sakit_Mapel', label: 'Sakit (Mapel)' },
+    { value: 'Izin_Mapel', label: 'Izin (Mapel)' },
+    { value: 'Alfa_Mapel', label: 'Alfa (Mapel)' },
+    { value: 'Tugas_Mapel', label: 'Tugas (Mapel)' },
   ];
   const [editingIdx, setEditingIdx] = useState(null);
   const openEdit = (i) => setEditingIdx(i);
@@ -292,7 +376,7 @@ export default function AbsensiSiswaMapelIndex(props) {
       <div className="space-y-6">
         {/* Top controls */}
         <div className="bg-white p-5 rounded-xl shadow-sm">
-          <form className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end" onSubmit={handleShow}>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
             <div className="col-span-1 md:col-span-2">
               <InputLabel value="Tanggal" htmlFor="tanggal" />
               <TextInput
@@ -313,10 +397,10 @@ export default function AbsensiSiswaMapelIndex(props) {
                 <Select
                   classNamePrefix="react-select"
                   isClearable
-                  options={jadwalOptions}
+                  options={extendedJadwalOptions}
                   value={selectedJadwalOption}
                   onChange={(opt) => {
-                    const val = opt ? opt.value : null;
+                    const val = opt && opt.value !== '' ? opt.value : null;
                     setFilterState(s => ({ ...s, id_jadwal: val }));
                     form.setData('id_jadwal', val);
                     importForm.setData('id_jadwal', val);
@@ -328,16 +412,16 @@ export default function AbsensiSiswaMapelIndex(props) {
 
             <div className="col-span-1 md:col-span-3">
               <InputLabel value="Filter Kelas" />
-              <Select classNamePrefix="react-select" isClearable options={kelasOptions} value={selectedKelasOption} onChange={(opt) => setFilterState(s => ({ ...s, id_kelas: opt ? opt.value : null }))} placeholder="Pilih kelas..." />
+              <Select classNamePrefix="react-select" isClearable options={extendedKelasOptions} value={selectedKelasOption} onChange={(opt) => setFilterState(s => ({ ...s, id_kelas: opt && opt.value !== '' ? opt.value : null }))} placeholder="Pilih kelas..." />
             </div>
 
             <div className="col-span-1 md:col-span-3">
               <InputLabel value="Filter Guru" />
-              <Select classNamePrefix="react-select" isClearable options={guruOptions} value={selectedGuruOption} onChange={(opt) => setFilterState(s => ({ ...s, id_guru: opt ? opt.value : null }))} placeholder="Pilih guru..." />
+              <Select classNamePrefix="react-select" isClearable options={extendedGuruOptions} value={selectedGuruOption} onChange={(opt) => setFilterState(s => ({ ...s, id_guru: opt && opt.value !== '' ? opt.value : null }))} placeholder="Pilih guru..." />
             </div>
 
             <div className="col-span-1 md:col-span-12 flex flex-wrap gap-2 justify-end">
-              <PrimaryButton type="submit">Tampilkan</PrimaryButton>
+              {/* Tombol Tampilkan dihilangkan karena filter otomatis berjalan di background */}
               <PrimaryButton type="button" onClick={() => document.getElementById('csv-file-input')?.click()}>Import CSV</PrimaryButton>
 
               {/* Dropdown Export */}
@@ -353,7 +437,7 @@ export default function AbsensiSiswaMapelIndex(props) {
                 <input id="csv-file-input" type="file" accept=".csv" onChange={(e) => importForm.setData('file', e.target.files?.[0] ?? null)} />
               </form>
             </div>
-          </form>
+          </div>
         </div>
 
         {/* Header & summary */}
@@ -402,7 +486,33 @@ export default function AbsensiSiswaMapelIndex(props) {
               </div>
             </div>
 
-            <div className="text-sm text-gray-500">{localRows.length} baris</div>
+            <div className="flex gap-2 items-center w-full md:w-auto">
+              <TextInput
+                type="text"
+                placeholder="Cari Nama / NIS..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full md:w-64 text-sm py-1"
+              />
+              
+              {showPagination && (
+                <select 
+                  className="text-sm border rounded px-2 py-1 bg-white" 
+                  value={pageSize} 
+                  onChange={(e) => {
+                    setPageSize(e.target.value === 'All' ? 'All' : Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                >
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={70}>70</option>
+                  <option value={100}>100</option>
+                  <option value="All">All Data</option>
+                </select>
+              )}
+            </div>
+            <div className="text-sm text-gray-500 mt-2 md:mt-0 w-full md:w-auto text-right md:text-left">{filteredRows.length} baris</div>
           </div>
 
           <div className="overflow-x-auto -mx-4 px-4">
@@ -415,8 +525,6 @@ export default function AbsensiSiswaMapelIndex(props) {
                   <th className="px-3 py-2 text-left text-xs text-gray-500">Nama</th>
                   <th className="px-3 py-2 text-left text-xs text-gray-500">Kelas</th>
                   <th className="px-3 py-2 text-left text-xs text-gray-500">Status</th>
-                  <th className="px-3 py-2 text-left text-xs text-gray-500">Jam Masuk</th>
-                  <th className="px-3 py-2 text-left text-xs text-gray-500">Jam Pulang</th>
                   <th className="px-3 py-2 text-left text-xs text-gray-500">Keterangan</th>
                   <th className="px-3 py-2 text-left text-xs text-gray-500">Penginput</th>
                   <th className="px-3 py-2 text-left text-xs text-gray-500">Terakhir Diubah</th>
@@ -425,8 +533,17 @@ export default function AbsensiSiswaMapelIndex(props) {
               </thead>
 
               <tbody className="bg-white divide-y divide-gray-200">
-                {localRows.map((row, idx) => (
-                  <tr key={rowKey(row)}>
+                {filteredRows.length === 0 ? (
+                  <tr>
+                    <td colSpan="12" className="px-3 py-6 text-center text-gray-500 text-sm">
+                      {searchQuery ? 'Tidak ada siswa yang cocok dengan pencarian.' : 'Tidak ada data siswa untuk ditampilkan.'}
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedRows.map((row, idx) => {
+                    const actualIdx = (!showPagination || pageSize === 'All') ? idx + 1 : ((currentPage - 1) * pageSize) + idx + 1;
+                    return (
+                    <tr key={rowKey(row)}>
                     <td className="px-3 py-2">
                       <input
                         type="checkbox"
@@ -435,7 +552,7 @@ export default function AbsensiSiswaMapelIndex(props) {
                         className="h-4 w-4"
                       />
                     </td>
-                    <td className="px-3 py-2 text-sm">{idx + 1}</td>
+                    <td className="px-3 py-2 text-sm">{actualIdx}</td>
                     <td className="px-3 py-2 text-sm">{row.nis}</td>
                     <td className="px-3 py-2 text-sm truncate max-w-[220px]">{row.nama_lengkap}</td>
                     <td className="px-3 py-2 text-sm">{row.kelas_label}</td>
@@ -444,24 +561,6 @@ export default function AbsensiSiswaMapelIndex(props) {
                       <div className="flex items-center gap-2">
                         <StatusBadge status={row.status_kehadiran} />
                       </div>
-                    </td>
-
-                    <td className="px-3 py-2 text-sm">
-                      <input
-                        type="time"
-                        className="text-sm border rounded px-2 py-1 w-28"
-                        value={toTimeInput(row.jam_mulai)}
-                        onChange={(e) => updateRow(idx, 'jam_mulai', e.target.value)}
-                      />
-                    </td>
-
-                    <td className="px-3 py-2 text-sm">
-                      <input
-                        type="time"
-                        className="text-sm border rounded px-2 py-1 w-28"
-                        value={toTimeInput(row.jam_selesai)}
-                        onChange={(e) => updateRow(idx, 'jam_selesai', e.target.value)}
-                      />
                     </td>
 
                     <td className="px-3 py-2 text-sm">
@@ -487,14 +586,43 @@ export default function AbsensiSiswaMapelIndex(props) {
                       </div>
                     </td>
                   </tr>
-                ))}
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
+          
+          {showPagination && pageSize !== 'All' && totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <div className="text-sm text-gray-500">
+                Menampilkan {(currentPage - 1) * pageSize + 1} sampai {Math.min(currentPage * pageSize, filteredRows.length)} dari {filteredRows.length} data
+              </div>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 border rounded text-sm disabled:opacity-50"
+                >
+                  Sebelumnya
+                </button>
+                <span className="text-sm font-medium px-2">
+                  Halaman {currentPage} dari {totalPages}
+                </span>
+                <button 
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1 border rounded text-sm disabled:opacity-50"
+                >
+                  Selanjutnya
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-end mt-4 gap-3">
             <button className="px-3 py-2 border rounded" onClick={() => { resetAll(); }}>Batal</button>
-            <PrimaryButton processing={saving} onClick={submitSave}>{saving ? 'Menyimpan...' : 'Simpan Absensi'}</PrimaryButton>
+            <PrimaryButton disabled={saving} onClick={submitSave}>{saving ? 'Menyimpan...' : 'Simpan Absensi'}</PrimaryButton>
           </div>
         </div>
       </div>
@@ -512,16 +640,6 @@ export default function AbsensiSiswaMapelIndex(props) {
                 <select className="mt-2 w-full border rounded px-2 py-1" value={localRows[editingIdx].status_kehadiran} onChange={(e) => updateRow(editingIdx, 'status_kehadiran', e.target.value)}>
                   {statusOptions.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                 </select>
-              </div>
-
-              <div>
-                <label className="text-xs text-gray-600">Jam Mulai</label>
-                <input type="time" className="w-full border rounded px-2 py-2" value={toTimeInput(localRows[editingIdx].jam_mulai)} onChange={(e) => updateRow(editingIdx, 'jam_mulai', e.target.value)} />
-              </div>
-
-              <div>
-                <label className="text-xs text-gray-600">Jam Selesai</label>
-                <input type="time" className="w-full border rounded px-2 py-2" value={toTimeInput(localRows[editingIdx].jam_selesai)} onChange={(e) => updateRow(editingIdx, 'jam_selesai', e.target.value)} />
               </div>
 
               <div className="md:col-span-2">
@@ -592,6 +710,6 @@ function runBulkKeteranganPlaceholder(selectedKeys, routes) {
   const keterangan = prompt('Masukkan keterangan untuk banyak siswa:');
   if (keterangan === null) return;
   window.axios.post(routes.bulk_update ?? route('admin.absensi-siswa-mapel.bulk_update'), { ids, keterangan })
-    .then(() => { window.toast?.success?.('Keterangan massal diterapkan'); window.location.reload(); })
+    .then(() => { window.toast?.success?.('Keterangan massal diterapkan'); router.reload(); })
     .catch(() => { window.toast?.error?.('Gagal menerapkan keterangan massal'); });
 }

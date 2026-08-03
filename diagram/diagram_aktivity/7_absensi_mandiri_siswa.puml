@@ -1,0 +1,23 @@
+@startuml
+|Siswa|
+start
+:Login ke SIAKAD;
+:Pilih Menu Absensi Harian;
+:Sistem meminta akses lokasi & waktu;
+|Sistem|
+:Mendeteksi Lokasi (Live Location) & Waktu Terkini;
+|Siswa|
+:Klik Tombol "Absen Hadir" / "Absen Pulang";
+|Sistem|
+:Validasi Lokasi (Radius dari Sekolah/Titik PKL);
+:Validasi Waktu (Jam Masuk/Pulang);
+if (Valid?) then (Ya)
+  :Simpan ke Tabel AbsensiSiswa;
+  :Simpan Data Lokasi (SiswaLiveLocation);
+  :Tampilkan Notifikasi Berhasil;
+else (Tidak)
+  :Tampilkan Pesan Gagal (Di luar batas/waktu salah);
+endif
+|Siswa|
+stop
+@enduml

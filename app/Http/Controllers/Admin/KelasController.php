@@ -305,16 +305,22 @@ class KelasController extends Controller
     {
         try {
             DB::beginTransaction();
+            // Ambil daftar ID guru yang valid
+            $validGuruIds = Guru::pluck('id_guru')->toArray();
 
-            // 1. Ambil semua kelas yang belum punya wali kelas
-            $kelasKosong = Kelas::whereNull('id_wali_kelas')->get();
+            // 1. Ambil semua kelas yang belum punya wali kelas atau ID wali kelasnya tidak valid
+            $kelasKosong = Kelas::whereNull('id_wali_kelas')
+                ->orWhereNotIn('id_wali_kelas', $validGuruIds)
+                ->get();
 
             if ($kelasKosong->isEmpty()) {
                 return back()->with('message', 'Semua kelas sudah memiliki wali kelas.');
             }
 
             // 2. Ambil ID guru yang SUDAH menjadi wali kelas
-            $assignedWaliIds = Kelas::whereNotNull('id_wali_kelas')->pluck('id_wali_kelas')->map(function ($id) {
+            $assignedWaliIds = Kelas::whereNotNull('id_wali_kelas')
+                ->whereIn('id_wali_kelas', $validGuruIds)
+                ->pluck('id_wali_kelas')->map(function ($id) {
                 return strtoupper(trim($id));
             })->toArray();
 

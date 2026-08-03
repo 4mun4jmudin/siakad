@@ -182,7 +182,7 @@ class MataPelajaranController extends Controller
                 'string',
                 'max:100',
                 function ($attribute, $value, $fail) use ($mataPelajaran) {
-                    $exists = \App\Models\MataPelajaran::where('nama_mapel', $value)
+                    $exists = MataPelajaran::where('nama_mapel', $value)
                         ->where('id_mapel', '!=', $mataPelajaran->id_mapel)
                         ->exists();
                     if ($exists) {
@@ -279,9 +279,11 @@ class MataPelajaranController extends Controller
                 // Bentrok Guru internal
                 if ($a['id_guru'] === $b['id_guru']) {
                     $guru = Guru::find($a['id_guru']);
-                    throw ValidationException::withMessages([
-                        'jadwal' => "Bentrok Internal (Baris " . ($i + 1) . " & " . ($j + 1) . "): Guru {$guru->nama_lengkap} dijadwalkan di waktu yang sama pada hari {$a['hari']}."
-                    ]);
+                    if (!str_contains(strtolower($guru->nama_lengkap ?? ''), 'pembina')) {
+                        throw ValidationException::withMessages([
+                            'jadwal' => "Bentrok Internal (Baris " . ($i + 1) . " & " . ($j + 1) . "): Guru {$guru->nama_lengkap} dijadwalkan di waktu yang sama pada hari {$a['hari']}."
+                        ]);
+                    }
                 }
 
                 // Bentrok Kelas internal
@@ -322,10 +324,12 @@ class MataPelajaranController extends Controller
 
             if ($teacherClash) {
                 $guru = Guru::find($idGuru);
-                $mapelBentrok = MataPelajaran::find($teacherClash->id_mapel);
-                throw ValidationException::withMessages([
-                    'jadwal' => "Bentrok Jadwal (Baris " . ($index + 1) . "): Guru {$guru->nama_lengkap} sudah mengajar \"{$mapelBentrok->nama_mapel}\" pada {$hari} {$teacherClash->jam_mulai}-{$teacherClash->jam_selesai}."
-                ]);
+                if (!str_contains(strtolower($guru->nama_lengkap ?? ''), 'pembina')) {
+                    $mapelBentrok = MataPelajaran::find($teacherClash->id_mapel);
+                    throw ValidationException::withMessages([
+                        'jadwal' => "Bentrok Jadwal (Baris " . ($index + 1) . "): Guru {$guru->nama_lengkap} sudah mengajar \"{$mapelBentrok->nama_mapel}\" pada {$hari} {$teacherClash->jam_mulai}-{$teacherClash->jam_selesai}."
+                    ]);
+                }
             }
 
             // --- ATURAN 2: Cek bentrok pada KELAS ---

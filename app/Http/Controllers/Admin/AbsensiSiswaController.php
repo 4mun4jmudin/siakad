@@ -354,6 +354,7 @@ class AbsensiSiswaController extends Controller
         $workdays = $this->countSchoolDays($start, $end);
 
         $rows = DB::table('tbl_kelas as k')
+            ->whereNull('k.deleted_at')
             ->leftJoin('tbl_siswa as s', function ($join) {
                 $join->on('s.id_kelas', '=', 'k.id_kelas')
                      ->where('s.status', '=', 'Aktif');

@@ -408,4 +408,45 @@ class SuratIzinController extends Controller
         }
         return $dates;
     }
+
+    /**
+     * ✅ VIEW: tampilkan lampiran langsung (inline) untuk modal preview.
+     */
+    public function lampiranView(SuratIzin $surat)
+    {
+        if (!$surat->file_lampiran) {
+            abort(404, 'Lampiran tidak tersedia.');
+        }
+
+        if (!Storage::disk('public')->exists($surat->file_lampiran)) {
+            abort(404, 'File lampiran tidak ditemukan di storage.');
+        }
+
+        $path = Storage::disk('public')->path($surat->file_lampiran);
+        $mime = finfo_file(finfo_open(FILEINFO_MIME_TYPE), $path) ?: 'application/octet-stream';
+
+        return response()->file($path, [
+            'Content-Type' => $mime,
+            'Content-Disposition' => 'inline; filename="' . basename($surat->file_lampiran) . '"',
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ]);
+    }
+
+    /**
+     * DOWNLOAD lampiran
+     */
+    public function lampiranDownload(SuratIzin $surat)
+    {
+        if (!$surat->file_lampiran) {
+            return back()->with('error', 'Lampiran tidak tersedia.');
+        }
+
+        if (!Storage::disk('public')->exists($surat->file_lampiran)) {
+            return back()->with('error', 'File lampiran tidak ditemukan di storage.');
+        }
+
+        return response()->download(Storage::disk('public')->path($surat->file_lampiran));
+    }
 }

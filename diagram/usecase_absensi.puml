@@ -1,0 +1,78 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+' Aktor di sebelah kiri
+actor "Siswa" as Siswa
+actor "Orang Tua" as OrangTua
+
+' Aktor di sebelah kanan
+actor "Admin" as Admin
+actor "Guru" as Guru
+
+rectangle "Sistem Siakad (Fokus Absensi)" {
+  usecase "Login" as UC0
+
+  ' Siswa
+  usecase "Melakukan Absensi (Dengan Tag Lokasi)" as UCS1
+  usecase "Melihat Riwayat Kehadiran Pribadi" as UCS2
+  
+  ' Orang Tua
+  usecase "Melihat Kehadiran Anak" as UCO1
+  usecase "Mengajukan Surat Izin Anak" as UCO2
+
+  ' Guru
+  usecase "Melakukan Absensi Siswa (Harian & Mapel)" as UCG1
+  usecase "Melihat Riwayat Absensi (Sebagai Pegawai)" as UCG2
+  usecase "Mengajukan Guru Pengganti" as UCG3
+  usecase "Meminta Akses Edit Absensi" as UCG4
+
+  ' Admin
+  usecase "Merekap Absensi (Siswa & Guru)" as UCA1
+  usecase "Validasi Surat Izin" as UCA2
+  usecase "Validasi Akses Edit Absensi" as UCA3
+  usecase "Validasi Pengajuan Guru Pengganti" as UCA4
+  usecase "Mengatur Jadwal Pelajaran" as UCA5
+}
+
+' Relasi Aktor Kiri
+Siswa --> UC0
+OrangTua --> UC0
+
+Siswa --> UCS1
+Siswa --> UCS2
+
+OrangTua --> UCO1
+OrangTua --> UCO2
+
+' Relasi Aktor Kanan
+UC0 <-- Admin
+UC0 <-- Guru
+
+UCG1 <-- Guru
+UCG2 <-- Guru
+UCG3 <-- Guru
+UCG4 <-- Guru
+
+UCA1 <-- Admin
+UCA2 <-- Admin
+UCA3 <-- Admin
+UCA4 <-- Admin
+UCA5 <-- Admin
+
+' Include ke Login
+UCS1 .> UC0 : <<include>>
+UCS2 .> UC0 : <<include>>
+UCO1 .> UC0 : <<include>>
+UCO2 .> UC0 : <<include>>
+UCG1 .> UC0 : <<include>>
+UCG2 .> UC0 : <<include>>
+UCG3 .> UC0 : <<include>>
+UCG4 .> UC0 : <<include>>
+UCA1 .> UC0 : <<include>>
+UCA2 .> UC0 : <<include>>
+UCA3 .> UC0 : <<include>>
+UCA4 .> UC0 : <<include>>
+UCA5 .> UC0 : <<include>>
+
+@enduml

@@ -1,0 +1,34 @@
+@startuml absensisiswamapel
+|Guru Mata Pelajaran|
+start
+:Login ke SIAKAD;
+:Buka Menu Jadwal Mengajar / Jurnal Kelas;
+|Sistem|
+:Cek Status Kehadiran Guru Hari Ini;
+if (Guru Sudah Absen Hadir?) then (Belum)
+  :Tampilkan Peringatan "Silakan Absen Hadir Dahulu";
+  |Guru Mata Pelajaran|
+  :Melakukan Absensi Guru Terlebih Dahulu;
+  :Kembali ke Jadwal Mengajar;
+else (Sudah)
+endif
+|Sistem|
+:Tampilkan Form Jurnal & Daftar Siswa di Kelas Tersebut;
+|Guru Mata Pelajaran|
+:Isi Materi Pembelajaran;
+:Cek Kehadiran Tiap Siswa pada Mapel Ini;
+note right
+Jika siswa tidak hadir di mapel ini 
+(meskipun absen harian hadir), 
+status akan terlihat oleh Orang Tua & Guru lain
+end note
+:Ubah Status (Hadir, Sakit, Izin, Alpa);
+:Klik Simpan Jurnal & Absensi;
+|Sistem|
+:Validasi Jurnal & Absensi;
+:Simpan ke Tabel JurnalMengajar & AbsensiSiswaMapel;
+:Perbarui Rekap Kehadiran Siswa;
+:Tampilkan Pesan Sukses;
+|Guru Mata Pelajaran|
+stop
+@enduml

@@ -1,0 +1,25 @@
+@startuml
+|Admin / Wali Kelas|
+start
+:Login ke SIAKAD;
+:Membuka Menu Persetujuan Surat Izin;
+|Sistem|
+:Menampilkan Daftar Izin Status "Diajukan";
+|Admin / Wali Kelas|
+:Pilih Salah Satu Pengajuan Izin;
+:Lihat Rincian & Download Bukti Lampiran;
+if (Disetujui?) then (Ya)
+  :Klik Setujui;
+  |Sistem|
+  :Ubah Status SuratIzin menjadi "Disetujui";
+  :Generate Rekap Absensi (Sakit/Izin) pada Tanggal Terkait;
+else (Tidak)
+  |Admin / Wali Kelas|
+  :Klik Tolak;
+  |Sistem|
+  :Ubah Status SuratIzin menjadi "Ditolak";
+endif
+:Tampilkan Pesan Berhasil;
+|Admin / Wali Kelas|
+stop
+@enduml

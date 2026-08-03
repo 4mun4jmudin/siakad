@@ -1,0 +1,20 @@
+@startuml
+actor Guru
+participant "View (Browser)" as View
+participant "AbsensiController" as Controller
+participant "AbsensiGuru (Model)" as Model
+
+Guru -> View : Membuka Menu Absensi Guru
+View -> Controller : GET /guru/absensi
+Controller -> Model : Cek status absen hari ini
+Model --> Controller : Return status
+Controller --> View : Tampilkan form absensi & map lokasi
+
+Guru -> View : Klik "Absen Hadir" (Kirim Koordinat)
+View -> Controller : POST /guru/absensi
+Controller -> Controller : Validasi Jarak & Waktu
+Controller -> Model : insert_data(id_guru, waktu, lokasi)
+Model --> Controller : Berhasil menyimpan
+Controller --> View : Notifikasi "Absen Berhasil"
+View --> Guru : Menampilkan Dashboard Guru
+@enduml

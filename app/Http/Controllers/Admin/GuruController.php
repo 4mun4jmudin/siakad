@@ -240,7 +240,7 @@ class GuruController extends Controller
             }
         });
 
-        return to_route('admin.guru.index')->with('success', 'Data Guru dan akun terkait berhasil dihapus.');
+        return back()->with('success', 'Data Guru dan akun terkait berhasil dihapus.');
     }
 
     /*

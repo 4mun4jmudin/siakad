@@ -1,0 +1,23 @@
+@startuml
+actor "Guru Mapel" as Guru
+participant "View" as View
+participant "JurnalController" as Controller
+participant "AbsensiGuru" as ModelAbsenGuru
+participant "JurnalMengajar" as ModelJurnal
+participant "AbsensiSiswaMapel" as ModelAbsenMapel
+
+Guru -> View : Membuka Jadwal & Jurnal Kelas
+View -> Controller : GET /guru/jurnal/create
+Controller -> ModelAbsenGuru : Cek Absensi Harian Guru
+ModelAbsenGuru --> Controller : Valid (Sudah Absen)
+Controller --> View : Tampilkan Form Jurnal & Daftar Siswa
+
+Guru -> View : Isi Materi & Set Kehadiran Siswa
+View -> Controller : POST /guru/jurnal/store
+Controller -> ModelJurnal : insert_data(materi)
+ModelJurnal --> Controller : id_jurnal
+Controller -> ModelAbsenMapel : insert_data() (Bulk Kehadiran Siswa)
+ModelAbsenMapel --> Controller : Sukses
+Controller --> View : Notifikasi "Jurnal Tersimpan"
+View --> Guru : Kembali ke Jadwal
+@enduml

@@ -1,0 +1,20 @@
+@startuml pengajuangurupengganti
+|Guru Peminta (Berhalangan)|
+start
+:Login ke SIAKAD;
+:Buka Menu Pengajuan Guru Pengganti / Inval;
+:Pilih Jadwal Mengajar yang Ditinggalkan;
+:Isi Keterangan & Ajukan;
+|Admin / Kurikulum|
+:Menerima Notifikasi Pengajuan;
+:Buka Menu Pengajuan Guru Pengganti;
+:Cek Jadwal & Ketersediaan Guru Lain;
+:Pilih Guru Pengganti (Target) & Klik Setujui;
+|Sistem|
+:Ubah Status Pengajuan Menjadi "Disetujui";
+:Alihkan Jadwal ke Akun Guru Pengganti;
+|Guru Pengganti|
+:Menerima Notifikasi Tugas Mengajar (Inval);
+:Melakukan Jurnal & Absensi Mapel (Sesuai Diagram 3);
+stop
+@enduml

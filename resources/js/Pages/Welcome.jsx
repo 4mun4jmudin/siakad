@@ -39,7 +39,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, landingStats
   const backgroundImages = [
     'https://www.idisionline.com/wp-content/uploads/2025/09/IMG_20250926_183716.jpg', 
     'https://png.pngtree.com/background/20230522/original/pngtree-3d-rendering-of-a-school-building-picture-image_2685696.jpg', 
-    'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=2070&auto=format&fit=crop'
+    '/images/bgdashboard.jpeg'
   ];
   
   const [currentBgIndex, setCurrentBgIndex] = useState(0);
@@ -137,7 +137,8 @@ export default function Welcome({ auth, laravelVersion, phpVersion, landingStats
                   alt={`School Background ${index + 1}`}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    e.currentTarget.src = 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=2070&auto=format&fit=crop';
+                    e.currentTarget.onerror = null; // Prevent infinite loop
+                    e.currentTarget.src = '/images/bgdashboard.jpeg';
                   }}
                 />
               </div>

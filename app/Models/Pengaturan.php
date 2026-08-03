@@ -54,6 +54,10 @@ class Pengaturan extends Model
         'jadwal_waktu',
         'is_kunci_absensi',
         'is_kunci_jurnal',
+        'mode_admin',
+        'mode_guru',
+        'mode_siswa',
+        'mode_ortu',
     ];
 
     /**
