@@ -1,0 +1,18 @@
+@startuml
+title Sequence Diagram - Riwayat Presensi
+actor "Siswa / Ortu" as User
+boundary "View Riwayat" as View
+control "AbsensiController" as Controller
+entity "AbsensiModel" as Model
+database "Database" as DB
+
+User -> View : Buka Menu Riwayat
+View -> Controller : riwayat(filter_bulan)
+Controller -> Controller : Dapatkan id_siswa (dari Session User Aktif)
+Controller -> Model : getRiwayat(id_siswa, filter_bulan)
+Model -> DB : SELECT * FROM tbl_absensi_siswa WHERE id_siswa = ?
+DB --> Model : Result Set
+Model --> Controller : Collection Riwayat
+Controller --> View : Render View dengan Data Riwayat
+View --> User : Tampilkan Tabel Riwayat Presensi
+@enduml

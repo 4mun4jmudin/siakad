@@ -1,6 +1,5 @@
 @startuml class_diagram_absensi
 skinparam classAttributeIconSize 0
-skinparam linetype ortho
 skinparam nodesep 80
 skinparam ranksep 80
 
@@ -12,6 +11,19 @@ class User {
   + login()
   + logout()
   + update_profile()
+}
+
+class PengaturanAbsensi {
+  - id_pengaturan: int
+  - latitude_sekolah: string
+  - longitude_sekolah: string
+  - radius_toleransi: int
+  - batas_akurasi_gps: int
+  - jam_masuk: time
+  - jam_pulang: time
+  ---
+  + get_pengaturan()
+  + update_pengaturan()
 }
 
 class Siswa {
@@ -68,6 +80,8 @@ class AbsensiSiswa {
   - id_absensi: string
   - id_siswa: int
   - tanggal: date
+  - waktu_masuk: time
+  - waktu_pulang: time
   - status: string
   - keterangan: string
   ---
@@ -113,6 +127,7 @@ class SuratIzin {
   - tanggal_mulai: date
   - tanggal_selesai: date
   - keterangan: text
+  - file_bukti: string
   - status_pengajuan: string
   - id_penyetuju: int
   ---
@@ -127,6 +142,7 @@ class AksesEditAbsensi {
   - tanggal_absensi: date
   - alasan: text
   - status_akses: string
+  - batas_waktu_akses: datetime
   ---
   + ajukan_akses()
   + beri_izin()
@@ -165,42 +181,88 @@ class OrangTuaWali {
   + pantau_absensi()
 }
 
-' Relasi Agregasi (o--) dan Komposisi (*--)
-User "1" o-down- "1" Siswa : memiliki >
-User "1" o-down- "1" Guru : memiliki >
-User "1" o-left- "1" OrangTuaWali : memiliki >
+' Konfigurasi tampilan garis dan layout
+skinparam linetype ortho
+skinparam roundcorner 10
+skinparam nodesep 80
+skinparam ranksep 100
 
-OrangTuaWali "1" -down- "1..*" Siswa : wali dari >
+' =========================================
+' PENATAAN LAYOUT (GRID BERLAPIS)
+' =========================================
 
-' Cabang Kiri (Siswa)
-Siswa "1" *-down- "*" AbsensiSiswaMapel : memiliki >
-Siswa "1" *-left- "*" AbsensiSiswa : memiliki >
-Siswa "1" *-left- "*" SuratIzin : mengajukan >
-Siswa "1" *-left- "*" SiswaLiveLocation : mencatat >
+' --- Baris 2: OrangTuaWali - User - Guru ---
+together {
+  class OrangTuaWali
+  class User
+  class Guru
+}
+OrangTuaWali -[hidden]right- User
+User -[hidden]right- Guru
 
-' Susunan Vertikal Kiri
-AbsensiSiswa -down[hidden]- SuratIzin
-SuratIzin -down[hidden]- SiswaLiveLocation
+' --- Baris 3: Siswa - SuratIzin - Jadwal - Pengajuan - AbsensiGuru ---
+together {
+  class Siswa
+  class SuratIzin
+  class JadwalMengajar
+  class PengajuanGuruPengganti
+  class AbsensiGuru
+}
+Siswa -[hidden]right- SuratIzin
+SuratIzin -[hidden]right- JadwalMengajar
+JadwalMengajar -[hidden]right- PengajuanGuruPengganti
+PengajuanGuruPengganti -[hidden]right- AbsensiGuru
 
-' Cabang Kanan (Guru)
-Guru "1" -down- "*" JadwalMengajar : mengajar >
-Guru "1" *-right- "*" AbsensiGuru : melakukan >
-Guru "1" -right- "*" AksesEditAbsensi : mengajukan >
-Guru "1" -right- "*" PengajuanGuruPengganti : meminta >
-Guru "1" -right- "*" PengajuanGuruTarget : merespon tawaran >
+' --- Baris 4: Pendukung Siswa & Guru di baris terbawah ---
+together {
+  class SiswaLiveLocation
+  class AbsensiSiswa
+  class AbsensiSiswaMapel
+  class JurnalMengajar
+  class PengajuanGuruTarget
+  class AksesEditAbsensi
+}
+SiswaLiveLocation -[hidden]right- AbsensiSiswa
+AbsensiSiswa -[hidden]right- AbsensiSiswaMapel
+AbsensiSiswaMapel -[hidden]right- JurnalMengajar
+JurnalMengajar -[hidden]right- PengajuanGuruTarget
+PengajuanGuruTarget -[hidden]right- AksesEditAbsensi
 
-' Susunan Vertikal Kanan
-AbsensiGuru -down[hidden]- AksesEditAbsensi
-AksesEditAbsensi -down[hidden]- PengajuanGuruPengganti
-PengajuanGuruPengganti -down[hidden]- PengajuanGuruTarget
 
-' Cabang Bawah (Jadwal)
-JadwalMengajar "1" *-down- "*" JurnalMengajar : memiliki >
-JadwalMengajar "1" *-left- "*" AbsensiSiswaMapel : memiliki >
-JadwalMengajar "1" -right- "*" PengajuanGuruPengganti : digantikan >
+' =========================================
+' TARIKAN GARIS RELASI 
+' =========================================
 
-PengajuanGuruPengganti "1" *-right- "*" PengajuanGuruTarget : memiliki target >
+' Relasi dari Pengaturan
+PengaturanAbsensi "1" -down- "1" User : " \n dikelola oleh " <
 
-User "1" -down- "*" SuratIzin : menyetujui >
+' Relasi Utama User (Agregasi)
+User "1" o-left- "1" OrangTuaWali : " memiliki " >
+User "1" o-right- "1" Guru : " memiliki " >
+User "1" o-down- "1" Siswa : " \n memiliki " >
 
-@enduml
+' Relasi Khusus User & OrangTua
+User "1" -down- "*" SuratIzin : " \n menyetujui " >
+OrangTuaWali "1" -down- "1..*" Siswa : " \n wali dari " >
+
+' Relasi dari Siswa (ke bawah)
+Siswa "1" *-right- "*" SuratIzin : " mengajukan " >
+Siswa "1" *-down- "*" SiswaLiveLocation : " \n mencatat " >
+Siswa "1" *-down- "*" AbsensiSiswa : " \n memiliki " >
+Siswa "1" *-down- "*" AbsensiSiswaMapel : " \n memiliki " >
+
+' Relasi dari Guru (ke bawah)
+Guru "1" -down- "*" JadwalMengajar : " \n mengajar " >
+Guru "1" *-down- "*" AbsensiGuru : " \n melakukan " >
+Guru "1" -down- "*" PengajuanGuruPengganti : " \n meminta " >
+Guru "1" -down- "*" AksesEditAbsensi : " \n mengajukan " >
+Guru "1" -down- "*" PengajuanGuruTarget : " \n merespon tawaran " >
+
+' Relasi dari JadwalMengajar (ke bawah & kanan)
+JadwalMengajar "1" *-down- "*" JurnalMengajar : " \n memiliki " >
+JadwalMengajar "1" *-down- "*" AbsensiSiswaMapel : " \n memiliki " >
+JadwalMengajar "1" -right- "*" PengajuanGuruPengganti : " digantikan " >
+
+' Relasi Pengajuan Guru Pengganti (ke bawah)
+PengajuanGuruPengganti "1" *-down- "*" PengajuanGuruTarget : " \n memiliki target " >
+

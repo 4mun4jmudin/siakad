@@ -1,0 +1,36 @@
+@startuml
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+|Siswa|
+|Sistem|
+
+title Activity Diagram - Presensi Pulang
+|Siswa|
+start
+:Buka Menu Presensi;
+:Klik Tombol "Absen Pulang";
+|Sistem|
+:Mendapatkan Latitude & Longitude Siswa;
+:Mengambil Pengaturan Lokasi Sekolah\n(Titik Pusat & Radius);
+:Menghitung Jarak dengan Algoritma Haversine;
+if (Jarak <= Radius Toleransi?) then (Ya)
+  :Cek Data Presensi Masuk Hari Ini;
+  if (Sudah Absen Masuk?) then (Ya)
+    :Memeriksa Waktu (Apakah Sudah Lewat Jam Pulang?);
+    if (Waktu Pulang Valid?) then (Ya)
+      :Update Data Presensi (Set Jam Pulang);
+      :Tampilkan Pesan "Presensi Pulang Berhasil";
+    else (Tidak)
+      :Tampilkan Peringatan "Belum Waktunya Pulang";
+    endif
+  else (Tidak)
+    :Tampilkan Error "Anda Belum Absen Masuk";
+  endif
+else (Tidak)
+  :Tampilkan Pesan Error\n"Anda Berada di Luar Radius Sekolah";
+endif
+|Siswa|
+stop
+@enduml

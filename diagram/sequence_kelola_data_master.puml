@@ -1,0 +1,41 @@
+@startuml
+title Sequence Diagram - Kelola Data Master
+actor Administrator
+boundary "Halaman Data Master" as View
+control "MasterDataController" as Controller
+entity "Model Data" as Model
+database "Database" as DB
+
+Administrator -> View : Akses Halaman Master (Siswa/Guru/dll)
+View -> Controller : index()
+Controller -> Model : getAllData()
+Model -> DB : SELECT query
+DB --> Model : result
+Model --> Controller : Collection
+Controller --> View : Render View (Table)
+View --> Administrator : Tampilkan Data
+
+alt Proses Tambah/Edit
+    Administrator -> View : Input Form & Submit
+    View -> Controller : store() / update()
+    Controller -> Controller : Validasi Input Form
+    alt Validasi Berhasil
+        Controller -> Model : saveData(data)
+        Model -> DB : INSERT / UPDATE query
+        DB --> Model : success
+        Model --> Controller : success
+        Controller --> View : Redirect dengan Pesan Sukses
+    else Validasi Gagal
+        Controller --> View : Redirect Back dengan Error
+    end
+else Proses Hapus
+    Administrator -> View : Klik Hapus & Konfirmasi
+    View -> Controller : destroy(id)
+    Controller -> Model : deleteData(id)
+    Model -> DB : DELETE query
+    DB --> Model : success
+    Model --> Controller : success
+    Controller --> View : Redirect dengan Pesan Sukses
+end
+View --> Administrator : Tampilkan Hasil
+@enduml

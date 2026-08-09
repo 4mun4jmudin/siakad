@@ -1,0 +1,11 @@
+flowchart TD
+    Start([Hasil Jarak Haversine]) --> Decision{Jarak ≤ Radius Toleransi?}
+
+    Decision -- Ya --> Valid[Lokasi Valid]
+    Decision -- Tidak --> Invalid[Lokasi Tidak Valid]
+
+    Valid --> Save[Presensi Disimpan]
+    Invalid --> Reject[Presensi Ditolak]
+
+    Save --> EndValid([Selesai])
+    Reject --> EndInvalid([Selesai])

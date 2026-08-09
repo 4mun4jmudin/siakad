@@ -1,0 +1,18 @@
+flowchart TD
+    Start([Mulai Proses Validasi Lokasi]) --> Input[<b>1. Input Koordinat & Parameter</b><br/>• Titik Sekolah: Lat1, Lon1<br/>• Titik Siswa: Lat2, Lon2<br/>• Radius Maksimal Sekolah: r meter<br/>• Radius Bumi: R = 6.371.000 m]
+
+    Input --> Radian[<b>2. Konversi Derajat ke Radian</b><br/>• φ1 = deg2rad(Lat1)<br/>• φ2 = deg2rad(Lat2)<br/>• Δφ = deg2rad(Lat2 - Lat1)<br/>• Δλ = deg2rad(Lon2 - Lon1)]
+
+    Radian --> CalcA[<b>3. Hitung Nilai a (Square Half Chord)</b><br/>a = sin²(Δφ/2) + cos(φ1) × cos(φ2) × sin²(Δλ/2)]
+
+    CalcA --> CalcC[<b>4. Hitung Jarak Sudut c (Angular Distance)</b><br/>c = 2 × atan2( √a, √(1-a) )]
+
+    CalcC --> CalcD[<b>5. Hitung Jarak Sebenarnya (d)</b><br/>d = R × c (dalam meter)<br/>d = round(d)]
+
+    CalcD --> CheckRadius{Apakah Jarak d <= Radius Maksimal r?}
+
+    CheckRadius -- Ya (Memenuhi) --> Valid[<b>Status: VALID</b><br/>• Siswa Berada di Lingkungan Sekolah<br/>• Data Presensi Disimpan]
+    CheckRadius -- Tidak (Di Luar) --> Invalid[<b>Status: INVALID / DITOLAK</b><br/>• Siswa Berada di Luar Radius<br/>• Tampilkan Pesan Error dan Jarak Siswa]
+
+    Valid --> End([Selesai])
+    Invalid --> End

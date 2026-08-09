@@ -1,0 +1,27 @@
+@startuml
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+|Siswa / Ortu|
+|Sistem|
+
+title Activity Diagram - Riwayat Presensi (Siswa & Ortu)
+|Siswa / Ortu|
+start
+:Buka Menu "Riwayat Kehadiran";
+|Sistem|
+:Menampilkan Filter Rentang Waktu (Bulan/Minggu);
+|Siswa / Ortu|
+:Pilih Bulan & Tahun;
+:Klik "Cari";
+|Sistem|
+:Query Data Presensi milik User aktif;
+if (Data Ditemukan?) then (Ya)
+  :Tampilkan Detail Kehadiran (Tanggal, Jam Masuk, Pulang, Status);
+else (Tidak)
+  :Tampilkan Pesan "Belum Ada Data Presensi";
+endif
+|Siswa / Ortu|
+stop
+@enduml

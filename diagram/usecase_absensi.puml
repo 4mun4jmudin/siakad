@@ -1,78 +1,94 @@
 @startuml
 left to right direction
 skinparam packageStyle rectangle
+skinparam actorStyle awesome
 
-' Aktor di sebelah kiri
-actor "Siswa" as Siswa
-actor "Orang Tua" as OrangTua
+actor Administrator
+actor Guru
+actor Siswa
+actor "Orang Tua" as Ortu
 
-' Aktor di sebelah kanan
-actor "Admin" as Admin
-actor "Guru" as Guru
-
-rectangle "Sistem Siakad (Fokus Absensi)" {
-  usecase "Login" as UC0
-
-  ' Siswa
-  usecase "Melakukan Absensi (Dengan Tag Lokasi)" as UCS1
-  usecase "Melihat Riwayat Kehadiran Pribadi" as UCS2
+rectangle "Sistem Presensi Siswa (Validasi Haversine)" {
   
-  ' Orang Tua
-  usecase "Melihat Kehadiran Anak" as UCO1
-  usecase "Mengajukan Surat Izin Anak" as UCO2
+  ' Use Cases Global
+  usecase "Login" as UC_Login
+  usecase "Logout" as UC_Logout
+  usecase "Dashboard" as UC_Dashboard
 
-  ' Guru
-  usecase "Melakukan Absensi Siswa (Harian & Mapel)" as UCG1
-  usecase "Melihat Riwayat Absensi (Sebagai Pegawai)" as UCG2
-  usecase "Mengajukan Guru Pengganti" as UCG3
-  usecase "Meminta Akses Edit Absensi" as UCG4
+  ' --- USE CASE ADMINISTRATOR ---
+  usecase "Kelola Data User" as A1
+  usecase "Kelola Data Guru" as A2
+  usecase "Kelola Data Siswa" as A3
+  usecase "Kelola Data Orang Tua" as A4
+  usecase "Kelola Data Kelas" as A5
+  usecase "Kelola Data Lokasi Presensi" as A6
+  usecase "Kelola Jadwal Presensi" as A7
+  usecase "Monitoring Data Presensi" as A8
+  
+  ' --- USE CASE GURU ---
+  usecase "Monitoring Presensi Siswa" as G1
+  usecase "Lihat Detail Presensi" as G2
+  usecase "Verifikasi Pengajuan Izin/Sakit" as G3
+  
+  ' --- USE CASE SISWA ---
+  usecase "Presensi Masuk" as S1
+  usecase "Presensi Pulang" as S2
+  usecase "Lihat Riwayat Presensi" as S3
+  
+  ' Sub-Use Case Haversine (Include)
+  usecase "Ambil Lokasi" as Sub1
+  usecase "Validasi Lokasi Haversine" as Sub2
+  usecase "Simpan Presensi" as Sub3
 
-  ' Admin
-  usecase "Merekap Absensi (Siswa & Guru)" as UCA1
-  usecase "Validasi Surat Izin" as UCA2
-  usecase "Validasi Akses Edit Absensi" as UCA3
-  usecase "Validasi Pengajuan Guru Pengganti" as UCA4
-  usecase "Mengatur Jadwal Pelajaran" as UCA5
+  S1 ..> Sub1 : <<include>>
+  S1 ..> Sub2 : <<include>>
+  S1 ..> Sub3 : <<include>>
+  
+  S2 ..> Sub1 : <<include>>
+  S2 ..> Sub2 : <<include>>
+  S2 ..> Sub3 : <<include>>
+  
+  ' --- USE CASE ORANG TUA ---
+  usecase "Monitoring Kehadiran Anak" as O1
+  usecase "Lihat Riwayat Presensi Anak" as O2
+  usecase "Ajukan Izin/Sakit" as O3
 }
 
-' Relasi Aktor Kiri
-Siswa --> UC0
-OrangTua --> UC0
+' === RELASI ADMINISTRATOR ===
+Administrator --> UC_Login
+Administrator --> UC_Dashboard
+Administrator --> A1
+Administrator --> A2
+Administrator --> A3
+Administrator --> A4
+Administrator --> A5
+Administrator --> A6
+Administrator --> A7
+Administrator --> A8
+Administrator --> UC_Logout
 
-Siswa --> UCS1
-Siswa --> UCS2
+' === RELASI GURU ===
+Guru --> UC_Login
+Guru --> UC_Dashboard
+Guru --> G1
+Guru --> G2
+Guru --> G3
+Guru --> UC_Logout
 
-OrangTua --> UCO1
-OrangTua --> UCO2
+' === RELASI SISWA ===
+Siswa --> UC_Login
+Siswa --> UC_Dashboard
+Siswa --> S1
+Siswa --> S2
+Siswa --> S3
+Siswa --> UC_Logout
 
-' Relasi Aktor Kanan
-UC0 <-- Admin
-UC0 <-- Guru
-
-UCG1 <-- Guru
-UCG2 <-- Guru
-UCG3 <-- Guru
-UCG4 <-- Guru
-
-UCA1 <-- Admin
-UCA2 <-- Admin
-UCA3 <-- Admin
-UCA4 <-- Admin
-UCA5 <-- Admin
-
-' Include ke Login
-UCS1 .> UC0 : <<include>>
-UCS2 .> UC0 : <<include>>
-UCO1 .> UC0 : <<include>>
-UCO2 .> UC0 : <<include>>
-UCG1 .> UC0 : <<include>>
-UCG2 .> UC0 : <<include>>
-UCG3 .> UC0 : <<include>>
-UCG4 .> UC0 : <<include>>
-UCA1 .> UC0 : <<include>>
-UCA2 .> UC0 : <<include>>
-UCA3 .> UC0 : <<include>>
-UCA4 .> UC0 : <<include>>
-UCA5 .> UC0 : <<include>>
+' === RELASI ORANG TUA ===
+Ortu --> UC_Login
+Ortu --> UC_Dashboard
+Ortu --> O1
+Ortu --> O2
+Ortu --> O3
+Ortu --> UC_Logout
 
 @enduml

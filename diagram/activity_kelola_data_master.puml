@@ -1,0 +1,38 @@
+@startuml
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+|Administrator|
+|Sistem|
+
+title Activity Diagram - Kelola Data Master (Admin)
+|Administrator|
+start
+:Mengakses Menu Data Master\n(User, Guru, Siswa, Kelas, Lokasi);
+|Sistem|
+:Menampilkan Tabel Data;
+|Administrator|
+:Pilih Aksi (Tambah, Edit, Hapus);
+if (Aksi = Tambah/Edit?) then (Ya)
+  |Administrator|
+  :Input Data pada Form;
+  :Klik Simpan;
+  |Sistem|
+  :Validasi Input (Form Validation);
+  if (Input Valid?) then (Ya)
+    :Simpan ke Database;
+    :Tampilkan Pesan Sukses;
+  else (Tidak)
+    :Tampilkan Pesan Error Validasi;
+  endif
+else (Aksi Hapus)
+  |Administrator|
+  :Konfirmasi Hapus;
+  |Sistem|
+  :Hapus Data dari Database;
+  :Tampilkan Pesan Sukses;
+endif
+|Administrator|
+stop
+@enduml

@@ -1,0 +1,79 @@
+@startmindmap
+skinparam NodePadding 10
+skinparam Margin 10
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontName Arial
+
+<style>
+mindmapDiagram {
+  .root {EB
+    FontColor white
+    FontSize 16
+    FontStyle bold
+  }
+  .siswa {81
+    FontColor white
+  }
+  .guru {0B
+    FontColor white
+  }
+  .admin {44
+    FontColor white
+  }
+  .ortu {F6
+    FontColor white
+  }
+  node {
+    BorderColor #CBD5E1
+    FontColor #334155
+  }
+}
+</style>
+
+* Struktur Antarmuka \nSistem Presensi Siswa <<root>>
+
+** 👨‍🎓 Antarmuka Siswa <<siswa>>
+*** Dashboard Siswa
+**** Widget Status Kehadiran Hari Ini
+**** Tombol Presensi Masuk / Pulang\n(GPS & Geofencing)
+**** Statistik Kehadiran
+*** Riwayat Presensi
+**** Filter Waktu (Bulan/Tahun)
+**** Tabel Riwayat\n(Status, Waktu, Lokasi)
+*** Pengajuan Surat Izin
+**** Form Pengajuan & Upload Bukti
+**** Riwayat Status Pengajuan Izin
+
+** 👨‍🏫 Antarmuka Guru <<guru>>
+*** Presensi Harian Siswa
+**** Form Input Kehadiran Manual
+*** Presensi Mata Pelajaran
+**** Pilih Jadwal Kelas & Jam
+**** Form Input Kehadiran Mapel
+**** Isi Jurnal Mengajar
+**** Ekspor Data (Meeting/Monthly)
+*** Pengajuan Akses Edit Absensi
+**** Form Pengajuan Edit Absensi Lampau
+**** Riwayat Status Pengajuan
+*** Pengajuan Guru Pengganti
+**** Minta Pengganti (Pilih Jadwal)
+**** Respon Tawaran Mengganti (Terima/Tolak)
+
+** 👨‍💻 Antarmuka Admin <<admin>>
+*** Kelola Presensi Harian
+**** Input Presensi Manual / Massal
+**** Laporan Harian (Export Excel/PDF)
+*** Kelola Presensi Bulanan
+**** Rekap Kehadiran per Kelas
+**** Ekspor Laporan Bulanan
+*** Persetujuan Akses Edit
+**** Terima / Tolak Pengajuan Edit Absensi Guru
+*** Persetujuan Surat Izin Siswa
+**** Terima / Tolak Pengajuan Izin Siswa
+*** Kelola Pengaturan Presensi
+**** Setting Jam, Radius, & Titik Koordinat
+
+** 👪 Antarmuka Orang Tua <<ortu>>
+*** Dashboard Pemantauan
+**** Pantau Riwayat Kehadiran Anak
+@endmindmap

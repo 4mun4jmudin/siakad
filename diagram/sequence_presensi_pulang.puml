@@ -1,0 +1,41 @@
+@startuml
+title Sequence Diagram - Presensi Pulang
+actor Siswa
+boundary "View Presensi" as View
+control "AbsensiController" as Controller
+entity "HaversineService" as Service
+entity "AbsensiModel" as Model
+database "Database" as DB
+
+Siswa -> View : Klik Tombol "Absen Pulang"
+View -> View : Get Geolocation
+View -> Controller : store(latitude, longitude, "pulang")
+Controller -> DB : Ambil Pengaturan Sekolah
+DB --> Controller : Data Pengaturan (school_lat, school_lng, radius, jam_pulang)
+Controller -> Service : calculateDistance(...)
+Service --> Controller : Jarak (Meters)
+
+alt Jarak <= Radius
+    Controller -> Model : Cek Absen Masuk Hari Ini
+    Model -> DB : SELECT query
+    DB --> Model : Data Presensi
+    Model --> Controller : Data Presensi (ada/tidak)
+    alt Sudah Absen Masuk
+        Controller -> Controller : Cek Waktu >= Jam Pulang
+        alt Sudah Jam Pulang
+            Controller -> Model : update(waktu_pulang)
+            Model -> DB : UPDATE tbl_absensi_siswa
+            DB --> Model : success
+            Controller --> View : Redirect (Berhasil)
+            View --> Siswa : Tampilkan Pesan Sukses Pulang
+        else Belum Jam Pulang
+            Controller --> View : Redirect (Peringatan Waktu)
+        end
+    else Belum Absen Masuk
+        Controller --> View : Redirect (Error Belum Masuk)
+    end
+else Jarak > Radius
+    Controller --> View : Redirect (Error Radius)
+    View --> Siswa : Tampilkan Error
+end
+@enduml

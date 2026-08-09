@@ -1,0 +1,28 @@
+@startuml
+title Sequence Diagram - Monitoring Presensi
+actor "Admin / Guru" as User
+boundary "View Laporan" as View
+control "LaporanController" as Controller
+entity "AbsensiModel" as Model
+database "Database" as DB
+
+User -> View : Akses Halaman Laporan & Input Filter
+View -> Controller : getLaporan(kelas_id, bulan, tahun)
+Controller -> Model : getRekapitulasi(kelas_id, bulan, tahun)
+Model -> DB : SELECT JOIN tbl_absensi_siswa, tbl_siswa
+DB --> Model : Raw Data Kehadiran
+Model -> Model : Proses Kalkulasi Statistik
+Model --> Controller : Data Rekap (JSON/Array)
+Controller --> View : Render Tabel Laporan
+View --> User : Tampilkan Data di Layar
+
+alt User Klik Cetak Laporan
+    User -> View : Klik "Export PDF"
+    View -> Controller : exportPdf(kelas_id, bulan, tahun)
+    Controller -> Model : getRekapitulasi(...)
+    Model --> Controller : Data Rekap
+    Controller -> Controller : Render HTML to PDF (Mpdf/DomPDF)
+    Controller --> View : Return Response Download (PDF)
+    View --> User : Unduh File PDF
+end
+@enduml

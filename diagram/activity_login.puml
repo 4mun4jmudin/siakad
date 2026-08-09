@@ -1,0 +1,37 @@
+@startuml
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+|User (Aktor)|
+|Sistem|
+
+title Activity Diagram - Login
+|User (Aktor)|
+start
+:Akses Halaman Login;
+:Mamasukkan Username & Password;
+:Klik Tombol Login;
+|Sistem|
+:Validasi Kredensial (Database);
+if (Kredensial Valid?) then (Ya)
+  :Cek Role/Level User;
+  if (Role = Admin?) then (Ya)
+    :Redirect ke Dashboard Admin;
+  elseif (Role = Guru?) then (Ya)
+    :Redirect ke Dashboard Guru;
+  elseif (Role = Siswa?) then (Ya)
+    :Redirect ke Dashboard Siswa;
+  else (Orang Tua)
+    :Redirect ke Dashboard Orang Tua;
+  endif
+  |User (Aktor)|
+  :Menampilkan Halaman Dashboard;
+  stop
+else (Tidak)
+  |Sistem|
+  :Menampilkan Pesan Error (Kredensial Salah);
+  |User (Aktor)|
+  stop
+endif
+@enduml

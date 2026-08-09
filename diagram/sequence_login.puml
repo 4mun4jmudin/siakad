@@ -1,0 +1,27 @@
+@startuml
+title Sequence Diagram - Login
+actor User
+boundary "Halaman Login" as View
+control "AuthController" as Controller
+entity "Model User" as Model
+database "Database" as DB
+
+User -> View : Akses Halaman (/login)
+View --> User : Tampilkan Form Login
+User -> View : Input Username & Password + Submit
+View -> Controller : attemptLogin(username, password)
+Controller -> Model : findUser(username)
+Model -> DB : SELECT * FROM users
+DB --> Model : Data User
+Model --> Controller : Data User
+Controller -> Controller : Validasi Password
+alt Kredensial Valid
+    Controller -> Controller : Set Session Auth
+    Controller -> Controller : Cek Role User
+    Controller --> View : Redirect Dashboard (sesuai Role)
+    View --> User : Halaman Dashboard
+else Kredensial Tidak Valid
+    Controller --> View : Redirect Back with Error
+    View --> User : Tampilkan Pesan Error
+end
+@enduml

@@ -1,0 +1,82 @@
+@startwbs
+skinparam defaultFontName Arial
+skinparam nodesep 10
+skinparam ranksep 15
+
+<style>
+wbsDiagram {
+  .root {
+    BackgroundColor white
+    FontColor #000000
+    FontSize 16
+    FontStyle plain
+    Padding 20
+    BorderColor black
+    BorderThickness 2
+    MaximumWidth 200
+  }
+  .siswa { BackgroundColor white; FontColor #000000; FontStyle plain; Padding 15; BorderColor black; BorderThickness 1.5; MaximumWidth 150 }
+  .guru { BackgroundColor white; FontColor #000000; FontStyle plain; Padding 15; BorderColor black; BorderThickness 1.5; MaximumWidth 150 }
+  .admin { BackgroundColor white; FontColor #000000; FontStyle plain; Padding 15; BorderColor black; BorderThickness 1.5; MaximumWidth 150 }
+  .ortu { BackgroundColor white; FontColor #000000; FontStyle plain; Padding 15; BorderColor black; BorderThickness 1.5; MaximumWidth 150 }
+  node {
+    BackgroundColor white
+    BorderColor black
+    FontColor #000000
+    FontStyle plain
+    Padding 12
+    Margin 2
+    RoundCorner 0
+    MaximumWidth 130
+  }
+  Line {
+    LineColor black
+    LineThickness 1
+  }
+}
+</style>
+
+* Sitemap Sistem Presensi Siswa <<root>>
+** 👨‍🎓 Portal Siswa <<siswa>>
+*** Dashboard Siswa
+**** Presensi Mandiri (Geolocation)
+**** Widget Statistik Kehadiran
+*** Riwayat Presensi
+**** Pencarian & Filter Bulan
+**** Detail Waktu & Lokasi
+*** Pengajuan Surat Izin
+**** Form Upload Bukti Sakit/Izin
+**** Riwayat Status Pengajuan
+
+** 👨‍🏫 Portal Guru <<guru>>
+*** Presensi Harian Siswa
+**** Input Kehadiran dan Izin Manual
+*** Presensi Mata Pelajaran
+**** Pemilihan Jadwal Kelas
+**** Input Kehadiran per Mapel
+**** Pengisian Jurnal Mengajar
+*** Pengajuan Akses Edit
+**** Form Permohonan Buka Akses
+**** Riwayat Status Permohonan
+*** Pengajuan Guru Pengganti
+**** Request Jadwal Pengganti
+**** Respon Tawaran Mengajar
+
+** 👨‍💻 Portal Admin <<admin>>
+*** Kelola Presensi Harian
+**** Input Manual / Massal
+**** Export Laporan (Harian)
+*** Kelola Presensi Bulanan
+**** Rekapitulasi per Kelas
+**** Export Laporan (Bulanan)
+*** Pusat Persetujuan (Approval)
+**** Persetujuan Akses Edit Guru
+**** Persetujuan Surat Izin Siswa
+*** Pengaturan Presensi
+**** Pengaturan Jam Masuk dan Pulang
+**** Konfigurasi Lokasi Presensi (Titik dan Radius)
+
+** 👪 Portal Orang Tua/Wali <<ortu>>
+*** Dashboard Pemantauan
+**** Monitoring Riwayat Kehadiran Siswa
+@endwbs

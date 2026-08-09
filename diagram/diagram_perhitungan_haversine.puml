@@ -1,0 +1,48 @@
+@startuml
+!theme plain
+skinparam defaultFontName Arial
+skinparam roundCorner 10
+skinparam shadowing false
+skinparam titleFontSize 16
+skinparam activityFontSize 12
+
+title Diagram Alur Proses Perhitungan Jarak (Algoritma Haversine)
+
+start
+
+:<b>Input Koordinat</b>
+1. Koordinat Sekolah: (Lat1, Lon1)
+2. Koordinat Siswa: (Lat2, Lon2)
+3. Parameter Radius Maksimal (r) & Radius Bumi (R = 6.371.000 m);
+
+:<b>Tahap 1: Konversi Derajat ke Radian</b>
+• φ1 = Lat1 × (π / 180)
+• φ2 = Lat2 × (π / 180)
+• Δφ = (Lat2 - Lat1) × (π / 180)
+• Δλ = (Lon2 - Lon1) × (π / 180);
+
+:<b>Tahap 2: Hitung Nilai 'a' (Square Half Chord)</b>
+• a = sin²(Δφ / 2) + cos(φ1) × cos(φ2) × sin²(Δλ / 2);
+
+:<b>Tahap 3: Hitung Nilai 'c' (Angular Distance)</b>
+• c = 2 × atan2( √a , √(1 - a) );
+
+:<b>Tahap 4: Hitung Jarak Nyata (d)</b>
+• d = R × c (meter)
+• d_round = round(d);
+
+:<b>Tahap 5: Validasi terhadap Batas Radius Sekolah</b>;
+
+if (d <= Radius Maksimal (r)?) then (Ya (Dalam Radius))
+  :<b>Status: VALID</b>
+  • Jarak diizinkan (d <= r)
+  • Presensi berhasil disimpan ke database;
+  stop
+else (Tidak (Luar Radius))
+  :<b>Status: DITOLAK (INVALID)</b>
+  • Siswa berada di luar radius sekolah
+  • Munculkan pesan error: "Di luar radius sekolah (Jarak: d meter)";
+  stop
+endif
+
+@enduml

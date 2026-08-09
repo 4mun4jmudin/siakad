@@ -1,0 +1,37 @@
+@startuml
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+|Siswa|
+|Sistem|
+
+title Activity Diagram - Presensi Masuk (Validasi Haversine)
+|Siswa|
+start
+:Buka Menu Presensi;
+:Klik Tombol "Absen Masuk";
+|Sistem|
+:Meminta Izin Akses GPS (Browser/Device);
+|Siswa|
+:Memberikan Izin Akses Lokasi;
+|Sistem|
+:Mendapatkan Latitude & Longitude Siswa;
+:Mengambil Pengaturan Lokasi Sekolah\n(Titik Pusat & Radius);
+:Menghitung Jarak dengan Algoritma Haversine;
+if (Jarak <= Radius Toleransi?) then (Ya)
+  :Memeriksa Waktu (Apakah Sudah Jam Masuk?);
+  if (Masih dalam rentang waktu?) then (Ya)
+    :Simpan Log Lokasi (Valid);
+    :Simpan Data Presensi Siswa (Hadir);
+    :Tampilkan Pesan "Presensi Berhasil";
+  else (Tidak)
+    :Tampilkan Pesan "Terlambat / Waktu Habis";
+  endif
+else (Tidak)
+  :Simpan Log Lokasi (Tidak Valid);
+  :Tampilkan Pesan Error\n"Anda Berada di Luar Radius Sekolah";
+endif
+|Siswa|
+stop
+@enduml

@@ -1,0 +1,40 @@
+flowchart TD
+    %% Define styles for flowchart shapes
+    classDef startEnd fill:#f9f,stroke:#333,stroke-width:2px;
+    classDef process fill:#fff,stroke:#333,stroke-width:2px;
+    classDef decision fill:#ff9,stroke:#333,stroke-width:2px;
+    classDef io fill:#ccf,stroke:#333,stroke-width:2px;
+    classDef db fill:#fcf,stroke:#333,stroke-width:2px;
+
+    Start([Mulai]):::startEnd --> A[Siswa Mengakses Fitur Absensi]:::process
+    A --> B[/Sistem Meminta Izin Akses Lokasi/]:::io
+    B --> C[/Mengirim Data Lokasi & Akurasi GPS/]:::io
+    
+    C --> D[Sistem Mengambil Pengaturan Sekolah\nKoordinat, Radius, Akurasi]:::process
+    
+    D --> E{Akurasi GPS <br><= Batas Akurasi?}:::decision
+    
+    E -- Ya --> F[Sistem Menghitung Jarak <br>ke Titik Sekolah]:::process
+    E -- Tidak --> G[Keterangan: Akurasi <br>Terlalu Rendah]:::process
+    
+    F --> H{Jarak <= <br>Radius Diizinkan?}:::decision
+    
+    H -- Ya --> I[Sistem Memeriksa Jaringan <br>Anti-VPN/Proxy]:::process
+    H -- Tidak --> J[Keterangan: Di Luar <br>Radius Sekolah]:::process
+    
+    I --> K{VPN/Proxy <br>Terdeteksi?}:::decision
+    
+    K -- Tidak --> L[Sistem Mencatat Log <br>Lokasi Status: Valid]:::process
+    K -- Ya --> M[Keterangan: Koneksi <br>Mencurigakan]:::process
+    
+    L --> N[(Simpan Data Kehadiran)]:::db
+    N --> O[/Tampilkan Notifikasi Berhasil/]:::io
+    O --> End([Selesai]):::startEnd
+    
+    G --> P[Sistem Mencatat Log Lokasi <br>Status: Tidak Valid]:::process
+    J --> P
+    M --> P
+    
+    P --> Q[Batalkan Proses Kehadiran]:::process
+    Q --> R[/Tampilkan Pesan Error/]:::io
+    R --> End

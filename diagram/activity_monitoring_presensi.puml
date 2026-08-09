@@ -1,0 +1,28 @@
+@startuml
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+|Admin / Guru|
+|Sistem|
+
+title Activity Diagram - Monitoring Presensi
+|Admin / Guru|
+start
+:Buka Menu Monitoring / Laporan Presensi;
+|Sistem|
+:Menampilkan Form Filter Pencarian;
+|Admin / Guru|
+:Pilih Kelas dan Rentang Bulan/Tahun;
+:Klik Tombol "Tampilkan";
+|Sistem|
+:Query Rekapitulasi Data Kehadiran\n(Hadir, Izin, Sakit, Alpa);
+:Menampilkan Tabel Rekap Data Presensi;
+|Admin / Guru|
+:Klik Tombol "Cetak Laporan / Export PDF";
+|Sistem|
+:Generate File PDF/Excel;
+:File Terunduh (Download);
+|Admin / Guru|
+stop
+@enduml

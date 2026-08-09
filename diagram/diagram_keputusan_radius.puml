@@ -1,0 +1,25 @@
+@startuml
+!theme plain
+skinparam defaultFontName Arial
+skinparam roundCorner 10
+skinparam shadowing false
+skinparam titleFontSize 16
+skinparam activityFontSize 12
+
+title Diagram Keputusan Mekanisme Pemeriksaan Radius Presensi
+
+start
+
+:Hasil Jarak Haversine (d);
+
+if (Jarak (d) <= Radius Toleransi (r)?) then (Ya)
+  :Lokasi Valid;
+  :Presensi Disimpan;
+  stop
+else (Tidak)
+  :Lokasi Tidak Valid;
+  :Presensi Ditolak;
+  stop
+endif
+
+@enduml

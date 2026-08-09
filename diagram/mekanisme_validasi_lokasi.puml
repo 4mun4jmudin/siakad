@@ -1,0 +1,47 @@
+@startuml
+!theme plain
+skinparam defaultFontName Arial
+skinparam titleFontSize 16
+skinparam activityFontSize 12
+
+title Gambar 4.3 Perencanaan Mekanisme Validasi Lokasi
+
+|Siswa|
+start
+:Mengakses Fitur Absensi;
+:Sistem Meminta Izin Akses Lokasi;
+:Mengirim Data Lokasi (Latitude, Longitude)\ndan Tingkat Akurasi GPS;
+
+|Sistem|
+:Mengambil Pengaturan Jarak & Lokasi Sekolah\n(Koordinat Utama, Radius Izin, Batas Akurasi);
+
+if (Akurasi GPS <= Batas Akurasi?) then (Memenuhi Syarat)
+  :Menghitung Jarak antara Koordinat Siswa \ndan Koordinat Sekolah (Haversine Formula);
+  
+  if (Jarak <= Radius Absen yang Diizinkan?) then (Memenuhi Syarat)
+    :Memeriksa Status Jaringan & IP \n(Pendeteksian VPN/Proxy);
+    
+    if (Penggunaan VPN/Proxy Terdeteksi?) then (Tidak)
+      :Mencatat Log Lokasi\n(Status: Valid);
+      :Menyimpan Data Kehadiran Siswa;
+      :Memberikan Notifikasi Absensi Berhasil;
+      |Siswa|
+      stop
+    else (Ya)
+      |Sistem|
+      :Menetapkan Keterangan:\n"Koneksi Mencurigakan (VPN/Proxy)";
+    endif
+  else (Tidak Memenuhi Syarat)
+    :Menetapkan Keterangan:\n"Di Luar Radius Sekolah";
+  endif
+else (Tidak Memenuhi Syarat)
+  :Menetapkan Keterangan:\n"Akurasi GPS Terlalu Rendah";
+endif
+
+:Mencatat Log Lokasi\n(Status: Tidak Valid, Alasan Tertentu);
+:Membatalkan Proses Kehadiran;
+:Menampilkan Pesan Error Peringatan Lokasi;
+
+|Siswa|
+stop
+@enduml

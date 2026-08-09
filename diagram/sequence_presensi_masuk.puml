@@ -1,0 +1,37 @@
+@startuml
+title Sequence Diagram - Presensi Masuk (Validasi Haversine)
+actor Siswa
+boundary "View Presensi" as View
+control "AbsensiController" as Controller
+entity "HaversineService" as Service
+entity "AbsensiModel" as Model
+database "Database" as DB
+
+Siswa -> View : Klik Tombol "Absen Masuk"
+View -> View : Get Geolocation (Browser API)
+View -> Controller : store(latitude, longitude, "masuk")
+Controller -> DB : Ambil Pengaturan Sekolah (Titik & Radius)
+DB --> Controller : Data Pengaturan (school_lat, school_lng, radius, jam_masuk)
+Controller -> Service : calculateDistance(siswa_lat, siswa_lng, school_lat, school_lng)
+Service --> Controller : Jarak (Meters)
+alt Jarak <= Radius
+    Controller -> Controller : Validasi Waktu Masuk
+    alt Waktu Valid
+        Controller -> Model : insert(Data Presensi Valid, waktu_masuk)
+        Model -> DB : INSERT INTO tbl_absensi_siswa (..., waktu_masuk)
+        DB --> Model : success
+        Model --> Controller : success
+        Controller --> View : JSON / Redirect (Berhasil)
+        View --> Siswa : Tampilkan Pesan Sukses
+    else Waktu Tidak Valid
+        Controller --> View : JSON / Redirect (Gagal: Terlambat)
+        View --> Siswa : Tampilkan Peringatan Waktu
+    end
+else Jarak > Radius
+    Controller -> Model : insert(Log Lokasi Tidak Valid)
+    Model -> DB : INSERT INTO tbl_absensi_siswa_log_lokasi
+    DB --> Model : success
+    Controller --> View : JSON / Redirect (Gagal: Di luar radius)
+    View --> Siswa : Tampilkan Error Radius
+end
+@enduml

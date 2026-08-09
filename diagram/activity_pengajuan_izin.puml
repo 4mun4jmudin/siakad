@@ -1,0 +1,27 @@
+@startuml
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+|Orang Tua|
+|Sistem|
+
+title Activity Diagram - Pengajuan Izin / Sakit
+|Orang Tua|
+start
+:Buka Menu Pengajuan Izin;
+:Isi Form Izin (Tanggal, Jenis Izin, Alasan);
+:Unggah File Bukti (Surat Dokter / Foto);
+:Klik Submit;
+|Sistem|
+:Validasi Form (Kelengkapan & Tipe File);
+if (Valid?) then (Ya)
+  :Simpan Data Izin (Status = Pending);
+  :Simpan File Gambar ke Storage;
+  :Tampilkan Pesan Sukses;
+else (Tidak)
+  :Tampilkan Peringatan Error Form;
+endif
+|Orang Tua|
+stop
+@enduml
