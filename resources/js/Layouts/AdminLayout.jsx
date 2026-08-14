@@ -25,7 +25,9 @@ import {
     ComputerDesktopIcon,
     CheckIcon,
     EnvelopeOpenIcon,
-    MapPinIcon
+    MapPinIcon,
+    StarIcon,
+    CheckCircleIcon
 } from "@heroicons/react/24/outline";
 
 /* ---------- Small Nav Components ---------- */
@@ -593,6 +595,8 @@ export default function AdminLayout({ user, header, children }) {
                                 route().current("admin.log-aktivitas.*") ||
                                 route().current("admin.kalender.*") ||
                                 route().current("admin.users.*") ||
+                                route().current("admin.feedback.*") ||
+                                route().current("admin.sus.*") ||
                                 route().current("admin.pengaturan.*")
                             }
                         >
@@ -642,6 +646,32 @@ export default function AdminLayout({ user, header, children }) {
                                         label="Manajemen User"
                                     >
                                         <UsersIcon className="w-5 h-5" />
+                                    </NavLink>
+                                </li>
+                            )}
+
+                            {!isAbsensiMode && (
+                                <li>
+                                    <NavLink
+                                        href={route("admin.feedback.index")}
+                                        active={route().current("admin.feedback.*")}
+                                        isCollapsed={false}
+                                        label="Rekap Feedback"
+                                    >
+                                        <StarIcon className="w-5 h-5" />
+                                    </NavLink>
+                                </li>
+                            )}
+
+                            {!isAbsensiMode && (
+                                <li>
+                                    <NavLink
+                                        href={route("admin.sus.index")}
+                                        active={route().current("admin.sus.*")}
+                                        isCollapsed={false}
+                                        label="Rekap Kuesioner SUS"
+                                    >
+                                        <CheckCircleIcon className="w-5 h-5" />
                                     </NavLink>
                                 </li>
                             )}

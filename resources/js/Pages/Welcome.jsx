@@ -1,14 +1,8 @@
 import { Head, Link } from '@inertiajs/react';
 import { useEffect, useState, useMemo } from 'react';
 
-/**
- * Modern Landing Page - Sistem Absensi Sekolah (SISAB)
- * Data stats & logo sekarang dinamis dari database.
- */
-
 export default function Welcome({ auth, laravelVersion, phpVersion, landingStats, schoolData }) {
   // --- Logic Statistik Dinamis ---
-  // Default nilai 0 jika props tidak tersedia (safety check)
   const statsTarget = useMemo(() => ({ 
     siswaAktif: landingStats?.siswa || 0, 
     guruAktif: landingStats?.guru || 0, 
@@ -18,18 +12,16 @@ export default function Welcome({ auth, laravelVersion, phpVersion, landingStats
   const [counts, setCounts] = useState({ siswa: 0, guru: 0, rata: 0 });
 
   useEffect(() => {
-    const duration = 2000; // Durasi animasi sedikit diperlambat agar lebih dramatis
+    const duration = 2000;
     const start = performance.now();
     const tick = (now) => {
       const progress = Math.min(1, (now - start) / duration);
-      const ease = 1 - Math.pow(1 - progress, 3); // easeOutCubic
-      
+      const ease = 1 - Math.pow(1 - progress, 3);
       setCounts({
         siswa: Math.round(statsTarget.siswaAktif * ease),
         guru: Math.round(statsTarget.guruAktif * ease),
         rata: Number((statsTarget.rataKehadiran * ease).toFixed(1))
       });
-
       if (progress < 1) requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
@@ -51,81 +43,78 @@ export default function Welcome({ auth, laravelVersion, phpVersion, landingStats
     return () => clearInterval(interval);
   }, []);
 
-  // --- Scroll Header Logic ---
-  const [scrolled, setScrolled] = useState(false);
+  // --- Dark Mode Logic ---
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme) {
+         return savedTheme === 'dark';
+      }
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return false;
+  });
+
   useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handler);
-    return () => window.removeEventListener('scroll', handler);
-  }, []);
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDarkMode]);
+
+  const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
+
+  // --- Typewriter Logic ---
+  const rotatingTexts = ["Generasi", "Karakter", "Masa Depan", "Prestasi"];
+  const [textIndex, setTextIndex] = useState(0);
+  const [displayText, setDisplayText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [typingSpeed, setTypingSpeed] = useState(150);
+
+  useEffect(() => {
+    let timer;
+    const currentFullText = rotatingTexts[textIndex];
+
+    const handleTyping = () => {
+      setDisplayText(
+        isDeleting 
+          ? currentFullText.substring(0, displayText.length - 1)
+          : currentFullText.substring(0, displayText.length + 1)
+      );
+
+      setTypingSpeed(isDeleting ? 50 : 150);
+
+      if (!isDeleting && displayText === currentFullText) {
+        timer = setTimeout(() => setIsDeleting(true), 1500);
+      } else if (isDeleting && displayText === "") {
+        setIsDeleting(false);
+        setTextIndex((prev) => (prev + 1) % rotatingTexts.length);
+        setTypingSpeed(500); // Jeda sebelum mengetik teks berikutnya
+      } else {
+        timer = setTimeout(handleTyping, typingSpeed);
+      }
+    };
+
+    timer = setTimeout(handleTyping, typingSpeed);
+    return () => clearTimeout(timer);
+  }, [displayText, isDeleting, textIndex, typingSpeed]);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <>
       <Head title={`Selamat Datang - ${schoolData?.nama || 'Sistem Absensi'}`} />
       
-      <div className="min-h-screen bg-slate-50 font-sans text-slate-600 selection:bg-indigo-500 selection:text-white">
+      <div className="min-h-screen bg-white dark:bg-slate-900 font-sans text-slate-600 dark:text-slate-300 selection:bg-indigo-500 selection:text-white relative transition-colors duration-300">
         
-        {/* === NAVBAR === */}
-        <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-white/90 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'}`}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-            {/* Logo Area */}
-            <div className="flex items-center gap-3">
-              <div className={`p-1.5 rounded-lg shadow-lg transition-all ${scrolled ? 'bg-white shadow-indigo-100' : 'bg-white/10 backdrop-blur-sm shadow-black/10'}`}>
-                {schoolData?.logo ? (
-                    <img 
-                        src={schoolData.logo} 
-                        alt="Logo Sekolah" 
-                        className="w-8 h-8 object-contain"
-                    />
-                ) : (
-                    <svg className="w-8 h-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                )}
-              </div>
-              <div className={`leading-tight transition-colors ${scrolled ? 'text-slate-800' : 'text-white'}`}>
-                <h1 className="font-bold text-lg tracking-tight">SISAB</h1>
-                <p className="text-[10px] uppercase tracking-wider opacity-90 font-medium">
-                    {schoolData?.nama || 'SEKOLAH DIGITAL'}
-                </p>
-              </div>
-            </div>
-
-            {/* Desktop Menu */}
-            <div className="hidden md:flex items-center gap-4">
-               {auth?.user ? (
-                 <Link href={route('dashboard')} className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-full shadow-lg shadow-indigo-200 transition-all transform hover:-translate-y-0.5">
-                   Dashboard
-                 </Link>
-               ) : (
-                 <>
-                   <Link href={route('login')} className={`text-sm font-medium hover:underline ${scrolled ? 'text-slate-600' : 'text-slate-200'}`}>
-                     Staff Login
-                   </Link>
-                   <Link href={route('login.siswa')} className="px-5 py-2.5 bg-white text-indigo-700 font-semibold rounded-full shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 border border-indigo-50">
-                     Area Siswa
-                   </Link>
-                   <Link href={route('login.orangtua')} className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-full shadow-lg shadow-emerald-200 transition-all transform hover:-translate-y-0.5">
-                     Orang Tua
-                   </Link>
-                 </>
-               )}
-            </div>
-
-             {/* Mobile Menu Button (Simple) */}
-             <div className="md:hidden">
-                <Link href={route('login')} className="p-2 text-indigo-600 font-bold bg-white rounded-md shadow-sm">
-                  Masuk
-                </Link>
-             </div>
-          </div>
-        </nav>
-
-        {/* === HERO SECTION === */}
-        <div className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden bg-slate-900">
-          {/* Background Image Carousel & Overlay */}
-          <div className="absolute inset-0 z-0">
-            {backgroundImages.map((img, index) => (
+        {/* Absolute Background for Right Hero */}
+        <div className="absolute top-0 right-0 w-full lg:w-[55%] h-[800px] xl:h-[900px] hidden lg:block z-0">
+           {backgroundImages.map((img, index) => (
               <div
                 key={index}
                 className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
@@ -137,312 +126,345 @@ export default function Welcome({ auth, laravelVersion, phpVersion, landingStats
                   alt={`School Background ${index + 1}`}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    e.currentTarget.onerror = null; // Prevent infinite loop
+                    e.currentTarget.onerror = null;
                     e.currentTarget.src = '/images/bgdashboard.jpeg';
                   }}
                 />
               </div>
             ))}
-            
-            {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-900/95 via-slate-900/80 to-indigo-900/40 z-10"></div>
-          </div>
+            {/* Gradient mask for smooth blending to solid color on the left */}
+            <div className="absolute inset-y-0 left-0 w-48 bg-gradient-to-r from-white dark:from-slate-900 to-transparent"></div>
+            {/* Bottom gradient mask for smooth blending to stats section */}
+            <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-white dark:from-slate-900 to-transparent"></div>
+        </div>
 
-          <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
-              {/* Left Content */}
-              <div className="space-y-8 animate-fade-in-up">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-100 text-xs font-medium backdrop-blur-sm">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                  Sistem Akademik Terintegrasi v2.0
-                </div>
-                
-                <h1 className="text-4xl lg:text-6xl font-extrabold text-white leading-tight tracking-tight">
-                  Wujudkan Disiplin <br/>
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-300">
-                    <Typewriter 
-                      words={['Generasi Emas', 'Masa Depan', 'Prestasi Juara']} 
-                      speed={100} 
-                      deleteSpeed={50} 
-                      delay={2000} 
-                    />
-                  </span>
-                </h1>
-                
-                <p className="text-lg text-slate-300 max-w-xl leading-relaxed">
-                  Platform manajemen kehadiran sekolah yang modern, real-time, dan mudah diakses oleh Siswa, Guru, dan Orang Tua di {schoolData?.nama || 'Sekolah Kami'}.
+        {/* === NAVBAR === */}
+        <nav className="relative z-50 py-5 bg-white lg:bg-transparent dark:bg-slate-900 lg:dark:bg-transparent transition-colors duration-300">
+          <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+            {/* Logo Area */}
+            <div className="flex items-center gap-3">
+              <div className="p-1.5 rounded-lg bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 transition-colors">
+                {schoolData?.logo ? (
+                    <img src={schoolData.logo} alt="Logo" className="w-8 h-8 object-contain" />
+                ) : (
+                    <svg className="w-8 h-8 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                )}
+              </div>
+              <div className="leading-tight text-slate-900 dark:text-white transition-colors">
+                <h1 className="font-bold text-lg tracking-tight">SISAB</h1>
+                <p className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-medium">
+                    {schoolData?.nama || 'SEKOLAH DIGITAL'}
                 </p>
+              </div>
+            </div>
 
-                <div className="flex flex-wrap gap-4">
-                  <Link href={route('login.siswa')} className="group flex items-center justify-center gap-2 px-6 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold shadow-xl shadow-indigo-900/20 transition-all w-full sm:w-auto">
-                    <span>Absen Sekarang</span>
-                    <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-                  </Link>
-                  <Link href="#fitur" className="flex items-center justify-center gap-2 px-6 py-3.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl font-medium backdrop-blur-sm transition-all w-full sm:w-auto">
-                    Pelajari Fitur
-                  </Link>
-                </div>
+            {/* Desktop Menu */}
+            <div className="hidden lg:flex items-center gap-8 font-medium text-sm text-slate-600 dark:text-slate-300">
+                <a href="#" className="text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400 pb-1">Beranda</a>
+                <a href="#fitur" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors pb-1 border-b-2 border-transparent">Fitur</a>
+                <a href="#" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors pb-1 border-b-2 border-transparent">Untuk Siapa</a>
+                <a href="#pengumuman" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors pb-1 border-b-2 border-transparent">Pengumuman</a>
+                <a href="#" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors pb-1 border-b-2 border-transparent">Tentang Kami</a>
+                <a href="#" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors pb-1 border-b-2 border-transparent">Kontak</a>
+            </div>
 
-                {/* Quick Stats in Hero (DATA REAL DARI DATABASE) */}
-                <div className="pt-8 border-t border-white/10 flex gap-8 lg:gap-12">
-                  <HeroStat label="Siswa Aktif" value={counts.siswa} />
-                  <HeroStat label="Guru & Staff" value={counts.guru} />
-                  <HeroStat label="Kehadiran" value={counts.rata + '%'} />
-                </div>
+            {/* Right Actions */}
+            <div className="hidden md:flex items-center gap-3">
+               <button 
+                 onClick={toggleDarkMode}
+                 className="p-2 text-slate-400 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-yellow-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full shadow-sm transition-all"
+                 aria-label="Toggle Dark Mode"
+               >
+                 {isDarkMode ? (
+                   // Sun Icon for Dark Mode
+                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                   </svg>
+                 ) : (
+                   // Moon Icon for Light Mode
+                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                   </svg>
+                 )}
+               </button>
+
+               {auth?.user ? (
+                 <Link href={route('dashboard')} className="px-5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-medium rounded-lg shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">
+                   Dashboard
+                 </Link>
+               ) : (
+                 <>
+                   <Link href={route('login')} className="px-5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-medium rounded-lg shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">
+                     Staff Login
+                   </Link>
+                   
+                   {/* Dropdown Area Placeholder */}
+                   <div className="relative group">
+                     <button className="px-5 py-2 bg-indigo-600 dark:bg-indigo-500 text-white font-medium rounded-lg shadow-sm shadow-indigo-200 dark:shadow-none flex items-center gap-2 hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-all">
+                        Area
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                     </button>
+                     <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 flex flex-col overflow-hidden">
+                        <Link href={route('login.siswa')} className="px-4 py-3 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 border-b border-slate-50 dark:border-slate-700">Area Siswa</Link>
+                        <Link href={route('login.orangtua')} className="px-4 py-3 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">Area Orang Tua</Link>
+                     </div>
+                   </div>
+                 </>
+               )}
+            </div>
+
+            {/* Mobile Menu Button */}
+            <div className="md:hidden flex items-center gap-2">
+                <button onClick={toggleDarkMode} className="p-2 text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md">
+                   {isDarkMode ? (
+                     <svg className="w-5 h-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                   ) : (
+                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                   )}
+                </button>
+                <Link href={route('login')} className="p-2 text-indigo-600 dark:text-indigo-400 font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-sm">
+                  Masuk
+                </Link>
+            </div>
+          </div>
+        </nav>
+
+        {/* === HERO SECTION === */}
+        <div className="relative z-10 max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-16 lg:pt-32 pb-16 lg:pb-24">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              
+              {/* Left Content */}
+              <div className="max-w-2xl">
+                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-900/50 border border-indigo-100 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 text-xs font-semibold mb-6 transition-colors">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/></svg>
+                    Sistem Akademik Terintegrasi v2.0
+                 </div>
+                 
+                 <h1 className="text-4xl lg:text-[3.5rem] font-bold text-slate-900 dark:text-white leading-[1.1] mb-6 transition-colors min-h-[120px] lg:min-h-[140px]">
+                   Wujudkan Disiplin <br/>
+                   <span className="text-indigo-600 dark:text-indigo-400 border-r-4 border-indigo-600 dark:border-indigo-400 pr-1 animate-pulse">
+                     {displayText}
+                   </span>
+                 </h1>
+                 
+                 <p className="text-lg text-slate-500 dark:text-slate-400 mb-10 leading-relaxed pr-8 transition-colors">
+                   Platform manajemen kehadiran sekolah yang modern, real-time, dan mudah diakses oleh Siswa, Guru, dan Orang Tua di {schoolData?.nama || 'SMK IT AL-HAWARI'}.
+                 </p>
+                 
+                 <div className="flex flex-wrap gap-4 mb-16">
+                    <Link href={route('login.siswa')} className="flex items-center justify-center gap-2 px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium shadow-lg shadow-indigo-200 dark:shadow-none transition-all w-full sm:w-auto">
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg>
+                      Absen Sekarang
+                    </Link>
+                    <a href="#fitur" className="flex items-center justify-center gap-2 px-8 py-3.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-medium transition-all w-full sm:w-auto shadow-sm">
+                      <svg className="w-5 h-5 text-slate-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd"/></svg>
+                      Pelajari Fitur
+                    </a>
+                 </div>
+
+                 {/* Access Cards Grid */}
+                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <AccessCard href={route('login.siswa')} icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />} title="Siswa" desc="Cek kehadiran & jadwal" color="text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400" />
+                    <AccessCard href={route('login')} icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />} title="Guru / Staff" desc="Input absensi & jurnal" color="text-sky-600 bg-sky-50 dark:bg-sky-900/30 dark:text-sky-400" />
+                    <AccessCard href={route('login.orangtua')} icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />} title="Orang Tua" desc="Pantau putra/putri" color="text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400" />
+                    <AccessCard href={route('login')} icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />} title="Admin" desc="Pengaturan sistem" color="text-slate-600 bg-slate-100 dark:bg-slate-700 dark:text-slate-300" />
+                 </div>
               </div>
 
-              {/* Right Content: Floating Cards (Glassmorphism) */}
-              <div className="hidden lg:block relative">
-                 {/* Decorative Blobs */}
-                 <div className="absolute -top-20 -right-20 w-72 h-72 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-                 <div className="absolute -bottom-20 -left-20 w-72 h-72 bg-emerald-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-
-                 <div className="relative bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-md shadow-2xl">
-                    <div className="flex justify-between items-center mb-6">
-                      <h3 className="text-white font-semibold text-lg">Pengumuman Terbaru</h3>
-                      <span className="text-xs text-indigo-300 bg-indigo-500/10 px-2 py-1 rounded border border-indigo-500/20">Live Update</span>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      <AnnouncementCard 
-                        date="10 Sep" 
-                        title="Ujian Tengah Semester" 
-                        desc="Persiapkan diri anda, jadwal telah terbit di dashboard."
-                        color="bg-amber-500"
-                      />
-                       <AnnouncementCard 
-                        date="21 Sep" 
-                        title="Libur Nasional" 
-                        desc="Sekolah diliburkan memperingati hari besar."
-                        color="bg-rose-500"
-                      />
-                       <AnnouncementCard 
-                        date="02 Okt" 
-                        title="Rapat Wali Murid" 
-                        desc="Undangan evaluasi pembelajaran semester ganjil."
-                        color="bg-emerald-500"
-                      />
-                    </div>
-
-                    <div className="mt-6 pt-4 border-t border-white/10 text-center">
-                       <Link href={route('login')} className="text-sm text-indigo-300 hover:text-white transition-colors">Lihat semua pengumuman &rarr;</Link>
+              {/* Right Content Overlay / Floating Cards */}
+              <div className="hidden lg:flex flex-col justify-end items-end h-full relative">
+                 <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border border-white/40 dark:border-slate-700/40 shadow-2xl p-5 rounded-2xl w-[380px] mt-[400px] xl:mt-[450px] relative z-20 transition-colors">
+                    <div className="flex gap-4">
+                       <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center shrink-0">
+                          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
+                       </div>
+                       <div>
+                          <h4 className="font-bold text-slate-900 dark:text-white">Keamanan & Privasi Terjamin</h4>
+                          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Data terlindungi dengan sistem enkripsi modern dan hanya dapat diakses oleh pihak berwenang.</p>
+                       </div>
                     </div>
                  </div>
               </div>
+
             </div>
-          </div>
         </div>
 
-        {/* === PORTAL AKSES CARD === */}
-        <div className="relative -mt-16 z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-           <div className="grid md:grid-cols-4 gap-4 bg-white rounded-2xl shadow-xl p-4 border border-slate-100">
-              <AccessCard 
-                href={route('login.siswa')} 
-                title="Siswa" 
-                icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />}
-                desc="Cek kehadiran & jadwal"
-                color="text-indigo-600 bg-indigo-50"
-              />
-              <AccessCard 
-                href={route('login')} 
-                title="Guru / Staff" 
-                icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />}
-                desc="Input absen & jurnal"
-                color="text-sky-600 bg-sky-50"
-              />
-              <AccessCard 
-                href={route('login.orangtua')} 
-                title="Orang Tua" 
-                icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />}
-                desc="Pantau putra/putri"
-                color="text-emerald-600 bg-emerald-50"
-              />
-               <AccessCard 
-                href={route('login')} 
-                title="Admin" 
-                icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />}
-                desc="Pengaturan sistem"
-                color="text-slate-600 bg-slate-100"
-              />
-           </div>
+        {/* === STATS SECTION === */}
+        <div className="relative z-20 max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 mb-12">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-8 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-slate-100 dark:divide-slate-700 transition-colors">
+               <StatItem icon={<><path d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6"/><path d="M21 16h-6"/><path d="M21 8h-6"/></>} value={counts.siswa + "+"} label="Siswa Aktif" sublabel={`Tahun Ajaran ${schoolData?.tahun_ajaran || '2025/2026'}`} color="text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400" />
+               <StatItem icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />} value={counts.guru + "+"} label="Guru & Staff" sublabel="Profesional" color="text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400" />
+               <StatItem icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />} value={counts.rata + "%"} label="Sistem Terintegrasi" sublabel="Real-time & Akurat" color="text-amber-500 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400" />
+            </div>
         </div>
 
-        {/* === FITUR SECTION === */}
-        <section id="fitur" className="py-24 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center max-w-3xl mx-auto mb-16">
-              <h2 className="text-3xl font-bold text-slate-900 sm:text-4xl">Teknologi untuk Kemudahan</h2>
-              <p className="mt-4 text-lg text-slate-500">Kami mengintegrasikan proses administrasi manual menjadi digital, otomatis, dan akurat.</p>
-            </div>
+        {/* === FEATURE & ANNOUNCEMENT SECTION === */}
+        <section id="fitur" className="relative z-20 max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pb-24">
+            <div className="grid lg:grid-cols-12 gap-6">
+                
+                {/* Features (Span 8) */}
+                <div className="lg:col-span-8 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                   {/* Header Box */}
+                   <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl p-8 flex flex-col justify-center transition-colors">
+                       <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-xs uppercase tracking-wider mb-4">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.381z" clipRule="evenodd"/></svg>
+                          Keunggulan Sistem SISAB
+                       </div>
+                       <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Teknologi untuk Kemudahan</h2>
+                       <p className="text-slate-500 dark:text-slate-400 mb-8 leading-relaxed">Kami mengintegrasikan proses administrasi manual menjadi digital, otomatis, dan akurat.</p>
+                       <Link href="#fitur" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors w-max shadow-sm">
+                          Lihat Selengkapnya
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                       </Link>
+                   </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
-              <FeatureCard 
-                title="Real-time Monitoring"
-                desc="Data kehadiran masuk ke server secara instan. Wali kelas dan orang tua dapat melihat status kehadiran detik itu juga."
-                icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />}
-              />
-              <FeatureCard 
-                title="Laporan Otomatis"
-                desc="Tidak perlu rekap manual. Sistem menghasilkan laporan harian, bulanan, dan semester dalam format PDF/Excel."
-                icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />}
-              />
-              <FeatureCard 
-                title="Notifikasi WhatsApp"
-                desc="Orang tua menerima notifikasi otomatis jika anak tidak hadir tanpa keterangan atau terlambat."
-                icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />}
-              />
-            </div>
-          </div>
-        </section>
+                   <FeatureBox 
+                      title="Real-time Monitoring" 
+                      desc="Data kehadiran masuk ke server secara instan. Wali kelas dan orang tua dapat melihat status kehadiran detik itu juga."
+                      icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />}
+                      color="text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400"
+                   />
+                   <FeatureBox 
+                      title="Laporan Otomatis" 
+                      desc="Tidak perlu rekap manual. Sistem menghasilkan laporan harian, bulanan, dan semester dalam format PDF/Excel."
+                      icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />}
+                      color="text-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400"
+                   />
+                   <FeatureBox 
+                      title="Notifikasi WhatsApp" 
+                      desc="Orang tua menerima notifikasi otomatis jika anak tidak hadir tanpa keterangan atau terlambat."
+                      icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />}
+                      color="text-sky-500 bg-sky-50 dark:bg-sky-900/30 dark:text-sky-400"
+                   />
+                </div>
 
-        {/* === CTA SECTION === */}
-        <section className="bg-slate-900 py-16 relative overflow-hidden">
-           <div className="absolute top-0 left-0 w-full h-full opacity-30 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
-           <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
-             <h2 className="text-3xl font-bold text-white mb-6">Siap untuk Transformasi Digital?</h2>
-             <p className="text-slate-400 mb-8 text-lg">Bergabunglah dengan ekosistem pendidikan modern {schoolData?.nama || 'Sekolah Kami'}.</p>
-             <div className="flex justify-center gap-4">
-                <Link href={route('register')} className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold shadow-lg transition-transform transform hover:scale-105">
-                  Daftarkan Akun Baru
-                </Link>
-             </div>
-           </div>
+                {/* Announcements (Span 4) */}
+                <div id="pengumuman" className="lg:col-span-4 bg-slate-900 rounded-2xl p-6 md:p-8 flex flex-col shadow-xl">
+                   <div className="flex justify-between items-center mb-8">
+                      <h3 className="text-xl font-bold text-white">Pengumuman Terbaru</h3>
+                      <button className="text-xs text-slate-300 hover:text-white px-3 py-1.5 border border-slate-700 rounded bg-slate-800 transition-colors">Lihat Semua</button>
+                   </div>
+                   
+                   <div className="space-y-4 flex-1">
+                      <AnnouncementRow 
+                        date="10" month="MEI" 
+                        title="Ujian Tengah Semester" 
+                        desc="Persiapkan diri Anda, jadwal telah terbit di dashboard." 
+                      />
+                      <AnnouncementRow 
+                        date="21" month="MEI" 
+                        title="Libur Nasional" 
+                        desc="Sekolah diliburkan memperingati hari besar." 
+                      />
+                      <AnnouncementRow 
+                        date="02" month="JUN" 
+                        title="Rapat Wali Murid" 
+                        desc="Undangan evaluasi pembelajaran semester genap." 
+                      />
+                   </div>
+                </div>
+
+            </div>
         </section>
 
         {/* === FOOTER === */}
-        <footer className="bg-slate-50 border-t border-slate-200 py-12 text-sm text-slate-500">
-          <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
+        <footer className="bg-slate-900 border-t border-slate-800 py-6 text-sm text-slate-400 relative z-20">
+          <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
-               <span className="font-bold text-slate-700 text-lg">SISAB</span>
+               <span className="font-bold text-white text-base">SISAB</span>
                <span className="hidden md:inline">|</span>
-               <span>&copy; {new Date().getFullYear()} {schoolData?.nama || 'SMK IT ALHAWARI'}</span>
+               <span>&copy; {new Date().getFullYear()} {schoolData?.nama || 'SMK IT AL-HAWARI'}</span>
             </div>
             <div className="flex gap-6">
-              <a href="#" className="hover:text-indigo-600">Kebijakan Privasi</a>
-              <a href="#" className="hover:text-indigo-600">Bantuan</a>
-              <a href="#" className="hover:text-indigo-600">Kontak</a>
+              <a href="#" className="hover:text-white transition-colors">Kebijakan Privasi</a>
+              <a href="#" className="hover:text-white transition-colors">Bantuan</a>
+              <a href="#" className="hover:text-white transition-colors">Kontak</a>
             </div>
-            <div className="text-xs text-slate-400">
-               Laravel v{laravelVersion} (PHP v{phpVersion})
+            <div className="flex items-center gap-4">
+               <span className="text-xs text-slate-500">
+                  Laravel v{laravelVersion} (PHP v{phpVersion})
+               </span>
+               <button onClick={scrollToTop} className="p-2 bg-slate-800 border border-slate-700 rounded hover:bg-slate-700 text-white transition-colors">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
+               </button>
             </div>
           </div>
         </footer>
 
       </div>
-      
-      {/* Styles for simple animations */}
-      <style>{`
-        @keyframes blob {
-          0% { transform: translate(0px, 0px) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
-          100% { transform: translate(0px, 0px) scale(1); }
-        }
-        .animate-blob { animation: blob 7s infinite; }
-        .animation-delay-2000 { animation-delay: 2s; }
-      `}</style>
     </>
   );
 }
 
-// --- Sub Components untuk kebersihan kode ---
-
-// Komponen Typing Animation
-function Typewriter({ words, speed = 150, deleteSpeed = 100, delay = 1500 }) {
-  const [index, setIndex] = useState(0); // Index kata dalam array words
-  const [subIndex, setSubIndex] = useState(0); // Index karakter yang sedang diketik
-  const [reverse, setReverse] = useState(false); // Mode menghapus
-  const [blink, setBlink] = useState(true); // Kursos kedip
-
-  // Efek kedip kursor
-  useEffect(() => {
-    const timeout2 = setInterval(() => {
-      setBlink((prev) => !prev);
-    }, 500);
-    return () => clearInterval(timeout2);
-  }, []);
-
-  // Logika mengetik
-  useEffect(() => {
-    if (subIndex === words[index].length + 1 && !reverse) {
-      // Selesai mengetik satu kata, tunggu delay sebelum menghapus
-      setTimeout(() => setReverse(true), delay);
-      return;
-    }
-
-    if (subIndex === 0 && reverse) {
-      // Selesai menghapus, pindah ke kata berikutnya
-      setReverse(false);
-      setIndex((prev) => (prev + 1) % words.length);
-      return;
-    }
-
-    const timeout = setTimeout(() => {
-      setSubIndex((prev) => prev + (reverse ? -1 : 1));
-    }, reverse ? deleteSpeed : speed);
-
-    return () => clearTimeout(timeout);
-  }, [subIndex, index, reverse, words, speed, deleteSpeed, delay]);
-
-  return (
-    <>
-      {`${words[index].substring(0, subIndex)}`}
-      <span className={`${blink ? 'opacity-100' : 'opacity-0'} ml-1 text-white`}>|</span>
-    </>
-  );
-}
-
-function HeroStat({ label, value }) {
-  return (
-    <div className="text-white">
-      <div className="text-3xl lg:text-4xl font-bold tracking-tight">{value}</div>
-      <div className="text-indigo-200 text-sm font-medium uppercase tracking-wider mt-1">{label}</div>
-    </div>
-  );
-}
-
-function AnnouncementCard({ date, title, desc, color }) {
-  return (
-    <div className="flex gap-4 items-start p-3 hover:bg-white/5 rounded-lg transition-colors group cursor-pointer">
-       <div className={`shrink-0 w-12 h-12 ${color} rounded-lg flex flex-col items-center justify-center text-white font-bold shadow-lg`}>
-          <span className="text-xs opacity-80 uppercase">{date.split(' ')[1]}</span>
-          <span className="text-lg leading-none">{date.split(' ')[0]}</span>
-       </div>
-       <div>
-          <h4 className="text-white font-medium group-hover:text-indigo-300 transition-colors">{title}</h4>
-          <p className="text-xs text-slate-300 mt-1 leading-relaxed">{desc}</p>
-       </div>
-    </div>
-  );
-}
+// --- Sub Components ---
 
 function AccessCard({ href, title, desc, icon, color }) {
   return (
-    <Link href={href} className="group relative p-6 rounded-xl border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-all text-left">
-      <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 ${color} transition-transform group-hover:scale-110 duration-300`}>
-        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <Link href={href} className="group flex flex-col p-5 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-500 hover:shadow-md transition-all text-left relative overflow-hidden">
+      <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 ${color} transition-transform group-hover:scale-110 duration-300`}>
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           {icon}
         </svg>
       </div>
-      <h3 className="text-lg font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">{title}</h3>
-      <p className="text-sm text-slate-500 mt-2">{desc}</p>
-      <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0 text-slate-400">
-        &rarr;
+      <h3 className="text-sm font-bold text-slate-800 dark:text-white mb-1 transition-colors">{title}</h3>
+      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug transition-colors">{desc}</p>
+      <div className="mt-auto pt-3 flex text-slate-400 dark:text-slate-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
       </div>
     </Link>
   );
 }
 
-function FeatureCard({ title, desc, icon }) {
+function StatItem({ icon, value, label, sublabel, color }) {
   return (
-    <div className="bg-slate-50 rounded-2xl p-8 transition-all hover:-translate-y-1 hover:shadow-lg border border-slate-100">
-      <div className="w-14 h-14 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center justify-center text-indigo-600 mb-6">
-        <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          {icon}
-        </svg>
+    <div className="flex-1 px-4 py-4 flex items-center gap-4">
+      <div className={`w-12 h-12 rounded-lg flex items-center justify-center shrink-0 ${color}`}>
+         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            {icon}
+         </svg>
       </div>
-      <h3 className="text-xl font-bold text-slate-900 mb-3">{title}</h3>
-      <p className="text-slate-600 leading-relaxed">{desc}</p>
+      <div>
+         <div className="text-2xl font-bold text-slate-900 dark:text-white leading-tight transition-colors">{value}</div>
+         <div className="text-sm font-semibold text-slate-700 dark:text-slate-300 transition-colors">{label}</div>
+         <div className="text-xs text-slate-500 dark:text-slate-400 transition-colors">{sublabel}</div>
+      </div>
+    </div>
+  );
+}
+
+function FeatureBox({ title, desc, icon, color }) {
+  return (
+    <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-6 hover:shadow-lg dark:hover:shadow-indigo-900/20 hover:-translate-y-1 transition-all flex flex-col">
+       <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-6 shrink-0 ${color}`}>
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+             {icon}
+          </svg>
+       </div>
+       <h4 className="font-bold text-slate-900 dark:text-white mb-2 transition-colors">{title}</h4>
+       <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 flex-1 transition-colors">{desc}</p>
+       <Link href="#fitur" className="text-sm text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center gap-1 w-max transition-colors">
+          Pelajari lebih lanjut <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+       </Link>
+    </div>
+  );
+}
+
+function AnnouncementRow({ date, month, title, desc }) {
+  return (
+    <div className="flex gap-4 items-center group cursor-pointer p-3 -mx-3 rounded-xl hover:bg-slate-800 transition-colors">
+       <div className="w-12 h-12 bg-white rounded-lg flex flex-col items-center justify-center shrink-0 text-slate-900 shadow">
+          <span className="text-lg font-bold leading-none">{date}</span>
+          <span className="text-[10px] font-bold uppercase mt-0.5 text-slate-500">{month}</span>
+       </div>
+       <div className="flex-1 pr-2">
+          <h4 className="text-sm font-bold text-white group-hover:text-indigo-300 transition-colors">{title}</h4>
+          <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">{desc}</p>
+       </div>
+       <div className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600 transition-all shrink-0">
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+       </div>
     </div>
   );
 }

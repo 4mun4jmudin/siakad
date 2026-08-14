@@ -83,7 +83,10 @@ class AbsensiSiswaController extends Controller
         ];
         $stats['belum_diinput'] = $stats['total'] - ($stats['hadir'] + $stats['sakit'] + $stats['izin'] + $stats['alfa']);
 
+        $pengaturan = Pengaturan::first();
+
         return Inertia::render('admin/AbsensiSiswa/Index', [
+            'pengaturan'       => $pengaturan,
             'kelasOptions'     => fn () => Kelas::orderBy('tingkat')->get(),
             'siswaWithAbsensi' => $siswaWithAbsensi,
             'stats'            => $stats,

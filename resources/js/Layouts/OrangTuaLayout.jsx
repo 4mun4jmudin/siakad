@@ -24,6 +24,8 @@ import {
   GraduationCap,
   Sparkles,
   ShieldCheck,
+  Star,
+  CheckCircle,
 } from 'lucide-react';
 
 function classNames(...classes) {
@@ -66,6 +68,8 @@ const getNavigationItems = (isAbsensiMode) => [
   { name: 'Pengumuman', href: 'orangtua.pengumuman.index', icon: Megaphone },
   { name: 'Pengajuan Izin', href: 'orangtua.surat-izin.index', icon: FileText },
   { name: 'Pengaturan Akun', href: 'orangtua.profile.show', icon: Settings },
+  { name: 'Feedback Sistem', href: 'orangtua.feedback.index', icon: Star },
+  { name: 'Kuesioner SUS', href: 'orangtua.sus.index', icon: CheckCircle },
 ];
 
 function NavItem({ item, collapsed, onClick }) {

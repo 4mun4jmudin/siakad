@@ -42,12 +42,15 @@ class HandleInertiaRequests extends Middleware
                         if ($user->level === 'Siswa') {
                             $user->load('siswa:id_pengguna,foto_profil');
                             $user->foto_profil = $user->siswa?->foto_profil;
+                            $user->foto_profil_url = $user->siswa?->foto_profil_url;
                         } elseif ($user->level === 'Guru') {
                             $user->load('guru:id_pengguna,foto_profil');
                             $user->foto_profil = $user->guru?->foto_profil;
+                            $user->foto_profil_url = $user->guru?->foto_profil_url;
                         } elseif ($user->level === 'Orang Tua') {
                             $user->load('orangTuaWali:id_pengguna,foto_profil');
                             $user->foto_profil = $user->orangTuaWali?->foto_profil;
+                            $user->foto_profil_url = $user->orangTuaWali?->foto_profil_url;
                         }
                     }
                     return $user;

@@ -284,7 +284,7 @@ function getPrecisePosition({ desiredAccuracy = 50, timeout = 15000 } = {}) {
   };
 }
 
-function PremiumCard({ children, className = '', delay = 0 }) {
+const PremiumCard = React.memo(function PremiumCard({ children, className = '', delay = 0 }) {
   return (
     <div
       className={cn(
@@ -298,9 +298,9 @@ function PremiumCard({ children, className = '', delay = 0 }) {
       {children}
     </div>
   );
-}
+});
 
-function StatusBadge({ status, className = '' }) {
+const StatusBadge = React.memo(function StatusBadge({ status, className = '' }) {
   const meta = statusMeta(status);
 
   return (
@@ -315,9 +315,9 @@ function StatusBadge({ status, className = '' }) {
       {meta.label}
     </span>
   );
-}
+});
 
-function HeroStat({ label, value, icon: Icon, tone = 'cyan' }) {
+const HeroStat = React.memo(function HeroStat({ label, value, icon: Icon, tone = 'cyan' }) {
   const tones = {
     cyan: 'text-cyan-100',
     emerald: 'text-emerald-200',
@@ -338,9 +338,9 @@ function HeroStat({ label, value, icon: Icon, tone = 'cyan' }) {
       </p>
     </div>
   );
-}
+});
 
-function MetricCard({ label, value, icon: Icon, tone = 'cyan', hint = null }) {
+const MetricCard = React.memo(function MetricCard({ label, value, icon: Icon, tone = 'cyan', hint = null }) {
   const tones = {
     cyan: 'bg-cyan-50 text-cyan-700 border-cyan-100',
     sky: 'bg-sky-50 text-sky-700 border-sky-100',
@@ -375,9 +375,9 @@ function MetricCard({ label, value, icon: Icon, tone = 'cyan', hint = null }) {
       </div>
     </PremiumCard>
   );
-}
+});
 
-function DigitalClock() {
+const DigitalClock = React.memo(function DigitalClock() {
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
@@ -407,9 +407,9 @@ function DigitalClock() {
       </div>
     </div>
   );
-}
+});
 
-function Toast({ show, type = 'success', message, onClose }) {
+const Toast = React.memo(function Toast({ show, type = 'success', message, onClose }) {
   useEffect(() => {
     if (!show) return undefined;
 
@@ -441,7 +441,7 @@ function Toast({ show, type = 'success', message, onClose }) {
       </div>
     </div>
   );
-}
+});
 
 function SmartGoogleMap({
   schoolLat,
@@ -743,8 +743,8 @@ export default function SiswaDashboard({
       const timeDiff = now - lastSent.time;
       const distDiff = Math.abs(distance - lastSent.distance);
       
-      // Kirim jika lebih dari 5 detik atau berpindah 5 meter
-      if (timeDiff >= 5000 || distDiff >= 5) {
+      // Kirim jika lebih dari 10 detik atau berpindah 10 meter
+      if (timeDiff >= 10000 || distDiff >= 10) {
         shouldSend = true;
       }
     }
@@ -1187,6 +1187,7 @@ export default function SiswaDashboard({
 
     router.post(safeRoute('siswa.absensi.store'), payload, {
       preserveScroll: true,
+      preserveState: true,
       onStart: () => {
         setIsSubmitting(true);
 

@@ -37,6 +37,10 @@ use App\Http\Controllers\Guru\AbsensiSiswaController as GuruAbsensiSiswaControll
 use App\Http\Controllers\Guru\AbsensiSiswaMapelController;
 use App\Http\Controllers\Guru\AbsensiHarianController;
 use App\Http\Controllers\Guru\JadwalController;
+use App\Http\Controllers\FeedbackController;
+use App\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
+use App\Http\Controllers\SusController;
+use App\Http\Controllers\Admin\SusController as AdminSusController;
 // use pindahkan ke sini untuk absesi siswa per mapel
 use App\Http\Controllers\Guru\AbsensiSiswaMapelController as GuruAbsensiSiswaMapelController;
 use App\Http\Controllers\Guru\RencanaMateriController as GuruRencanaMateriController;
@@ -175,6 +179,14 @@ Route::middleware('auth')->group(function () {
         Route::get('/nilai', [SiswaNilaiController::class, 'index'])->name('nilai.index');
         Route::get('/absensi/riwayat', [SiswaAbsensiController::class, 'riwayat'])->name('absensi.index');
         Route::get('/jadwal', [SiswaJadwalController::class, 'index'])->name('jadwal.index');
+
+        // Feedback
+        Route::get('/feedback', [FeedbackController::class, 'index'])->name('feedback.index');
+        Route::post('/feedback', [FeedbackController::class, 'store'])->name('feedback.store');
+
+        // Sus Kuesioner
+        Route::get('/sus', [SusController::class, 'index'])->name('sus.index');
+        Route::post('/sus', [SusController::class, 'store'])->name('sus.store');
     });
 
 
@@ -218,6 +230,14 @@ Route::middleware('auth')->group(function () {
             // (opsional) kalau kamu butuh halaman terpisah, jangan pakai nama yang sama
             Route::get('/profile/account', [OrangTuaProfileController::class, 'account'])
                 ->name('profile.account.page');
+
+            // Feedback
+            Route::get('/feedback', [FeedbackController::class, 'index'])->name('feedback.index');
+            Route::post('/feedback', [FeedbackController::class, 'store'])->name('feedback.store');
+
+            // Sus Kuesioner
+            Route::get('/sus', [SusController::class, 'index'])->name('sus.index');
+            Route::post('/sus', [SusController::class, 'store'])->name('sus.store');
         });
 
     /*
@@ -356,6 +376,14 @@ Route::middleware('auth')->group(function () {
             Route::post('/attendance/checkin', [GuruDashboardController::class, 'checkin'])->name('attendance.checkin');
             Route::post('/attendance/checkout', [GuruDashboardController::class, 'checkout'])->name('attendance.checkout');
         });
+
+        // Feedback
+        Route::get('/feedback', [FeedbackController::class, 'index'])->name('feedback.index');
+        Route::post('/feedback', [FeedbackController::class, 'store'])->name('feedback.store');
+
+        // Sus Kuesioner
+        Route::get('/sus', [SusController::class, 'index'])->name('sus.index');
+        Route::post('/sus', [SusController::class, 'store'])->name('sus.store');
 
         // Route::post('/absensi-mapel/prefill', [\App\Http\Controllers\Guru\AbsensiSiswaMapelController::class, 'prefill'])->name('absensi-mapel.prefill');
     });
@@ -659,6 +687,15 @@ Route::middleware('auth')->group(function () {
         Route::put('/pengaturan/pengguna', [PengaturanController::class, 'updateUsers'])->name('pengaturan.update-users');
         Route::put('/pengaturan/sistem', [PengaturanController::class, 'updateSystem'])->name('pengaturan.update-system');
         Route::put('/pengaturan/backup', [PengaturanController::class, 'updateBackup'])->name('pengaturan.update-backup');
+
+        // Rekap Feedback (Admin)
+        Route::get('/feedback', [AdminFeedbackController::class, 'index'])->name('feedback.index');
+        Route::delete('/feedback/{id}', [AdminFeedbackController::class, 'destroy'])->name('feedback.destroy');
+
+        // Rekap SUS (Admin)
+        Route::get('/sus', [AdminSusController::class, 'index'])->name('sus.index');
+        
+        // Pengaturan Sistem
         Route::put('/pengaturan/jadwal', [PengaturanController::class, 'updateJadwal'])->name('pengaturan.jadwal.update');
 
         // Maintenance

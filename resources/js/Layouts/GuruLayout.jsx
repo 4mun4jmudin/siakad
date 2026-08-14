@@ -26,6 +26,8 @@ import {
   UserRound,
   ShieldCheck,
   PanelLeft,
+  Star,
+  CheckCircle,
 } from 'lucide-react';
 import NotificationDropdown from '@/Components/NotificationDropdown';
 
@@ -355,6 +357,18 @@ export default function GuruLayout({ children, header = 'Panel Guru' }) {
       href: 'guru.laporan.index',
       icon: FileText,
     }] : []),
+    {
+      type: 'item',
+      name: 'Feedback Sistem',
+      href: 'guru.feedback.index',
+      icon: Star,
+    },
+    {
+      type: 'item',
+      name: 'Kuesioner SUS',
+      href: 'guru.sus.index',
+      icon: CheckCircle,
+    },
   ];
 
   const user = auth?.user ?? {

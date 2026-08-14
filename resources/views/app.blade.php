@@ -6,9 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title inertia>{{ config('app.name', 'Laravel') }}</title>
-    <!-- di <head> -->
+    @php
+        $pengaturan = \App\Models\Pengaturan::first();
+        $appName = $pengaturan->nama_sekolah ?? config('app.name', 'Laravel');
+        $logoUrl = $pengaturan->logo_url ? asset($pengaturan->logo_url) : asset('favicon.ico');
+    @endphp
 
+    <title inertia>{{ $appName }}</title>
+    <link rel="icon" type="image/x-icon" href="{{ $logoUrl }}">
+    <link rel="shortcut icon" href="{{ $logoUrl }}">
+    
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

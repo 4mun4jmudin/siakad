@@ -21,6 +21,17 @@ export default function Login({ status, canResetPassword }) {
   const [capsOn, setCapsOn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+  }, []);
+
   useEffect(() => () => reset('password'), []);
 
   const submit = (e) => {
@@ -53,7 +64,7 @@ export default function Login({ status, canResetPassword }) {
 
       {/* Card */}
       <div className="relative w-full max-w-md">
-        <div className="rounded-2xl bg-white/90 shadow-2xl ring-1 ring-black/5 backdrop-blur-md overflow-hidden">
+        <div className="rounded-2xl bg-white/90 dark:bg-slate-800/90 shadow-2xl ring-1 ring-black/5 dark:ring-white/10 backdrop-blur-md overflow-hidden transition-colors">
           {/* Header */}
           <div className="px-8 pt-8 text-center">
             <img
@@ -64,8 +75,8 @@ export default function Login({ status, canResetPassword }) {
                 e.currentTarget.style.display = 'none';
               }}
             />
-            <h1 className="mt-4 text-2xl font-bold text-slate-800">Selamat Datang</h1>
-            <p className="mt-1 mb-6 text-sm text-slate-600">
+            <h1 className="mt-4 text-2xl font-bold text-slate-800 dark:text-white transition-colors">Selamat Datang</h1>
+            <p className="mt-1 mb-6 text-sm text-slate-600 dark:text-slate-300 transition-colors">
               Login untuk Admin &amp; Guru
             </p>
           </div>
@@ -89,7 +100,7 @@ export default function Login({ status, canResetPassword }) {
                   type="text"
                   name="username"
                   value={data.username}
-                  className="block w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                  className="block w-full pl-10 pr-3 py-2.5 !bg-transparent dark:text-white"
                   autoComplete="username"
                   isFocused
                   onChange={(e) => setData('username', e.target.value)}
@@ -110,7 +121,7 @@ export default function Login({ status, canResetPassword }) {
                   type={showPassword ? 'text' : 'password'}
                   name="password"
                   value={data.password}
-                  className="block w-full pl-10 pr-12 py-2.5 rounded-lg border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                  className="block w-full pl-10 pr-12 py-2.5 !bg-transparent dark:text-white"
                   autoComplete="current-password"
                   onChange={(e) => setData('password', e.target.value)}
                   onKeyUp={onKeyWatch}
@@ -154,13 +165,13 @@ export default function Login({ status, canResetPassword }) {
                   checked={data.remember}
                   onChange={(e) => setData('remember', e.target.checked)}
                 />
-                <span className="text-sm text-slate-600">Ingat saya</span>
+                <span className="text-sm text-slate-600 dark:text-slate-300 transition-colors">Ingat saya</span>
               </label>
 
               {canResetPassword && (
                 <Link
                   href={route('password.request')}
-                  className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
+                  className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors"
                 >
                   Lupa password?
                 </Link>

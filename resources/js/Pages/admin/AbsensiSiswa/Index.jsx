@@ -21,7 +21,8 @@ import {
     ArrowDownTrayIcon,
     ChartPieIcon,
     ChevronLeftIcon,
-    ChevronRightIcon
+    ChevronRightIcon,
+    MapPinIcon
 } from "@heroicons/react/24/solid";
 import {
     ClockIcon,
@@ -111,12 +112,26 @@ const StatusBadge = ({ status, terlambat }) => {
 
 export default function Index({
     auth,
+    pengaturan,
     kelasOptions,
     siswaWithAbsensi,
     stats,
     filters,
 }) {
     const [isMassalModalOpen, setIsMassalModalOpen] = useState(false);
+
+    // Menghitung jarak menggunakan formula Haversine
+    const hitungJarak = (lat1, lon1, lat2, lon2) => {
+        if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+        const R = 6371e3; // Radius bumi dalam meter
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return Math.round(R * c);
+    };
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [currentSiswa, setCurrentSiswa] = useState(null);
 
@@ -492,6 +507,7 @@ export default function Index({
                                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-20">NIS</th>
                                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Nama Siswa</th>
                                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Lokasi</th>
                                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Waktu Masuk</th>
                                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Waktu Pulang</th>
                                     <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Aksi</th>
@@ -499,7 +515,17 @@ export default function Index({
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-100">
                                 {(siswaWithAbsensi || []).length > 0 ? (
-                                    siswaWithAbsensi.map((siswa, idx) => (
+                                    siswaWithAbsensi.map((siswa, idx) => {
+                                        const absensiLat = siswa.absensi?.latitude;
+                                        const absensiLng = siswa.absensi?.longitude;
+                                        const sekolahLat = pengaturan?.lokasi_sekolah_latitude;
+                                        const sekolahLng = pengaturan?.lokasi_sekolah_longitude;
+                                        const radiusSetting = pengaturan?.radius_absen_meters || 200;
+                                        
+                                        const jarakMeter = hitungJarak(sekolahLat, sekolahLng, absensiLat, absensiLng);
+                                        const isAman = jarakMeter !== null ? (jarakMeter <= radiusSetting) : null;
+
+                                        return (
                                         <tr key={siswa.id_siswa} className={`hover:bg-indigo-50/30 transition-colors group ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">
                                                 {siswa.nis}
@@ -524,6 +550,35 @@ export default function Index({
                                                     status={siswa.absensi?.status_kehadiran} 
                                                     terlambat={siswa.absensi?.menit_keterlambatan} 
                                                 />
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                {jarakMeter !== null ? (
+                                                    <div className="flex flex-col gap-1">
+                                                        <a 
+                                                            href={`https://www.google.com/maps?q=${absensiLat},${absensiLng}`} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex items-center text-xs font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
+                                                            title="Lihat di Peta"
+                                                        >
+                                                            <MapPinIcon className="w-4 h-4 mr-1" />
+                                                            Lihat Peta ({jarakMeter}m)
+                                                        </a>
+                                                        <div>
+                                                            {isAman ? (
+                                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                                                    Aman
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-800 border border-red-200">
+                                                                    Luar Radius
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-xs text-gray-400 italic">Tidak ada lokasi</span>
+                                                )}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
                                                 {siswa.absensi?.jam_masuk?.substring(0, 5) ? (
@@ -553,10 +608,11 @@ export default function Index({
                                                 </button>
                                             </td>
                                         </tr>
-                                    ))
+                                        );
+                                    })
                                 ) : (
                                     <tr>
-                                        <td colSpan="6" className="px-6 py-16 text-center text-gray-500">
+                                        <td colSpan="7" className="px-6 py-16 text-center text-gray-500">
                                             <div className="flex flex-col items-center justify-center max-w-sm mx-auto">
                                                 <div className="bg-gray-100 p-4 rounded-full mb-4">
                                                     <UserGroupIcon className="h-10 w-10 text-gray-400" />

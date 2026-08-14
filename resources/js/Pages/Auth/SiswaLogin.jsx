@@ -17,6 +17,17 @@ export default function SiswaLogin({ status }) {
     const [capsOn, setCapsOn] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+    }, []);
+
     useEffect(() => () => reset('password'), []);
 
     const onKeyWatch = (e) => {

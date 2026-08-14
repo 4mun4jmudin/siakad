@@ -22,6 +22,8 @@ import {
   SparklesIcon,
   UserCircleIcon,
   XMarkIcon,
+  StarIcon,
+  CheckCircleIcon,
 } from '@heroicons/react/24/outline';
 
 const getMainNavigation = (isAbsensiMode) => [
@@ -71,6 +73,18 @@ const getAcademicNavigation = (isAbsensiMode) => [
     routeName: 'siswa.jadwal.index',
     icon: ClockIcon,
     activePatterns: ['siswa.jadwal.*'],
+  },
+  {
+    name: 'Feedback Sistem',
+    routeName: 'siswa.feedback.index',
+    icon: StarIcon,
+    activePatterns: ['siswa.feedback.*'],
+  },
+  {
+    name: 'Kuesioner SUS',
+    routeName: 'siswa.sus.index',
+    icon: CheckCircleIcon,
+    activePatterns: ['siswa.sus.*'],
   },
 ];
 

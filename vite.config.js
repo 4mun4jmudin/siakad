@@ -5,7 +5,7 @@ import { fileURLToPath, URL } from "node:url";
 
 export default defineConfig({
   plugins: [
-    laravel({ input: "resources/js/app.jsx", refresh: true }),
+    laravel({ input: ["resources/js/app.jsx", "resources/js/Pages/admin/LiveLocation/Siswa.jsx"], refresh: true }),
     react(),
   ],
   resolve: {
