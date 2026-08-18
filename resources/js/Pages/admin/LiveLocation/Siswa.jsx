@@ -219,14 +219,22 @@ export default function AdminLiveLocationSiswa({ auth, sekolah }) {
                                                     </div>
                                                     <div className="flex justify-between gap-4">
                                                         <span className="text-slate-500">Update:</span>
-                                                        <span className="font-semibold text-slate-700">{loc.seconds_ago} detik lalu</span>
+                                                        <span className="font-semibold text-slate-700">{Math.round(loc.seconds_ago)} detik lalu</span>
                                                     </div>
                                                     {loc.network_meta && (
-                                                        <div className="flex justify-between gap-4 border-t border-slate-200 mt-2 pt-2">
-                                                            <span className="text-slate-500">Jaringan (Ping):</span>
-                                                            <span className="font-semibold text-cyan-700">
-                                                                {loc.network_meta.effectiveType || '?'} • {loc.network_meta.rtt || '-'}ms
-                                                            </span>
+                                                        <div className="flex flex-col gap-1 border-t border-slate-200 mt-2 pt-2">
+                                                            <div className="flex justify-between gap-4">
+                                                                <span className="text-slate-500">Perangkat:</span>
+                                                                <span className="font-semibold text-indigo-700">
+                                                                    {loc.network_meta.device || 'Desktop'}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex justify-between gap-4">
+                                                                <span className="text-slate-500">Jaringan:</span>
+                                                                <span className="font-semibold text-cyan-700">
+                                                                    {loc.network_meta.type && loc.network_meta.type !== '?' ? loc.network_meta.type : loc.network_meta.effectiveType || '?'} • {loc.network_meta.rtt || '-'}ms
+                                                                </span>
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </div>

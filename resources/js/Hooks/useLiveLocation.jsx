@@ -79,11 +79,13 @@ export function useLiveLocation(isSiswa = true) {
                             latitude,
                             longitude,
                             accuracy,
-                            network_meta: navigator.connection ? JSON.stringify({
-                                effectiveType: navigator.connection.effectiveType,
-                                downlink: navigator.connection.downlink,
-                                rtt: navigator.connection.rtt,
-                            }) : null,
+                            network_meta: JSON.stringify({
+                                effectiveType: navigator.connection ? navigator.connection.effectiveType : '?',
+                                downlink: navigator.connection ? navigator.connection.downlink : '?',
+                                rtt: navigator.connection ? navigator.connection.rtt : '?',
+                                type: navigator.connection && navigator.connection.type ? navigator.connection.type : '?',
+                                device: /android/i.test(navigator.userAgent) ? 'Android' : (/ipad|iphone|ipod/i.test(navigator.userAgent) ? 'iOS' : (/mobile/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop'))
+                            }),
                             location_meta: JSON.stringify({
                                 timestamp: position.timestamp,
                                 altitude: position.coords.altitude,
