@@ -35,5 +35,9 @@ class AppServiceProvider extends ServiceProvider
         if (is_string($appUrl) && str_starts_with($appUrl, 'https://')) {
             URL::forceScheme('https');
         }
+
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Login::class, function ($event) {
+            session()->put('just_logged_in', true);
+        });
     }
 }
