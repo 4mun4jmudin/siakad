@@ -1,27 +1,49 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
+
+// Module-level variables to persist state across Inertia SPA page navigations
+let globalWatchId = null;
+let globalLastUpdate = 0;
+let globalPermission = 'prompt';
+let globalError = null;
+let globalIsTracking = false;
+let globalLastPosition = null;
+let subscribers = [];
+
+const minUpdateInterval = 10000; // 10 seconds throttle
+
+function notifySubscribers() {
+    subscribers.forEach(fn => fn({
+        isTracking: globalIsTracking,
+        permission: globalPermission,
+        error: globalError,
+        lastPosition: globalLastPosition,
+    }));
+}
 
 export function useLiveLocation(isSiswa = true) {
     const [locationState, setLocationState] = useState({
-        isTracking: false,
-        permission: 'prompt', // 'prompt', 'granted', 'denied'
-        error: null,
-        lastPosition: null,
+        isTracking: globalIsTracking,
+        permission: globalPermission,
+        error: globalError,
+        lastPosition: globalLastPosition,
     });
-
-    const watchIdRef = useRef(null);
-    const lastUpdateRef = useRef(0);
-    const minUpdateInterval = 10000; // 10 seconds throttle
 
     useEffect(() => {
         if (!isSiswa) return;
 
-        // Check initial permission status
-        if (navigator.permissions) {
+        // Register subscriber
+        const updateState = (newState) => setLocationState(newState);
+        subscribers.push(updateState);
+
+        // Check initial permission status if not already checked
+        if (navigator.permissions && globalPermission === 'prompt') {
             navigator.permissions.query({ name: 'geolocation' }).then((result) => {
-                setLocationState((prev) => ({ ...prev, permission: result.state }));
+                globalPermission = result.state;
+                notifySubscribers();
                 result.onchange = () => {
-                    setLocationState((prev) => ({ ...prev, permission: result.state }));
+                    globalPermission = result.state;
+                    notifySubscribers();
                 };
             }).catch(() => {
                 // Ignore fallback
@@ -29,27 +51,28 @@ export function useLiveLocation(isSiswa = true) {
         }
 
         const startTracking = () => {
+            if (globalWatchId !== null) return; // Already tracking!
+
             if (!navigator.geolocation) {
-                setLocationState((prev) => ({ ...prev, error: 'Geolocation is not supported by your browser.' }));
+                globalError = 'Geolocation is not supported by your browser.';
+                notifySubscribers();
                 return;
             }
 
-            watchIdRef.current = navigator.geolocation.watchPosition(
+            globalWatchId = navigator.geolocation.watchPosition(
                 (position) => {
                     const { latitude, longitude, accuracy } = position.coords;
 
-                    setLocationState((prev) => ({
-                        ...prev,
-                        isTracking: true,
-                        permission: 'granted',
-                        error: null,
-                        lastPosition: { latitude, longitude, accuracy },
-                    }));
+                    globalIsTracking = true;
+                    globalPermission = 'granted';
+                    globalError = null;
+                    globalLastPosition = { latitude, longitude, accuracy };
+                    notifySubscribers();
 
                     const now = Date.now();
                     // Throttle updates to avoid spamming the server
-                    if (now - lastUpdateRef.current >= minUpdateInterval) {
-                        lastUpdateRef.current = now;
+                    if (now - globalLastUpdate >= minUpdateInterval) {
+                        globalLastUpdate = now;
                         
                         // Send data to backend
                         axios.post('/siswa/lokasi/realtime', {
@@ -93,12 +116,10 @@ export function useLiveLocation(isSiswa = true) {
                             break;
                     }
 
-                    setLocationState((prev) => ({
-                        ...prev,
-                        isTracking: false,
-                        permission: permStatus,
-                        error: errorMessage,
-                    }));
+                    globalIsTracking = false;
+                    globalPermission = permStatus;
+                    globalError = errorMessage;
+                    notifySubscribers();
                 },
                 {
                     enableHighAccuracy: true,
@@ -111,24 +132,30 @@ export function useLiveLocation(isSiswa = true) {
         startTracking();
 
         return () => {
-            if (watchIdRef.current !== null && navigator.geolocation) {
-                navigator.geolocation.clearWatch(watchIdRef.current);
-            }
+            // Unsubscribe component, but DO NOT clear globalWatchId.
+            // This ensures GPS tracking continues uninterrupted across page changes!
+            subscribers = subscribers.filter(fn => fn !== updateState);
         };
     }, [isSiswa]);
 
-    // Expose a method to manually request location if they previously denied but then changed browser settings
+    // Expose a method to manually request location
     const requestLocationRetry = () => {
-        setLocationState(prev => ({ ...prev, error: null, permission: 'prompt' }));
+        globalError = null;
+        globalPermission = 'prompt';
+        notifySubscribers();
+
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 () => {
-                    setLocationState(prev => ({ ...prev, permission: 'granted', error: null }));
-                    // The watchPosition in useEffect will automatically pick it up once permitted
+                    globalPermission = 'granted';
+                    globalError = null;
+                    notifySubscribers();
                 },
                 (err) => {
                     if (err.code === err.PERMISSION_DENIED) {
-                        setLocationState(prev => ({ ...prev, permission: 'denied', error: 'Izin akses lokasi ditolak.' }));
+                        globalPermission = 'denied';
+                        globalError = 'Izin akses lokasi ditolak.';
+                        notifySubscribers();
                     }
                 },
                 { enableHighAccuracy: true }
