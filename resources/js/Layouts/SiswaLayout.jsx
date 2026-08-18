@@ -24,7 +24,9 @@ import {
   XMarkIcon,
   StarIcon,
   CheckCircleIcon,
+  MapPinIcon,
 } from '@heroicons/react/24/outline';
+import { useLiveLocation } from '../Hooks/useLiveLocation';
 
 const getMainNavigation = (isAbsensiMode) => [
   {
@@ -493,6 +495,10 @@ export default function SiswaLayout({
   const isAbsensiMode = systemMode?.siswa === 'absensi';
 
   const user = auth?.user || {};
+  
+  // Initialize Live Location hook (only activates if user is a Siswa)
+  const isSiswaUser = user?.role === 'siswa' || window.location.pathname.startsWith('/siswa');
+  const { permission, error, requestLocationRetry } = useLiveLocation(isSiswaUser);
   const displayName = user?.nama_lengkap || user?.name || 'Siswa';
   const userPhoto = getUserPhoto(user);
 
@@ -655,6 +661,92 @@ export default function SiswaLayout({
       </div>
 
       <MobileBottomNav isAbsensiMode={isAbsensiMode} />
+
+      {/* Location Permission Modal */}
+      <Transition.Root show={isSiswaUser && (permission === 'prompt' || permission === 'denied' || error !== null)} as={Fragment}>
+        <Dialog as="div" className="relative z-[100]" onClose={() => {}}>
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md transition-opacity" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 z-10 w-screen overflow-y-auto">
+            <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                enterTo="opacity-100 translate-y-0 sm:scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 translate-y-0 sm:scale-100"
+                leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+              >
+                <Dialog.Panel className="relative transform overflow-hidden rounded-3xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md">
+                  <div className="bg-gradient-to-br from-blue-600 to-cyan-600 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                    <div className="sm:flex sm:items-start">
+                      <div className="mx-auto flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-white/20 shadow-inner sm:mx-0 sm:h-12 sm:w-12">
+                        <MapPinIcon className="h-8 w-8 text-white sm:h-6 sm:w-6" aria-hidden="true" />
+                      </div>
+                      <div className="mt-4 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                        <Dialog.Title as="h3" className="text-lg font-black leading-6 text-white">
+                          Akses Lokasi Dibutuhkan
+                        </Dialog.Title>
+                        <div className="mt-3">
+                          <p className="text-sm font-medium leading-relaxed text-cyan-50">
+                            Untuk menggunakan aplikasi secara maksimal, kami membutuhkan akses ke lokasi Anda secara real-time demi keamanan dan keperluan akademik.
+                          </p>
+                          {error && (
+                            <div className="mt-3 rounded-xl bg-rose-500/20 p-3 border border-rose-400/30">
+                              <p className="text-xs font-bold text-rose-100">
+                                Error: {error}
+                              </p>
+                              <p className="mt-1 text-xs text-rose-50">
+                                Silakan buka pengaturan browser/situs Anda dan izinkan Akses Lokasi (Location), lalu muat ulang halaman ini.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-slate-50 px-4 py-4 sm:flex sm:flex-row-reverse sm:px-6">
+                    <button
+                      type="button"
+                      className="inline-flex w-full justify-center rounded-2xl bg-cyan-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-cyan-600/30 hover:bg-cyan-500 focus:outline-none sm:ml-3 sm:w-auto"
+                      onClick={() => {
+                        if (permission === 'denied' || error) {
+                          window.location.reload();
+                        } else {
+                          requestLocationRetry();
+                        }
+                      }}
+                    >
+                      {permission === 'denied' || error ? 'Muat Ulang Halaman' : 'Minta Izin Lokasi'}
+                    </button>
+                    {(permission === 'denied' || error) && (
+                      <Link
+                        href={safeRoute('logout')}
+                        method="post"
+                        as="button"
+                        className="mt-3 inline-flex w-full justify-center rounded-2xl bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:mt-0 sm:w-auto"
+                      >
+                        Keluar Aplikasi
+                      </Link>
+                    )}
+                  </div>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition.Root>
 
       <style>{`
         .custom-sidebar-scroll::-webkit-scrollbar {

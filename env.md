@@ -1,13 +1,15 @@
-
 ```shell
+jangan pernah mengubah file ini karena sebagai backup
+jika kamu menganalisa file ini oke tapi kalau update jangan 
+
 # ========== APP ==========
 APP_NAME=sisab
-APP_ENV=local
+APP_ENV=production
 APP_KEY=base64:rU6yZ+xXksqbFTQ5NQFp7yUWmwv4w2HRg/S5DtofBeU=
 APP_DEBUG=true
 # APP_URL=https://5a5bdec15ad8.ngrok-free.app
 # Kalau balik ke lokal biasa: ganti ke http://127.0.0.1:8000
-APP_URL=http://127.0.0.1:8000
+APP_URL=https://alhawaribro.my.id
 # APP_URL=http://192.168.1.3:8000
 # APP_URL=https://sticks-animals-mechanical-solutions.trycloudflare.com
 # SANCTUM_STATEFUL_DOMAINS=sticks-animals-mechanical-solutions.trycloudflare.com
@@ -37,9 +39,9 @@ LOG_LEVEL=debug
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=db_sistem
-DB_USERNAME=root
-DB_PASSWORD=
+DB_DATABASE=qjnjmnoj_simdikalhawari
+DB_USERNAME=qjnjmnoj_simdikalhawari
+DB_PASSWORD=nz5VCRnj35zUv6reaPkh
 
 # ========== SESSION / COOKIES ==========
 SESSION_DRIVER=file
@@ -151,14 +153,15 @@ VITE_GOOGLE_MAPS_API_KEY=ISI_API_KEY_GOOGLE_MAPS_BRO
 # REDIS_PASSWORD=null
 # REDIS_PORT=6379
 
-# MAIL_MAILER=log
-# MAIL_SCHEME=null
-# MAIL_HOST=127.0.0.1
-# MAIL_PORT=2525
-# MAIL_USERNAME=null
-# MAIL_PASSWORD=null
-# MAIL_FROM_ADDRESS=hello@example.com
-# MAIL_FROM_NAME="${APP_NAME}"
+MAIL_MAILER=smtp
+MAIL_HOST=mail.mandalaarenatest.my.id
+MAIL_PORT=587
+MAIL_USERNAME="mandala@mandalaarenatest.my.id"
+MAIL_PASSWORD="mandala123"
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS="mandala@mandalaarenatest.my.id"
+MAIL_FROM_NAME="${APP_NAME}"
+
 
 # AWS_ACCESS_KEY_ID=
 # AWS_SECRET_ACCESS_KEY=

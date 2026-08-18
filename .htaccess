@@ -1,0 +1,20 @@
+<IfModule mod_rewrite.c>
+    # Mematikan fitur melihat daftar folder/file
+    Options -Indexes
+
+    RewriteEngine On
+    
+    # Memaksa pengunjung otomatis dialihkan ke HTTPS (Jalur Aman)
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # Mencegah akses langsung ke file .env demi keamanan
+    <Files .env>
+        Order allow,deny
+        Deny from all
+    </Files>
+
+    # Mengarahkan semua request ke folder public
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L,QSA]
+</IfModule>
