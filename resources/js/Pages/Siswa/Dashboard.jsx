@@ -458,6 +458,8 @@ function SmartGoogleMap({
   onOpenFullMap,
 }) {
   const [components, setComponents] = useState(null);
+  const [mapInstance, setMapInstance] = useState(null);
+  const [hasCentered, setHasCentered] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && !document.getElementById('leaflet-css')) {
@@ -516,9 +518,25 @@ function SmartGoogleMap({
   const MapEffect = ({ components }) => {
     const map = components.useMap();
     useEffect(() => {
-      if (center) map.setView(center, map.getZoom(), { animate: true });
-    }, [center, map]);
+      if (!mapInstance) setMapInstance(map);
+    }, [map]);
     return null;
+  };
+
+  useEffect(() => {
+    if (mapInstance && center && !hasCentered) {
+      mapInstance.setView(center, 17, { animate: false });
+      setHasCentered(true);
+    }
+  }, [mapInstance, center, hasCentered]);
+
+  const handleRecenter = () => {
+    if (mapInstance) {
+      const targetCenter = studentCenter || schoolCenter || center;
+      if (targetCenter) {
+        mapInstance.setView(targetCenter, 17, { animate: true });
+      }
+    }
   };
 
   if (!components) {
@@ -620,6 +638,14 @@ function SmartGoogleMap({
         </div>
 
         <div className="flex flex-wrap gap-2 pointer-events-auto">
+          <button
+            type="button"
+            onClick={handleRecenter}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 shadow-xl transition hover:bg-slate-50"
+          >
+            <LocateFixed className="h-5 w-5" />
+            Pusatkan
+          </button>
 
           {onOpenFullMap && (
             <button
