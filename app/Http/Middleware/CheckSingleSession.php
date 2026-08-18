@@ -26,10 +26,19 @@ class CheckSingleSession
                 $user->update(['current_session_id' => $sessionId]);
             } else {
                 // Untuk request normal, periksa apakah ID Sesi cocok
+                \Illuminate\Support\Facades\Log::info('CheckSingleSession: Checking session', [
+                    'user_id' => $user->id_pengguna,
+                    'db_session_id' => $user->current_session_id,
+                    'request_session_id' => $sessionId,
+                ]);
+
                 if ($user->current_session_id && $user->current_session_id !== $sessionId) {
+                    \Illuminate\Support\Facades\Log::info('CheckSingleSession: Session mismatch, logging out', ['user_id' => $user->id_pengguna]);
                     Auth::logout();
                     $request->session()->invalidate();
-                    $request->session()->regenerateToken();
+                    if (!$request->header('X-Inertia') && ($request->ajax() || $request->wantsJson())) {
+                        return response()->json(['message' => 'Sesi login Anda telah berakhir karena akun digunakan di perangkat lain.', 'kick' => true], 401);
+                    }
 
                     return redirect('/')->with('error', 'Sesi login Anda telah berakhir karena akun digunakan di perangkat lain.');
                 }

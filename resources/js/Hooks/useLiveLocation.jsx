@@ -94,6 +94,10 @@ export function useLiveLocation(isSiswa = true) {
                                 speed: position.coords.speed,
                             })
                         }).catch(err => {
+                            if (err.response && (err.response.status === 401 || err.response.status === 419 || err.response.status === 403)) {
+                                window.location.href = '/';
+                                return;
+                            }
                             console.error('Failed to update live location:', err);
                         });
                     }
