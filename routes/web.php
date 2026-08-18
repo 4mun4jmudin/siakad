@@ -122,8 +122,6 @@ Route::get('/', [DashboardRedirectController::class, 'welcome']);
 // Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 Route::get('/dashboard', [DashboardRedirectController::class, 'redirect'])->middleware('auth')->name('dashboard');
 
-
-
 /*
 |--------------------------------------------------------------------------
 | Login Khusus Admin Penilaian
