@@ -1,0 +1,1 @@
+import{j as a}from"./index-BZ0PykaF.js";function n({value:t,className:e="",children:s,...r}){return a.jsx("label",{...r,className:"block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1.5 "+e,children:t||s})}export{n as I};

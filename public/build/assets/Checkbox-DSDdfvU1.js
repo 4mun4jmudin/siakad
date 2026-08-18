@@ -1,0 +1,1 @@
+import{r as s,j as t}from"./index-BZ0PykaF.js";const c=s.forwardRef(function({className:o="",...r},e){return t.jsx("input",{...r,type:"checkbox",ref:e,className:"rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 "+o})});export{c as C};
