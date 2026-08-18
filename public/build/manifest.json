@@ -566,8 +566,8 @@
       "_index-BZ0PykaF.js"
     ]
   },
-  "_SiswaLayout-Bt93hxEC.js": {
-    "file": "assets/SiswaLayout-Bt93hxEC.js",
+  "_SiswaLayout-Btxb8Gzn.js": {
+    "file": "assets/SiswaLayout-Btxb8Gzn.js",
     "name": "SiswaLayout",
     "imports": [
       "_index-BZ0PykaF.js",
@@ -1668,13 +1668,13 @@
     ]
   },
   "resources/js/Pages/Feedback/Index.jsx": {
-    "file": "assets/Index-DjKUYofR.js",
+    "file": "assets/Index-B2UVlUZs.js",
     "name": "Index",
     "src": "resources/js/Pages/Feedback/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_index-BZ0PykaF.js",
-      "_SiswaLayout-Bt93hxEC.js",
+      "_SiswaLayout-Btxb8Gzn.js",
       "_GuruLayout-5NwxhzeW.js",
       "_OrangTuaLayout-BraVzQoW.js",
       "_sweetalert2.esm.all-C80wueXW.js",
@@ -3645,13 +3645,13 @@
     ]
   },
   "resources/js/Pages/Siswa/Absensi/Index.jsx": {
-    "file": "assets/Index-XTZ3j2f8.js",
+    "file": "assets/Index-90_MuSu9.js",
     "name": "Index",
     "src": "resources/js/Pages/Siswa/Absensi/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_index-BZ0PykaF.js",
-      "_SiswaLayout-Bt93hxEC.js",
+      "_SiswaLayout-Btxb8Gzn.js",
       "_Pagination-6PmeQQIJ.js",
       "_sparkles-DOt8bzA0.js",
       "_calendar-days-C8HQanH3.js",
@@ -3688,13 +3688,13 @@
     ]
   },
   "resources/js/Pages/Siswa/Account/Edit.jsx": {
-    "file": "assets/Edit-BaOqSYty.js",
+    "file": "assets/Edit-C5fbwbJT.js",
     "name": "Edit",
     "src": "resources/js/Pages/Siswa/Account/Edit.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_index-BZ0PykaF.js",
-      "_SiswaLayout-Bt93hxEC.js",
+      "_SiswaLayout-Btxb8Gzn.js",
       "_InputError-D3Iagfoy.js",
       "_createLucideIcon-CNW7Ty73.js",
       "_sparkles-DOt8bzA0.js",
@@ -3731,13 +3731,13 @@
     ]
   },
   "resources/js/Pages/Siswa/Account/EditPhoto.jsx": {
-    "file": "assets/EditPhoto-CGP2WCtE.js",
+    "file": "assets/EditPhoto-BBqQo_fL.js",
     "name": "EditPhoto",
     "src": "resources/js/Pages/Siswa/Account/EditPhoto.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_index-BZ0PykaF.js",
-      "_SiswaLayout-Bt93hxEC.js",
+      "_SiswaLayout-Btxb8Gzn.js",
       "_InputError-D3Iagfoy.js",
       "_camera-DaI36wUB.js",
       "_sparkles-DOt8bzA0.js",
@@ -3767,14 +3767,14 @@
     ]
   },
   "resources/js/Pages/Siswa/Dashboard.jsx": {
-    "file": "assets/Dashboard-Cs8qGJMl.js",
+    "file": "assets/Dashboard-_e8vdpRl.js",
     "name": "Dashboard",
     "src": "resources/js/Pages/Siswa/Dashboard.jsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.jsx",
       "_index-BZ0PykaF.js",
-      "_SiswaLayout-Bt93hxEC.js",
+      "_SiswaLayout-Btxb8Gzn.js",
       "_sparkles-DOt8bzA0.js",
       "_trending-up-u07mU2np.js",
       "_circle-check-CPx9X7qT.js",
@@ -3816,13 +3816,13 @@
     ]
   },
   "resources/js/Pages/Siswa/Jadwal/Index.jsx": {
-    "file": "assets/Index-BRp99a56.js",
+    "file": "assets/Index-DpxRW_kN.js",
     "name": "Index",
     "src": "resources/js/Pages/Siswa/Jadwal/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_index-BZ0PykaF.js",
-      "_SiswaLayout-Bt93hxEC.js",
+      "_SiswaLayout-Btxb8Gzn.js",
       "_sparkles-DOt8bzA0.js",
       "_graduation-cap-CLXkHw9K.js",
       "_calendar-days-C8HQanH3.js",
@@ -3854,13 +3854,13 @@
     ]
   },
   "resources/js/Pages/Siswa/Materi/Index.jsx": {
-    "file": "assets/Index-BNVzqGjY.js",
+    "file": "assets/Index-DlaXZzeI.js",
     "name": "Index",
     "src": "resources/js/Pages/Siswa/Materi/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_index-BZ0PykaF.js",
-      "_SiswaLayout-Bt93hxEC.js",
+      "_SiswaLayout-Btxb8Gzn.js",
       "_sparkles-DOt8bzA0.js",
       "_book-open-3zM0dAS5.js",
       "_circle-check-CPx9X7qT.js",
@@ -3891,13 +3891,13 @@
     ]
   },
   "resources/js/Pages/Siswa/Nilai/Index.jsx": {
-    "file": "assets/Index-Q0YCv54m.js",
+    "file": "assets/Index-M-UWCNdA.js",
     "name": "Index",
     "src": "resources/js/Pages/Siswa/Nilai/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_index-BZ0PykaF.js",
-      "_SiswaLayout-Bt93hxEC.js",
+      "_SiswaLayout-Btxb8Gzn.js",
       "_sparkles-DOt8bzA0.js",
       "_calendar-days-C8HQanH3.js",
       "_layers-BihC3PkD.js",
@@ -3933,13 +3933,13 @@
     ]
   },
   "resources/js/Pages/Siswa/Tugas/Index.jsx": {
-    "file": "assets/Index-DO1diMA_.js",
+    "file": "assets/Index-DR_9GyZw.js",
     "name": "Index",
     "src": "resources/js/Pages/Siswa/Tugas/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_index-BZ0PykaF.js",
-      "_SiswaLayout-Bt93hxEC.js",
+      "_SiswaLayout-Btxb8Gzn.js",
       "_Pagination-6PmeQQIJ.js",
       "_sparkles-DOt8bzA0.js",
       "_clipboard-list-smzCS9T8.js",
@@ -3974,13 +3974,13 @@
     ]
   },
   "resources/js/Pages/Siswa/Tugas/Show.jsx": {
-    "file": "assets/Show-5ZRk-g-Z.js",
+    "file": "assets/Show-CG4fPcY-.js",
     "name": "Show",
     "src": "resources/js/Pages/Siswa/Tugas/Show.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_index-BZ0PykaF.js",
-      "_SiswaLayout-Bt93hxEC.js",
+      "_SiswaLayout-Btxb8Gzn.js",
       "_InputError-D3Iagfoy.js",
       "_file-text-CrQTIhIG.js",
       "_sparkles-DOt8bzA0.js",
@@ -4019,13 +4019,13 @@
     ]
   },
   "resources/js/Pages/Sus/Index.jsx": {
-    "file": "assets/Index-DqbGfahq.js",
+    "file": "assets/Index-PWNAJqwN.js",
     "name": "Index",
     "src": "resources/js/Pages/Sus/Index.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_index-BZ0PykaF.js",
-      "_SiswaLayout-Bt93hxEC.js",
+      "_SiswaLayout-Btxb8Gzn.js",
       "_GuruLayout-5NwxhzeW.js",
       "_OrangTuaLayout-BraVzQoW.js",
       "_sweetalert2.esm.all-C80wueXW.js",
@@ -6422,7 +6422,7 @@
     ]
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-CBaUs7Oj.js",
+    "file": "assets/app-B4rhElih.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,

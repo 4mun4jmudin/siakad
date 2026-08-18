@@ -61,7 +61,24 @@ export function useLiveLocation(isSiswa = true) {
 
             globalWatchId = navigator.geolocation.watchPosition(
                 (position) => {
-                    const { latitude, longitude, accuracy } = position.coords;
+                    const { latitude, longitude, accuracy, altitude, altitudeAccuracy, heading, speed } = position.coords;
+
+                    // Anti-Fake GPS Heuristic
+                    const isMocked = position.mocked || position.coords.mocked;
+                    const isSuspiciousFake = 
+                        (altitude === 0 || altitude === null) &&
+                        (altitudeAccuracy === 0 || altitudeAccuracy === null) &&
+                        (heading === 0 || heading === null || Number.isNaN(heading)) &&
+                        (speed === 0 || speed === null);
+                    const isPerfectRound = accuracy % 1 === 0 && accuracy <= 20;
+
+                    if (isMocked || (isSuspiciousFake && isPerfectRound)) {
+                        globalError = 'Terdeteksi penggunaan Fake GPS / Lokasi Palsu.';
+                        globalIsTracking = false;
+                        notifySubscribers();
+                        if (globalWatchId !== null) navigator.geolocation.clearWatch(globalWatchId);
+                        return;
+                    }
 
                     globalIsTracking = true;
                     globalPermission = 'granted';

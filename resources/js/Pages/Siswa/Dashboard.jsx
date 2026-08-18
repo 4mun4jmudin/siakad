@@ -230,6 +230,28 @@ function getPrecisePosition({ desiredAccuracy = 50, timeout = 15000 } = {}) {
 
     watchId = navigator.geolocation.watchPosition(
       (position) => {
+        // Anti-Fake GPS Heuristic
+        const c = position.coords;
+        const isMocked = position.mocked || c.mocked;
+        const isSuspiciousFake = 
+          (c.altitude === 0 || c.altitude === null) &&
+          (c.altitudeAccuracy === 0 || c.altitudeAccuracy === null) &&
+          (c.heading === 0 || c.heading === null || Number.isNaN(c.heading)) &&
+          (c.speed === 0 || c.speed === null);
+
+        // Jika terdeteksi properti mocked OS, atau
+        // Akurasi bulat sempurna tanpa goyangan desimal (misal 5, 10) + data satelit 100% kosong
+        const isPerfectRound = c.accuracy % 1 === 0 && c.accuracy <= 20;
+
+        if (isMocked || (isSuspiciousFake && isPerfectRound)) {
+          if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+          if (timer) clearTimeout(timer);
+          
+          resolved = true;
+          reject(new Error('Akses ditolak: Terdeteksi penggunaan Fake GPS / Lokasi Palsu.'));
+          return;
+        }
+
         if (!best || position.coords.accuracy < best.coords.accuracy) {
           best = position;
         }
@@ -1049,6 +1071,30 @@ export default function SiswaDashboard({
 
     liveWatchRef.current = navigator.geolocation.watchPosition(
       (position) => {
+        // Anti-Fake GPS Heuristic
+        const c = position.coords;
+        const isMocked = position.mocked || c.mocked;
+        const isSuspiciousFake = 
+          (c.altitude === 0 || c.altitude === null) &&
+          (c.altitudeAccuracy === 0 || c.altitudeAccuracy === null) &&
+          (c.heading === 0 || c.heading === null || Number.isNaN(c.heading)) &&
+          (c.speed === 0 || c.speed === null);
+
+        const isPerfectRound = c.accuracy % 1 === 0 && c.accuracy <= 20;
+
+        if (isMocked || (isSuspiciousFake && isPerfectRound)) {
+          setLocating(false);
+          setLiveTracking(false);
+          setLocationError('Akses ditolak: Terdeteksi penggunaan Fake GPS / Lokasi Palsu.');
+          setToast({
+            show: true,
+            message: 'Akses ditolak: Terdeteksi penggunaan Fake GPS / Lokasi Palsu.',
+            type: 'error',
+          });
+          if (liveWatchRef.current) navigator.geolocation.clearWatch(liveWatchRef.current);
+          return;
+        }
+
         updateLocationState(position);
         setLocating(false);
       },
