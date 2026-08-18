@@ -94,6 +94,10 @@ use Illuminate\Support\Facades\Storage;
 // ------------- PUBLIC STORAGE ROUTE (untuk foto profil, dll) -------------
 Route::get('/storage-public/{path}', [StorageController::class, 'serve'])->where('path', '.*')->name('storage.public');
 
+// ------------- PWA MANIFEST -------------
+Route::get('/manifest.json', [\App\Http\Controllers\PwaController::class, 'manifest'])->name('pwa.manifest');
+Route::get('/pwa-icon/{size}', [\App\Http\Controllers\PwaController::class, 'icon'])->name('pwa.icon');
+
 
 
 /*

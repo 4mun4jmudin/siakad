@@ -2,6 +2,44 @@ import { Head, Link } from '@inertiajs/react';
 import { useEffect, useState, useMemo } from 'react';
 
 export default function Welcome({ auth, laravelVersion, phpVersion, landingStats, schoolData }) {
+  // --- PWA Install Prompt Logic ---
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallPrompt(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+        setShowInstallPrompt(false);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const [isInstalling, setIsInstalling] = useState(false);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      setIsInstalling(true);
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+        setShowInstallPrompt(false);
+      }
+      setIsInstalling(false);
+    }
+  };
+
   // --- Logic Statistik Dinamis ---
   const statsTarget = useMemo(() => ({ 
     siswaAktif: landingStats?.siswa || 0, 
@@ -111,6 +149,27 @@ export default function Welcome({ auth, laravelVersion, phpVersion, landingStats
       <Head title={`Selamat Datang - ${schoolData?.nama || 'Sistem Absensi'}`} />
       
       <div className="min-h-screen bg-white dark:bg-slate-900 font-sans text-slate-600 dark:text-slate-300 selection:bg-indigo-500 selection:text-white relative transition-colors duration-300">
+        
+        {/* === PWA INSTALL PROMPT === */}
+        {showInstallPrompt && (
+          <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-indigo-100 dark:border-slate-700 z-[100] p-4 flex gap-4 items-start animate-[bounce_1s_ease-in-out]">
+            <div className="w-12 h-12 shrink-0 rounded-lg bg-indigo-50 dark:bg-slate-700 flex items-center justify-center p-2">
+                {schoolData?.logo ? (
+                    <img src={schoolData.logo} alt="Logo" className="w-full h-full object-contain" />
+                ) : (
+                    <svg className="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                )}
+            </div>
+            <div className="flex-1">
+               <h4 className="font-bold text-slate-900 dark:text-white text-sm">Pasang Aplikasi Siakad</h4>
+               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-snug">Tambahkan ke layar utama untuk akses lebih cepat dan tanpa browser.</p>
+               <div className="mt-3 flex gap-2">
+                  <button onClick={handleInstallClick} className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded-lg transition-colors shadow-sm">Install</button>
+                  <button onClick={() => setShowInstallPrompt(false)} className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-medium rounded-lg transition-colors">Nanti saja</button>
+               </div>
+            </div>
+          </div>
+        )}
         
         {/* Absolute Background for Right Hero */}
         <div className="absolute top-0 right-0 w-full lg:w-[55%] h-[800px] xl:h-[900px] hidden lg:block z-0">
@@ -253,7 +312,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, landingStats
                    Platform manajemen kehadiran sekolah yang modern, real-time, dan mudah diakses oleh Siswa, Guru, dan Orang Tua di {schoolData?.nama || 'SMK IT AL-HAWARI'}.
                  </p>
                  
-                 <div className="flex flex-wrap gap-4 mb-16">
+                 <div className="flex flex-wrap gap-4 mb-8">
                     <Link href={route('login.siswa')} className="flex items-center justify-center gap-2 px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium shadow-lg shadow-indigo-200 dark:shadow-none transition-all w-full sm:w-auto">
                       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg>
                       Absen Sekarang
@@ -263,6 +322,48 @@ export default function Welcome({ auth, laravelVersion, phpVersion, landingStats
                       Pelajari Fitur
                     </a>
                  </div>
+
+                 {/* Install PWA Prompt (Hero Banner Inline) */}
+                 {deferredPrompt && (
+                   <div className="mb-10 bg-indigo-50/80 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-800 rounded-2xl p-5 flex flex-col sm:flex-row items-center gap-5 justify-between max-w-2xl backdrop-blur-sm shadow-sm transition-all hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-700">
+                       <div className="flex items-start gap-4">
+                           <div className="w-14 h-14 bg-white dark:bg-slate-800 rounded-xl shadow-sm flex items-center justify-center shrink-0 p-2.5">
+                               {schoolData?.logo ? (
+                                   <img src={schoolData.logo} alt="App Icon" className="w-full h-full object-contain" />
+                               ) : (
+                                   <svg className="w-7 h-7 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                               )}
+                           </div>
+                           <div>
+                               <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                  Pasang Aplikasi Mobile 
+                                  <span className="flex h-2 w-2 relative">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                                  </span>
+                               </h3>
+                               <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
+                                   Tambahkan ke layar utama perangkat Anda untuk akses super cepat, bebas antri browser, dan antarmuka penuh layaknya aplikasi native profesional.
+                               </p>
+                           </div>
+                       </div>
+                       <button 
+                           onClick={handleInstallClick}
+                           disabled={isInstalling}
+                           className="shrink-0 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-indigo-500/30 transition-all flex items-center gap-2 w-full sm:w-auto justify-center disabled:opacity-80"
+                       >
+                           {isInstalling ? (
+                              <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                           ) : (
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                           )}
+                           {isInstalling ? 'Memproses...' : 'Pasang App'}
+                       </button>
+                   </div>
+                 )}
 
                  {/* Access Cards Grid */}
                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -290,6 +391,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, landingStats
 
             </div>
         </div>
+
 
         {/* === STATS SECTION === */}
         <div className="relative z-20 max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 mb-12">
