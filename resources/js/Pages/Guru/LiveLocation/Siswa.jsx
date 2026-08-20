@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Head } from '@inertiajs/react';
-import AdminLayout from '@/Layouts/AdminLayout';
+import GuruLayout from '@/Layouts/GuruLayout';
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import SmoothMarker from '@/Components/SmoothMarker';
 import 'leaflet/dist/leaflet.css';
@@ -23,7 +23,7 @@ const icons = {
     offline: createIcon('#ef4444'),// red-500
 };
 
-export default function AdminLiveLocationSiswa({ auth, sekolah }) {
+export default function GuruLiveLocationSiswa({ auth, sekolah }) {
     const [locations, setLocations] = useState([]);
     const [stats, setStats] = useState({ total: 0, online: 0, idle: 0, offline: 0 });
     const [adminPing, setAdminPing] = useState(null);
@@ -55,7 +55,7 @@ export default function AdminLiveLocationSiswa({ auth, sekolah }) {
     const fetchLocations = async () => {
         const start = performance.now();
         try {
-            const response = await axios.get(route('admin.live-location.siswa'));
+            const response = await axios.get(route('guru.live-location.siswa'));
             const end = performance.now();
             setAdminPing(Math.round(end - start));
 
@@ -82,7 +82,7 @@ export default function AdminLiveLocationSiswa({ auth, sekolah }) {
     }, []);
 
     return (
-        <AdminLayout user={auth.user} header="Live Lokasi Siswa" subtitle="Pemantauan realtime GPS siswa aktif di area sekolah.">
+        <GuruLayout user={auth.user} header="Live Lokasi Siswa" subtitle="Pemantauan realtime GPS siswa aktif di area sekolah.">
             <Head title="Live Lokasi Siswa" />
 
             <div className="py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-6">
@@ -259,6 +259,6 @@ export default function AdminLiveLocationSiswa({ auth, sekolah }) {
                     </div>
                 </div>
             </div>
-        </AdminLayout>
+        </GuruLayout>
     );
 }

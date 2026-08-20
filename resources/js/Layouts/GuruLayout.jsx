@@ -28,6 +28,7 @@ import {
   PanelLeft,
   Star,
   CheckCircle,
+  MapPin,
 } from 'lucide-react';
 import NotificationDropdown from '@/Components/NotificationDropdown';
 
@@ -339,6 +340,7 @@ export default function GuruLayout({ children, header = 'Panel Guru' }) {
       name: 'Akademik & Kehadiran',
       icon: ClipboardCheck,
       items: [
+        { name: 'Live Location', href: 'guru.live-location.index', icon: MapPin },
         { name: 'Absensi Siswa', href: 'guru.absensi-mapel.index', icon: Users },
         { name: 'Surat Izin Siswa', href: 'guru.surat-izin.index', icon: FileText },
         { name: 'Akses Edit Absensi', href: 'guru.akses-edit-absensi.index', icon: ShieldCheck },

@@ -1037,6 +1037,7 @@ export default function SiswaDashboard({
       heading: position.coords.heading,
       speed: position.coords.speed,
       timestamp: position.timestamp,
+      mocked: position.mocked || (position.coords && position.coords.mocked) || false,
     };
 
     const distance = calculateDistance(nextCoords.latitude, nextCoords.longitude);

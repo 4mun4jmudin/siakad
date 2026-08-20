@@ -48,6 +48,7 @@ use App\Http\Controllers\Guru\TugasController as GuruTugasController;
 use App\Http\Controllers\Guru\PenilaianController as GuruPenilaianController;
 use App\Http\Controllers\Guru\WaliKelasController as GuruWaliKelasController;
 use App\Http\Controllers\Guru\AksesEditAbsensiController as GuruAksesEditAbsensiController;
+use App\Http\Controllers\Guru\GuruLiveLocationController;
 
 // Panel Orang Tua
 use App\Http\Controllers\OrangTua\DashboardController;
@@ -378,6 +379,10 @@ Route::middleware('auth')->group(function () {
             Route::post('/attendance/checkin', [GuruDashboardController::class, 'checkin'])->name('attendance.checkin');
             Route::post('/attendance/checkout', [GuruDashboardController::class, 'checkout'])->name('attendance.checkout');
         });
+
+        // Live Location
+        Route::get('/live-location', [GuruLiveLocationController::class, 'page'])->name('live-location.index');
+        Route::get('/live-location/siswa', [GuruLiveLocationController::class, 'index'])->name('live-location.siswa');
 
         // Feedback
         Route::get('/feedback', [FeedbackController::class, 'index'])->name('feedback.index');

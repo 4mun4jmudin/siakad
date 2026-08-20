@@ -31,6 +31,7 @@
         "clsx": "^2.1.1",
         "framer-motion": "^12.23.12",
         "leaflet": "^1.9.4",
+        "leaflet.marker.slideto": "^0.3.0",
         "lodash.debounce": "^4.0.8",
         "lucide-react": "^0.536.0",
         "moment": "^2.30.1",
